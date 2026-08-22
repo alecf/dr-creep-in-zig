@@ -99,7 +99,11 @@ reference/   prior-art clones for study (gitignored)
 - [x] M3 headless emulation core boots the game (VICE-class behavior for
       this one program, no Commodore ROMs required)
 - [x] M5 playable via core (input + render; verified by scripted runs)
-- [ ] M4 platform shell: native macOS (Metal) window + wasm build
+- [x] M4 platform shells:
+      `zig build && ./zig-out/bin/creep` — native macOS window (Metal via
+      sokol); `zig build wasm` then serve `web/` — browser build
+      (wasm32-freestanding, no emscripten; symlink `web/extracted` to your
+      extracted game files)
 - [ ] M2 asset decoding: castle format renderer, sprite/charset extraction
 - [ ] M6 progressive lift: replace engine routines with Zig, with
       differential tests; SID audio; the dynamic-modification playground
