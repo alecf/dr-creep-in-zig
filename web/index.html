@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Castles of Dr. Creep (Zig/wasm)</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center;
+    background: #101014; color: #9a9aa0;
+    font: 14px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  main { text-align: center; }
+  canvas {
+    width: min(92vw, 960px); aspect-ratio: 320 / 200;
+    image-rendering: pixelated; background: #000;
+    border: 1px solid #2a2a30; border-radius: 4px;
+  }
+  h1 { font-size: 15px; font-weight: 600; color: #cfcfd4; margin: 18px 0 6px; }
+  p  { margin: 6px 0 16px; }
+  kbd {
+    background: #1c1c22; border: 1px solid #34343c; border-radius: 3px;
+    padding: 0 5px; color: #cfcfd4;
+  }
+  #status { color: #6f6f76; }
+</style>
+</head>
+<body>
+<main>
+  <h1>The Castles of Dr. Creep — decompiled to Zig, running as wasm</h1>
+  <p>
+    <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> + <kbd>space</kbd> joystick 1 ·
+    <kbd>WASD</kbd> + <kbd>shift</kbd> joystick 2 ·
+    <kbd>esc</kbd> menu (RUN/STOP) · <kbd>enter</kbd> return
+  </p>
+  <canvas id="screen" width="320" height="200"></canvas>
+  <p id="status">loading…</p>
+</main>
+<script type="module" src="creep.js"></script>
+</body>
+</html>

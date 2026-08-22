@@ -38,6 +38,23 @@ pub fn build(b: *std.Build) void {
     const run_app = b.addRunArtifact(app);
     b.step("run", "Run the windowed game").dependOn(&run_app.step);
 
+    // WebAssembly build: wasm32-freestanding, driven by web/creep.js.
+    const wasm = b.addExecutable(.{
+        .name = "creep",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/wasm.zig"),
+            .target = b.resolveTargetQuery(.{
+                .cpu_arch = .wasm32,
+                .os_tag = .freestanding,
+            }),
+            .optimize = .ReleaseSmall,
+        }),
+    });
+    wasm.entry = .disabled;
+    wasm.rdynamic = true;
+    const wasm_install = b.addInstallFile(wasm.getEmittedBin(), "../web/creep.wasm");
+    b.step("wasm", "Build web/creep.wasm").dependOn(&wasm_install.step);
+
     const tests = b.addTest(.{
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/core/tests.zig"),
