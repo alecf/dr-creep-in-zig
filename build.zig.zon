@@ -1,0 +1,12 @@
+.{
+    .name = .dr_creep_in_zig,
+    .version = "0.16.0",
+    .dependencies = .{
+        .sokol = .{
+            .url = "git+https://github.com/floooh/sokol-zig.git#91498cff7ed82c89036e3ea6bd8b7baa581106cd",
+            .hash = "sokol-0.1.0-pb1HKxumPwAHmB1rtMsj8GMbr-40BnxFLGT1AD5C4Vlk",
+        },
+    },
+    .paths = .{""},
+    .fingerprint = 0x3f07a1c9bd6ce0bb,
+}

@@ -20,6 +20,24 @@ pub fn build(b: *std.Build) void {
     if (b.args) |args| run_headless.addArgs(args);
     b.step("headless", "Run the headless core").dependOn(&run_headless.step);
 
+    // Native windowed app (sokol: Metal on macOS). The same shell is the
+    // basis for the wasm build (sokol WebGL2 via emscripten) later.
+    const dep_sokol = b.dependency("sokol", .{ .target = target, .optimize = optimize });
+    const app = b.addExecutable(.{
+        .name = "creep",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/app.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "sokol", .module = dep_sokol.module("sokol") },
+            },
+        }),
+    });
+    b.installArtifact(app);
+    const run_app = b.addRunArtifact(app);
+    b.step("run", "Run the windowed game").dependOn(&run_app.step);
+
     const tests = b.addTest(.{
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/core/tests.zig"),
