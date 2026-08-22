@@ -1,5 +1,5 @@
 {
- "file": "extracted/object.prg",
+ "file": "extracted/object-descrambled.prg",
  "load": "0x0800",
  "routines": [
   {
@@ -116,13 +116,13 @@
    ]
   },
   {
-   "address": "0x0A7B",
-   "name": "sub_0A7B",
+   "address": "0x0A82",
+   "name": "sub_0A82",
    "callers": []
   },
   {
-   "address": "0x0A82",
-   "name": "sub_0A82",
+   "address": "0x0B7B",
+   "name": "sub_0B7B",
    "callers": []
   },
   {
@@ -166,13 +166,6 @@
    "name": "sub_14CE",
    "callers": [
     "0x0E80"
-   ]
-  },
-  {
-   "address": "0x1502",
-   "name": "sub_1502",
-   "callers": [
-    "0x7544"
    ]
   },
   {
@@ -804,6 +797,8 @@
    "address": "0x5750",
    "name": "sub_5750",
    "callers": [
+    "0x4159",
+    "0x4241",
     "0x440A",
     "0x46C7",
     "0x4897",
@@ -824,6 +819,8 @@
    "name": "sub_5783",
    "callers": [
     "0x406F",
+    "0x41B5",
+    "0x4291",
     "0x4461",
     "0x44B3",
     "0x45C6",
@@ -864,6 +861,8 @@
     "0x132D",
     "0x13D0",
     "0x1630",
+    "0x16C9",
+    "0x17B4",
     "0x186E",
     "0x1890",
     "0x19AC",
@@ -871,6 +870,7 @@
     "0x1E1D",
     "0x2BB9",
     "0x4044",
+    "0x4156",
     "0x4312",
     "0x43BE",
     "0x4434",
@@ -972,6 +972,8 @@
    "address": "0x5FA3",
    "name": "sub_5FA3",
    "callers": [
+    "0x16A6",
+    "0x177E",
     "0x1825",
     "0x521B",
     "0x52F9",
@@ -987,7 +989,8 @@
     "0x0FB9",
     "0x142F",
     "0x4008",
-    "0x40EB"
+    "0x40EB",
+    "0x417D"
    ]
   },
   {

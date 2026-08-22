@@ -3,82 +3,44 @@
 
         .org $0800
 
-
-; ---------- routine (called from ) ----------
-sub_0800:
-        jmp loc_08C2                 ; 0800: 4c c2 08
-
-; ---------- routine (called from ) ----------
-sub_0803:
-        jmp loc_730C                 ; 0803: 4c 0c 73
-
-; ---------- routine (called from ) ----------
-sub_0806:
-        jmp loc_246A                 ; 0806: 4c 6a 24
-
-; ---------- routine (called from ) ----------
-sub_0809:
-        jmp $2047                    ; 0809: 4c 47 20
-
-; ---------- routine (called from ) ----------
-sub_080C:
-        jmp loc_17EE                 ; 080c: 4c ee 17
-
-; ---------- routine (called from ) ----------
-sub_080F:
-        jmp loc_752A                 ; 080f: 4c 2a 75
-
-; ---------- routine (called from ) ----------
-sub_0812:
+engine_start_trampoline:
+        jmp engine_start             ; 0800: 4c c2 08
+trampoline_to_730c:
+        jmp loc_410C                 ; 0803: 4c 0c 41
+trampoline_to_246a:
+        jmp loc_166A                 ; 0806: 4c 6a 16
+trampoline_to_2047:
+        jmp loc_1747                 ; 0809: 4c 47 17
+trampoline_to_17ee_object_prepare:
+        jmp obj_ladder_prepare       ; 080c: 4c ee 17
+trampoline_to_752a:
+        jmp loc_422A                 ; 080f: 4c 2a 42
+trampoline_obj_lightning_prepare:
         jmp loc_43E4                 ; 0812: 4c e4 43
-
-; ---------- routine (called from ) ----------
-sub_0815:
-        jmp loc_46AE                 ; 0815: 4c ae 46
-
-; ---------- routine (called from ) ----------
-sub_0818:
-        jmp loc_4872                 ; 0818: 4c 72 48
-
-; ---------- routine (called from ) ----------
-sub_081B:
-        jmp loc_49F8                 ; 081b: 4c f8 49
-
-; ---------- routine (called from ) ----------
-sub_081E:
-        jmp loc_4AB6                 ; 081e: 4c b6 4a
-
-; ---------- routine (called from ) ----------
-sub_0821:
-        jmp loc_160A                 ; 0821: 4c 0a 16
-
-; ---------- routine (called from ) ----------
-sub_0824:
-        jmp loc_4C58                 ; 0824: 4c 58 4c
-
-; ---------- routine (called from ) ----------
-sub_0827:
-        jmp loc_4F5C                 ; 0827: 4c 5c 4f
-
-; ---------- routine (called from ) ----------
-sub_082A:
-        jmp loc_517F                 ; 082a: 4c 7f 51
-
-; ---------- routine (called from ) ----------
-sub_082D:
-        jmp loc_5501                 ; 082d: 4c 01 55
-
-; ---------- routine (called from ) ----------
-sub_0830:
-        jmp loc_564E                 ; 0830: 4c 4e 56
-
-; ---------- routine (called from ) ----------
-sub_0833:
-        jmp sub_2A6D                 ; 0833: 4c 6d 2a
-
-; ---------- routine (called from ) ----------
-sub_0836:
-        jmp loc_1AE6                 ; 0836: 4c e6 1a
+trampoline_obj_forcefield_prepare:
+        jmp forcefield_prepare       ; 0815: 4c ae 46
+trampoline_obj_mummy_prepare:
+        jmp mummy_prepare            ; 0818: 4c 72 48
+trampoline_obj_key_prepare:
+        jmp key_prepare              ; 081b: 4c f8 49
+trampoline_obj_door_lock_prepare:
+        jmp door_lock_prepare        ; 081e: 4c b6 4a
+trampoline_obj_multidraw:
+        jmp obj_multi_draw           ; 0821: 4c 0a 16
+trampoline_obj_raygun_prepare:
+        jmp raygun_prepare           ; 0824: 4c 58 4c
+trampoline_obj_teleport_prepare:
+        jmp teleport_prepare         ; 0827: 4c 5c 4f
+trampoline_obj_trapdoor_prepare:
+        jmp trapdoor_prepare         ; 082a: 4c 7f 51
+trampoline_obj_conveyor_prepare:
+        jmp conveyor_prepare         ; 082d: 4c 01 55
+trampoline_obj_frankie_prepare:
+        jmp obj_frankie_prepare      ; 0830: 4c 4e 56
+trampoline_obj_string_print:
+        jmp obj_string_print_list    ; 0833: 4c 6d 2a
+trampoline_to_1ae6:
+        jmp obj_image_draw           ; 0836: 4c e6 1a
         .byte $00,$80,$40,$20,$10,$00,$80,$40,$20,$d5,$3f,$75,$40,$00,$00,$d8 ; 0839 |..@ ...@ .?u@...|
         .byte $41,$ad,$42,$00,$00,$00,$00,$e7,$44,$e0,$45,$47,$46,$5e,$47,$a7 ; 0849 |A.B.....D.EGF^G.|
         .byte $47,$00,$00,$90,$49,$00,$00,$68,$4a,$1a,$4b,$00,$00,$00,$00,$70 ; 0859 |G...I..hJ.K....p|
@@ -88,7 +50,7 @@ sub_0836:
         .byte $82,$36,$00,$00,$04,$00,$b3,$36,$4f,$37,$00,$00,$03,$00,$9a,$37 ; 0899 |.6.....6O7.....7|
         .byte $40,$39,$ce,$38,$02,$01,$08,$3a,$00,$00,$60,$3a,$04,$00,$eb,$3a ; 08a9 |@9.8...:..`:...:|
         .byte $de,$3d,$6e,$3d,$00,$01,$80,$80,$40                      ; 08b9 |.=n=....@|
-loc_08C2:
+engine_start:
         lda #$40                     ; 08c2: a9 40
 loc_08C4:
         sta $30                      ; 08c4: 85 30
@@ -177,9 +139,9 @@ loc_0917:
 loc_0919:
         bcc loc_0901                 ; 0919: 90 e6
 loc_091B:
-        jsr sub_2C10                 ; 091b: 20 10 2c
+        jsr copy_protection_check    ; 091b: 20 10 2c
 loc_091E:
-        jsr sub_7572                 ; 091e: 20 72 75
+        jsr options_menu_prepare     ; 091e: 20 72 75
 loc_0921:
         lda $0839                    ; 0921: ad 39 08
 loc_0924:
@@ -225,11 +187,11 @@ loc_0949:
 loc_094B:
         ldx #$10                     ; 094b: a2 10
 loc_094D:
-        jsr sub_23BB                 ; 094d: 20 bb 23
+        jsr castle_select_and_load   ; 094d: 20 bb 23
 loc_0950:
         jmp loc_0956                 ; 0950: 4c 56 09
 loc_0953:
-        jsr sub_0A42                 ; 0953: 20 42 0a
+        jsr castle_data_backup_to_9800 ; 0953: 20 42 0a
 loc_0956:
         lda #$00                     ; 0956: a9 00
 loc_0958:
@@ -237,9 +199,7 @@ loc_0958:
 loc_095B:
         jmp loc_0B84                 ; 095b: 4c 84 0b
         .byte $01                                                      ; 095e |.|
-
-; ---------- routine (called from $234c,$2373,$24aa,$2990,$2cd5) ----------
-sub_095F:
+disable_sprites_and_stop_sound:
         pha                          ; 095f: 48
 loc_0960:
         txa                          ; 0960: 8a
@@ -442,9 +402,7 @@ loc_0A3F:
 loc_0A40:
         rts                          ; 0a40: 60
         .byte $00                                                      ; 0a41 |.|
-
-; ---------- routine (called from $0953) ----------
-sub_0A42:
+castle_data_backup_to_9800:
         pha                          ; 0a42: 48
 loc_0A43:
         tya                          ; 0a43: 98
@@ -504,9 +462,7 @@ loc_0A78:
         sta ($32),y                  ; 0a78: 91 32
 loc_0A7A:
         iny                          ; 0a7a: c8
-
-; ---------- routine (called from ) ----------
-sub_0A7B:
+backup_copy_loop_continue_stub:
         jmp loc_0A72                 ; 0a7b: 4c 72 0a
 loc_0A7E:
         pla                          ; 0a7e: 68
@@ -516,9 +472,7 @@ loc_0A80:
         pla                          ; 0a80: 68
 loc_0A81:
         rts                          ; 0a81: 60
-
-; ---------- routine (called from ) ----------
-sub_0A82:
+irq_handler_raster_sprite_and_music_tick:
         pha                          ; 0a82: 48
 loc_0A83:
         tya                          ; 0a83: 98
@@ -717,7 +671,7 @@ loc_0B64:
 loc_0B66:
         beq loc_0B6B                 ; 0b66: f0 03
 loc_0B68:
-        jsr sub_1F29                 ; 0b68: 20 29 1f
+        jsr music_buffer_feed        ; 0b68: 20 29 1f
 loc_0B6B:
         pla                          ; 0b6b: 68
 loc_0B6C:
@@ -730,17 +684,25 @@ loc_0B6F:
         pla                          ; 0b6f: 68
 loc_0B70:
         rti                          ; 0b70: 40
-        .byte $00,$00,$00,$00,$0b,$a2,$09,$ca,$0b,$d2,$48,$a9,$01,$8d,$83,$0b ; 0b71 |..........H.....|
-        .byte $68,$40,$00                                              ; 0b81 |h@.|
+        .byte $00,$00,$00,$00,$0b,$a2,$09,$ca,$0b,$d2                  ; 0b71 |..........|
+nmi_handler_restore_key:
+        pha                          ; 0b7b: 48
+loc_0B7C:
+        lda #$01                     ; 0b7c: a9 01
+loc_0B7E:
+        sta $0b83                    ; 0b7e: 8d 83 0b
+loc_0B81:
+        pla                          ; 0b81: 68
+loc_0B82:
+        rti                          ; 0b82: 40
+        .byte $00                                                      ; 0b83 |.|
 loc_0B84:
-        jsr sub_0B8D                 ; 0b84: 20 8d 0b
+        jsr intro                    ; 0b84: 20 8d 0b
 loc_0B87:
-        jsr sub_0D71                 ; 0b87: 20 71 0d
+        jsr game_main                ; 0b87: 20 71 0d
 loc_0B8A:
         jmp loc_0B84                 ; 0b8a: 4c 84 0b
-
-; ---------- routine (called from $0b84) ----------
-sub_0B8D:
+intro:
         pha                          ; 0b8d: 48
 loc_0B8E:
         tya                          ; 0b8e: 98
@@ -783,7 +745,7 @@ loc_0BB6:
 loc_0BB9:
         lda $0d11                    ; 0bb9: ad 11 0d
 loc_0BBC:
-        jsr sub_5FD9                 ; 0bbc: 20 d9 5f
+        jsr room_ptr_set             ; 0bbc: 20 d9 5f
 loc_0BBF:
         ldy #$00                     ; 0bbf: a0 00
 loc_0BC1:
@@ -797,11 +759,11 @@ loc_0BC8:
 loc_0BCA:
         sta $0d11                    ; 0bca: 8d 11 0d
 loc_0BCD:
-        jsr sub_13F0                 ; 0bcd: 20 f0 13
+        jsr room_load                ; 0bcd: 20 f0 13
 loc_0BD0:
         jmp loc_0BE1                 ; 0bd0: 4c e1 0b
 loc_0BD3:
-        jsr sub_18E4                 ; 0bd3: 20 e4 18
+        jsr screen_clear             ; 0bd3: 20 e4 18
 loc_0BD6:
         lda #$1a                     ; 0bd6: a9 1a
 loc_0BD8:
@@ -811,7 +773,7 @@ loc_0BDA:
 loc_0BDC:
         sta $3f                      ; 0bdc: 85 3f
 loc_0BDE:
-        jsr sub_15E0                 ; 0bde: 20 e0 15
+        jsr room_prepare             ; 0bde: 20 e0 15
 loc_0BE1:
         lda VIC_CTRL1                ; 0be1: ad 11 d0
 loc_0BE4:
@@ -843,7 +805,7 @@ loc_0C02:
 loc_0C05:
         beq loc_0C0D                 ; 0c05: f0 06
 loc_0C07:
-        jsr sub_2E1C                 ; 0c07: 20 1c 2e
+        jsr events_execute           ; 0c07: 20 1c 2e
 loc_0C0A:
         jmp loc_0C17                 ; 0c0a: 4c 17 0c
 loc_0C0D:
@@ -857,7 +819,7 @@ loc_0C14:
 loc_0C17:
         lda $0d10                    ; 0c17: ad 10 0d
 loc_0C1A:
-        jsr sub_5EFC                 ; 0c1a: 20 fc 5e
+        jsr poll_joystick_and_runstop ; 0c1a: 20 fc 5e
 loc_0C1D:
         lda $5f57                    ; 0c1d: ad 57 5f
 loc_0C20:
@@ -883,7 +845,7 @@ loc_0C37:
 loc_0C39:
         jmp loc_0BA9                 ; 0c39: 4c a9 0b
 loc_0C3C:
-        jsr sub_2233                 ; 0c3c: 20 33 22
+        jsr options_menu             ; 0c3c: 20 33 22
 loc_0C3F:
         lda $24fd                    ; 0c3f: ad fd 24
 loc_0C42:
@@ -913,15 +875,15 @@ loc_0C5D:
 loc_0C5F:
         sta $29a7                    ; 0c5f: 8d a7 29
 loc_0C62:
-        jsr sub_2920                 ; 0c62: 20 20 29
+        jsr disk_io_prepare_hardware ; 0c62: 20 20 29
 loc_0C65:
-        jsr sub_1E8F                 ; 0c65: 20 8f 1e
+        jsr verify_master_disk       ; 0c65: 20 8f 1e
 loc_0C68:
         cmp #$00                     ; 0c68: c9 00
 loc_0C6A:
         bne loc_0C88                 ; 0c6a: d0 1c
 loc_0C6C:
-        jsr sub_28EC                 ; 0c6c: 20 ec 28
+        jsr kernal_load_file         ; 0c6c: 20 ec 28
 loc_0C6F:
         jsr $ffb7                    ; 0c6f: 20 b7 ff
 loc_0C72:
@@ -947,7 +909,7 @@ loc_0C88:
 loc_0C8A:
         sta $7802                    ; 0c8a: 8d 02 78
 loc_0C8D:
-        jsr sub_2973                 ; 0c8d: 20 73 29
+        jsr disk_io_settle_delay     ; 0c8d: 20 73 29
 loc_0C90:
         lda #$02                     ; 0c90: a9 02
 loc_0C92:
@@ -1073,9 +1035,7 @@ loc_0D0D:
         .byte $45,$44,$20,$48,$4f,$42,$42,$d3,$10,$c0,$0c,$21,$42,$52,$30,$44 ; 0d4e |ED HOBB....!BR0D|
         .byte $45,$52,$42,$55,$4e,$44,$20,$20,$53,$4f,$46,$54,$57,$41,$52,$c5 ; 0d5e |ERBUND  SOFTWAR.|
         .byte $00,$00,$00                                              ; 0d6e |...|
-
-; ---------- routine (called from $0b87) ----------
-sub_0D71:
+game_main:
         pha                          ; 0d71: 48
 loc_0D72:
         tya                          ; 0d72: 98
@@ -1306,11 +1266,11 @@ loc_0E78:
 loc_0E7A:
         sta $11ca                    ; 0e7a: 8d ca 11
 loc_0E7D:
-        jsr sub_0F94                 ; 0e7d: 20 94 0f
+        jsr map_display              ; 0e7d: 20 94 0f
 loc_0E80:
-        jsr sub_14CE                 ; 0e80: 20 ce 14
+        jsr room_main_entry          ; 0e80: 20 ce 14
 loc_0E83:
-        jsr sub_18E4                 ; 0e83: 20 e4 18
+        jsr screen_clear             ; 0e83: 20 e4 18
 loc_0E86:
         lda #$00                     ; 0e86: a9 00
 loc_0E88:
@@ -1338,7 +1298,7 @@ loc_0EA0:
 loc_0EA2:
         stx $1ab2                    ; 0ea2: 8e b2 1a
 loc_0EA5:
-        jsr sub_1950                 ; 0ea5: 20 50 19
+        jsr game_escape_castle       ; 0ea5: 20 50 19
 loc_0EA8:
         lda $7802                    ; 0ea8: ad 02 78
 loc_0EAB:
@@ -1388,7 +1348,7 @@ loc_0ED3:
 loc_0ED5:
         stx $1cfd                    ; 0ed5: 8e fd 1c
 loc_0ED8:
-        jsr sub_1B9F                 ; 0ed8: 20 9f 1b
+        jsr game_high_scores_handle  ; 0ed8: 20 9f 1b
 loc_0EDB:
         jmp loc_0EFC                 ; 0edb: 4c fc 0e
 loc_0EDE:
@@ -1434,7 +1394,7 @@ loc_0F0E:
 loc_0F10:
         bne loc_0F58                 ; 0f10: d0 46
 loc_0F12:
-        jsr sub_18E4                 ; 0f12: 20 e4 18
+        jsr screen_clear             ; 0f12: 20 e4 18
 loc_0F15:
         lda #$64                     ; 0f15: a9 64
 loc_0F17:
@@ -1444,7 +1404,7 @@ loc_0F19:
 loc_0F1B:
         sta $3f                      ; 0f1b: 85 3f
 loc_0F1D:
-        jsr sub_2A6D                 ; 0f1d: 20 6d 2a
+        jsr obj_string_print_list    ; 0f1d: 20 6d 2a
 loc_0F20:
         lda $7812                    ; 0f20: ad 12 78
 loc_0F23:
@@ -1466,7 +1426,7 @@ loc_0F32:
 loc_0F34:
         sta $3f                      ; 0f34: 85 3f
 loc_0F36:
-        jsr sub_2A6D                 ; 0f36: 20 6d 2a
+        jsr obj_string_print_list    ; 0f36: 20 6d 2a
 loc_0F39:
         lda $7810                    ; 0f39: ad 10 78
 loc_0F3C:
@@ -1482,7 +1442,7 @@ loc_0F44:
 loc_0F46:
         sta $3f                      ; 0f46: 85 3f
 loc_0F48:
-        jsr sub_2A6D                 ; 0f48: 20 6d 2a
+        jsr obj_string_print_list    ; 0f48: 20 6d 2a
 loc_0F4B:
         lda VIC_CTRL1                ; 0f4b: ad 11 d0
 loc_0F4E:
@@ -1492,7 +1452,7 @@ loc_0F50:
 loc_0F53:
         lda #$23                     ; 0f53: a9 23
 loc_0F55:
-        jsr sub_1935                 ; 0f55: 20 35 19
+        jsr hw_int_sleep             ; 0f55: 20 35 19
 loc_0F58:
         jmp loc_0E19                 ; 0f58: 4c 19 0e
 loc_0F5B:
@@ -1511,9 +1471,7 @@ loc_0F60:
         .byte $00,$30,$68,$07,$21,$46,$4f,$52,$20,$50,$4c,$41,$59,$45,$52,$20 ; 0f71 |.0h.!FOR PLAYER |
         .byte $b1,$00,$30,$80,$08,$21,$46,$4f,$52,$20,$50,$4c,$41,$59,$45,$52 ; 0f81 |..0..!FOR PLAYER|
         .byte $20,$b2,$00                                              ; 0f91 | ..|
-
-; ---------- routine (called from $0e7d) ----------
-sub_0F94:
+map_display:
         pha                          ; 0f94: 48
 loc_0F95:
         tya                          ; 0f95: 98
@@ -1524,7 +1482,7 @@ loc_0F97:
 loc_0F98:
         pha                          ; 0f98: 48
 loc_0F99:
-        jsr sub_18E4                 ; 0f99: 20 e4 18
+        jsr screen_clear             ; 0f99: 20 e4 18
 loc_0F9C:
         lda #$00                     ; 0f9c: a9 00
 loc_0F9E:
@@ -1548,7 +1506,7 @@ loc_0FB3:
 loc_0FB6:
         lda $7809,x                  ; 0fb6: bd 09 78
 loc_0FB9:
-        jsr sub_5FD9                 ; 0fb9: 20 d9 5f
+        jsr room_ptr_set             ; 0fb9: 20 d9 5f
 loc_0FBC:
         ldy #$00                     ; 0fbc: a0 00
 loc_0FBE:
@@ -1560,7 +1518,7 @@ loc_0FC3:
 loc_0FC5:
         lda $780b,x                  ; 0fc5: bd 0b 78
 loc_0FC8:
-        jsr sub_6009                 ; 0fc8: 20 09 60
+        jsr room_extra_record_lookup ; 0fc8: 20 09 60
 loc_0FCB:
         ldy #$02                     ; 0fcb: a0 02
 loc_0FCD:
@@ -1570,7 +1528,7 @@ loc_0FCF:
 loc_0FD1:
         sta $11d9                    ; 0fd1: 8d d9 11
 loc_0FD4:
-        jsr sub_3F14                 ; 0fd4: 20 14 3f
+        jsr sprite_creepfindfree     ; 0fd4: 20 14 3f
 loc_0FD7:
         txa                          ; 0fd7: 8a
 loc_0FD8:
@@ -1658,7 +1616,7 @@ loc_1029:
 loc_102C:
         sta $bd03,x                  ; 102c: 9d 03 bd
 loc_102F:
-        jsr sub_5D26                 ; 102f: 20 26 5d
+        jsr hw_sprite_prepare        ; 102f: 20 26 5d
 loc_1032:
         ldy $11d8                    ; 1032: ac d8 11
 loc_1035:
@@ -1692,7 +1650,7 @@ loc_1053:
 loc_1056:
         sta $3f                      ; 1056: 85 3f
 loc_1058:
-        jsr sub_2A6D                 ; 1058: 20 6d 2a
+        jsr obj_string_print_list    ; 1058: 20 6d 2a
 loc_105B:
         tya                          ; 105b: 98
 loc_105C:
@@ -1712,7 +1670,7 @@ loc_1065:
 loc_1067:
         sta $3f                      ; 1067: 85 3f
 loc_1069:
-        jsr sub_29AE                 ; 1069: 20 ae 29
+        jsr convert_timer_to_digits  ; 1069: 20 ae 29
 loc_106C:
         clc                          ; 106c: 18
 loc_106D:
@@ -1734,7 +1692,7 @@ loc_107F:
 loc_1081:
         sta $5cc7                    ; 1081: 8d c7 5c
 loc_1084:
-        jsr sub_580D                 ; 1084: 20 0d 58
+        jsr screen_draw              ; 1084: 20 0d 58
 loc_1087:
         inc $11d7                    ; 1087: ee d7 11
 loc_108A:
@@ -1746,7 +1704,7 @@ loc_108F:
 loc_1091:
         jmp loc_0FA9                 ; 1091: 4c a9 0f
 loc_1094:
-        jsr sub_1203                 ; 1094: 20 03 12
+        jsr map_room_draw            ; 1094: 20 03 12
 loc_1097:
         lda #$00                     ; 1097: a9 00
 loc_1099:
@@ -1902,7 +1860,7 @@ loc_1157:
 loc_115A:
         txa                          ; 115a: 8a
 loc_115B:
-        jsr sub_5EFC                 ; 115b: 20 fc 5e
+        jsr poll_joystick_and_runstop ; 115b: 20 fc 5e
 loc_115E:
         lda $5f6a                    ; 115e: ad 6a 5f
 loc_1161:
@@ -1914,7 +1872,7 @@ loc_1165:
 loc_1167:
         sta $2e02                    ; 1167: 8d 02 2e
 loc_116A:
-        jsr sub_2C08                 ; 116a: 20 08 2c
+        jsr forced_break_stub        ; 116a: 20 08 2c
 loc_116D:
         jmp loc_0F99                 ; 116d: 4c 99 0f
 loc_1170:
@@ -1924,7 +1882,7 @@ loc_1173:
 loc_1175:
         bne loc_117D                 ; 1175: d0 06
 loc_1177:
-        jsr sub_24FF                 ; 1177: 20 ff 24
+        jsr game_position_save       ; 1177: 20 ff 24
 loc_117A:
         jmp loc_0F99                 ; 117a: 4c 99 0f
 loc_117D:
@@ -1962,7 +1920,7 @@ loc_11A2:
 loc_11A5:
         lda #$00                     ; 11a5: a9 00
 loc_11A7:
-        jsr sub_5EFC                 ; 11a7: 20 fc 5e
+        jsr poll_joystick_and_runstop ; 11a7: 20 fc 5e
 loc_11AA:
         lda $5f57                    ; 11aa: ad 57 5f
 loc_11AD:
@@ -1970,7 +1928,7 @@ loc_11AD:
 loc_11AF:
         lda #$01                     ; 11af: a9 01
 loc_11B1:
-        jsr sub_5EFC                 ; 11b1: 20 fc 5e
+        jsr poll_joystick_and_runstop ; 11b1: 20 fc 5e
 loc_11B4:
         lda $5f57                    ; 11b4: ad 57 5f
 loc_11B7:
@@ -1978,7 +1936,7 @@ loc_11B7:
 loc_11B9:
         lda #$09                     ; 11b9: a9 09
 loc_11BB:
-        jsr sub_21C8                 ; 11bb: 20 c8 21
+        jsr sound_play_effect        ; 11bb: 20 c8 21
 loc_11BE:
         lda #$00                     ; 11be: a9 00
 loc_11C0:
@@ -1999,9 +1957,7 @@ loc_11C8:
         .byte $a0,$ff,$02,$ff,$fb,$f6,$fe,$06,$fe,$14,$15,$12,$13,$0a,$07,$0d ; 11d9 |................|
         .byte $ed,$11,$f8,$11,$10,$00,$01,$22,$4f,$4e,$45,$20,$55,$d0,$00,$74 ; 11e9 |......."ONE U..t|
         .byte $00,$01,$22,$54,$57,$4f,$20,$55,$d0,$00                  ; 11f9 |.."TWO U..|
-
-; ---------- routine (called from $1094) ----------
-sub_1203:
+map_room_draw:
         pha                          ; 1203: 48
 loc_1204:
         tya                          ; 1204: 98
@@ -2096,7 +2052,7 @@ loc_1266:
 loc_1269:
         sta $5ccb                    ; 1269: 8d cb 5c
 loc_126C:
-        jsr sub_580D                 ; 126c: 20 0d 58
+        jsr screen_draw              ; 126c: 20 0d 58
 loc_126F:
         clc                          ; 126f: 18
 loc_1270:
@@ -2142,7 +2098,7 @@ loc_12A2:
 loc_12A4:
         sta $5cd5                    ; 12a4: 8d d5 5c
 loc_12A7:
-        jsr sub_580D                 ; 12a7: 20 0d 58
+        jsr screen_draw              ; 12a7: 20 0d 58
 loc_12AA:
         clc                          ; 12aa: 18
 loc_12AB:
@@ -2182,7 +2138,7 @@ loc_12CE:
 loc_12D1:
         sta $13ea                    ; 12d1: 8d ea 13
 loc_12D4:
-        jsr sub_580D                 ; 12d4: 20 0d 58
+        jsr screen_draw              ; 12d4: 20 0d 58
 loc_12D7:
         clc                          ; 12d7: 18
 loc_12D8:
@@ -2212,7 +2168,7 @@ loc_12F6:
 loc_12F9:
         sta $13ea                    ; 12f9: 8d ea 13
 loc_12FC:
-        jsr sub_580D                 ; 12fc: 20 0d 58
+        jsr screen_draw              ; 12fc: 20 0d 58
 loc_12FF:
         clc                          ; 12ff: 18
 loc_1300:
@@ -2254,7 +2210,7 @@ loc_1327:
 loc_132A:
         sta $13ea                    ; 132a: 8d ea 13
 loc_132D:
-        jsr sub_580D                 ; 132d: 20 0d 58
+        jsr screen_draw              ; 132d: 20 0d 58
 loc_1330:
         clc                          ; 1330: 18
 loc_1331:
@@ -2270,7 +2226,7 @@ loc_133C:
 loc_133E:
         lda #$00                     ; 133e: a9 00
 loc_1340:
-        jsr sub_6009                 ; 1340: 20 09 60
+        jsr room_extra_record_lookup ; 1340: 20 09 60
 loc_1343:
         lda $603a                    ; 1343: ad 3a 60
 loc_1346:
@@ -2402,7 +2358,7 @@ loc_13CB:
 loc_13CD:
         sta $5cd5                    ; 13cd: 8d d5 5c
 loc_13D0:
-        jsr sub_580D                 ; 13d0: 20 0d 58
+        jsr screen_draw              ; 13d0: 20 0d 58
 loc_13D3:
         clc                          ; 13d3: 18
 loc_13D4:
@@ -2432,9 +2388,7 @@ loc_13E8:
 loc_13E9:
         rts                          ; 13e9: 60
         .byte $a0,$b1,$a0,$8c,$a0,$a0                                  ; 13ea |......|
-
-; ---------- routine (called from $0bcd,$14d3) ----------
-sub_13F0:
+room_load:
         pha                          ; 13f0: 48
 loc_13F1:
         tya                          ; 13f1: 98
@@ -2445,7 +2399,7 @@ loc_13F3:
 loc_13F4:
         pha                          ; 13f4: 48
 loc_13F5:
-        jsr sub_18E4                 ; 13f5: 20 e4 18
+        jsr screen_clear             ; 13f5: 20 e4 18
 loc_13F8:
         lda #$00                     ; 13f8: a9 00
 loc_13FA:
@@ -2497,7 +2451,7 @@ loc_1429:
 loc_142C:
         lda $7809,x                  ; 142c: bd 09 78
 loc_142F:
-        jsr sub_5FD9                 ; 142f: 20 d9 5f
+        jsr room_ptr_set             ; 142f: 20 d9 5f
 loc_1432:
         ldy #$00                     ; 1432: a0 00
 loc_1434:
@@ -2619,7 +2573,7 @@ loc_14C1:
 loc_14C3:
         sta $3f                      ; 14c3: 85 3f
 loc_14C5:
-        jsr sub_15E0                 ; 14c5: 20 e0 15
+        jsr room_prepare             ; 14c5: 20 e0 15
 loc_14C8:
         pla                          ; 14c8: 68
 loc_14C9:
@@ -2632,9 +2586,7 @@ loc_14CC:
         pla                          ; 14cc: 68
 loc_14CD:
         rts                          ; 14cd: 60
-
-; ---------- routine (called from $0e80) ----------
-sub_14CE:
+room_main_entry:
         pha                          ; 14ce: 48
 loc_14CF:
         tya                          ; 14cf: 98
@@ -2645,7 +2597,7 @@ loc_14D1:
 loc_14D2:
         pha                          ; 14d2: 48
 loc_14D3:
-        jsr sub_13F0                 ; 14d3: 20 f0 13
+        jsr room_load                ; 14d3: 20 f0 13
 loc_14D6:
         ldx #$00                     ; 14d6: a2 00
 loc_14D8:
@@ -2657,7 +2609,7 @@ loc_14DD:
 loc_14DF:
         stx $3638                    ; 14df: 8e 38 36
 loc_14E2:
-        jsr sub_359E                 ; 14e2: 20 9e 35
+        jsr obj_player_add           ; 14e2: 20 9e 35
 loc_14E5:
         inx                          ; 14e5: e8
 loc_14E6:
@@ -2679,12 +2631,10 @@ loc_14F7:
 loc_14F9:
         sta VIC_CTRL1                ; 14f9: 8d 11 d0
 loc_14FC:
-        jsr sub_2E1C                 ; 14fc: 20 1c 2e
+        jsr events_execute           ; 14fc: 20 1c 2e
 loc_14FF:
         lda $5f6a                    ; 14ff: ad 6a 5f
-
-; ---------- routine (called from $7544) ----------
-sub_1502:
+room_main_event_loop:
         cmp #$01                     ; 1502: c9 01
 loc_1504:
         bne loc_150E                 ; 1504: d0 08
@@ -2693,7 +2643,7 @@ loc_1506:
 loc_1508:
         sta $2e02                    ; 1508: 8d 02 2e
 loc_150B:
-        jsr sub_2C08                 ; 150b: 20 08 2c
+        jsr forced_break_stub        ; 150b: 20 08 2c
 loc_150E:
         lda $5f69                    ; 150e: ad 69 5f
 loc_1511:
@@ -2709,7 +2659,7 @@ loc_151A:
 loc_151D:
         bne loc_151A                 ; 151d: d0 fb
 loc_151F:
-        jsr sub_5EFC                 ; 151f: 20 fc 5e
+        jsr poll_joystick_and_runstop ; 151f: 20 fc 5e
 loc_1522:
         lda $5f69                    ; 1522: ad 69 5f
 loc_1525:
@@ -2733,7 +2683,7 @@ loc_1538:
 loc_153A:
         lda #$00                     ; 153a: a9 00
 loc_153C:
-        jsr sub_5EFC                 ; 153c: 20 fc 5e
+        jsr poll_joystick_and_runstop ; 153c: 20 fc 5e
 loc_153F:
         lda $5f69                    ; 153f: ad 69 5f
 loc_1542:
@@ -2749,7 +2699,7 @@ loc_154B:
 loc_154E:
         bne loc_154B                 ; 154e: d0 fb
 loc_1550:
-        jsr sub_5EFC                 ; 1550: 20 fc 5e
+        jsr poll_joystick_and_runstop ; 1550: 20 fc 5e
 loc_1553:
         lda $5f69                    ; 1553: ad 69 5f
 loc_1556:
@@ -2853,7 +2803,7 @@ loc_15C6:
 loc_15C9:
         ldx #$1e                     ; 15c9: a2 1e
 loc_15CB:
-        jsr sub_2E1C                 ; 15cb: 20 1c 2e
+        jsr events_execute           ; 15cb: 20 1c 2e
 loc_15CE:
         dex                          ; 15ce: ca
 loc_15CF:
@@ -2871,9 +2821,7 @@ loc_15D5:
 loc_15D6:
         rts                          ; 15d6: 60
         .byte $00,$a8,$a0,$a0,$a0,$a0,$a0,$c5,$a2                      ; 15d7 |.........|
-
-; ---------- routine (called from $0bde,$14c5,$196e,$25c4,$25df) ----------
-sub_15E0:
+room_prepare:
         pha                          ; 15e0: 48
 loc_15E1:
         tya                          ; 15e1: 98
@@ -2884,7 +2832,7 @@ loc_15E3:
 loc_15E5:
         lda ($3e),y                  ; 15e5: b1 3e
 loc_15E7:
-        sta sub_1601                 ; 15e7: 8d 01 16
+        sta room_prepare_dispatch_slot ; 15e7: 8d 01 16
 loc_15EA:
         iny                          ; 15ea: c8
 loc_15EB:
@@ -2908,7 +2856,7 @@ loc_15FB:
 loc_15FE:
         beq loc_1606                 ; 15fe: f0 06
 loc_1600:
-        jsr sub_1601                 ; 1600: 20 01 16
+        jsr room_prepare_dispatch_slot ; 1600: 20 01 16
 loc_1603:
         jmp loc_15E3                 ; 1603: 4c e3 15
 loc_1606:
@@ -2919,7 +2867,7 @@ loc_1608:
         pla                          ; 1608: 68
 loc_1609:
         rts                          ; 1609: 60
-loc_160A:
+obj_multi_draw:
         pha                          ; 160a: 48
 loc_160B:
         tya                          ; 160b: 98
@@ -2936,7 +2884,7 @@ loc_1614:
 loc_1616:
         beq loc_165F                 ; 1616: f0 47
 loc_1618:
-        sta $1669                    ; 1618: 8d 69 16
+        sta obj_walkway_prepare      ; 1618: 8d 69 16
 loc_161B:
         ldy #$01                     ; 161b: a0 01
 loc_161D:
@@ -2956,9 +2904,9 @@ loc_162B:
 loc_162D:
         sta $5cca                    ; 162d: 8d ca 5c
 loc_1630:
-        jsr sub_580D                 ; 1630: 20 0d 58
+        jsr screen_draw              ; 1630: 20 0d 58
 loc_1633:
-        dec $1669                    ; 1633: ce 69 16
+        dec obj_walkway_prepare      ; 1633: ce 69 16
 loc_1636:
         beq loc_1651                 ; 1636: f0 19
 loc_1638:
@@ -3011,32 +2959,369 @@ loc_1667:
         pla                          ; 1667: 68
 loc_1668:
         rts                          ; 1668: 60
-        .byte $a0,$48,$98,$48,$a0,$00,$b1,$3e,$8d,$46,$17,$d0,$09,$e6,$3e,$d0 ; 1669 |.H.H...>.F....>.|
-        .byte $02,$e6,$3f,$4c,$40,$17,$a0,$01,$b1,$3e,$8d,$cb,$5c,$a0,$02,$b1 ; 1679 |..?L@....>..\...|
-        .byte $3e,$8d,$ca,$5c,$a9,$01,$8d,$44,$17,$ad,$cb,$5c,$4a,$4a,$38,$e9 ; 1689 |>..\...D...\JJ8.|
-        .byte $04,$8d,$d5,$5f,$ad,$ca,$5c,$4a,$4a,$4a,$8d,$d6,$5f,$20,$a3,$5f ; 1699 |..._..\JJJ.._ ._|
-        .byte $ad,$44,$17,$c9,$01,$f0,$0a,$cd,$46,$17,$f0,$0a,$a9,$1c,$4c,$c1 ; 16a9 |.D......F.....L.|
-        .byte $16,$a9,$1b,$4c,$c1,$16,$a9,$1d,$8d,$c9,$5c,$a9,$00,$8d,$c7,$5c ; 16b9 |...L......\....\|
-        .byte $20,$0d,$58,$a9,$01,$8d,$45,$17,$ad,$44,$17,$c9,$01,$f0,$0a,$cd ; 16c9 | .X...E..D......|
-        .byte $46,$17,$f0,$11,$a9,$44,$4c,$f8,$16,$ad,$45,$17,$c9,$01,$d0,$f4 ; 16d9 |F....DL...E.....|
-        .byte $a9,$04,$4c,$f8,$16,$ad,$45,$17,$cd,$cd,$5c,$d0,$e7,$a9,$40,$a0 ; 16e9 |..L...E...\...@.|
-        .byte $00,$11,$3c,$91,$3c,$ee,$45,$17,$18,$a5,$3c,$69,$02,$85,$3c,$90 ; 16f9 |..<.<.E...<i..<.|
-        .byte $02,$e6,$3d,$ad,$45,$17,$cd,$cd,$5c,$90,$bd,$f0,$bb,$ad,$cd,$5c ; 1709 |..=.E...\......\|
-        .byte $0a,$0a,$18,$6d,$cb,$5c,$8d,$cb,$5c,$ee,$44,$17,$ad,$44,$17,$cd ; 1719 |...m.\..\.D..D..|
-        .byte $46,$17,$f0,$02,$b0,$03,$4c,$a9,$16,$a5,$3e,$18,$69,$03,$85,$3e ; 1729 |F.....L...>.i..>|
-        .byte $90,$02,$e6,$3f,$4c,$6d,$16,$68,$a8,$68,$60,$a0,$a0,$a9,$48,$98 ; 1739 |...?Lm.h.h`...H.|
-        .byte $48,$a0,$00,$b1,$3e,$d0,$09,$e6,$3e,$d0,$02,$e6,$3f,$4c,$e9,$17 ; 1749 |H...>...>...?L..|
-        .byte $8d,$ed,$17,$a0,$01,$b1,$3e,$8d,$cb,$5c,$a0,$02,$b1,$3e,$8d,$ca ; 1759 |......>..\...>..|
-        .byte $5c,$ad,$cb,$5c,$4a,$4a,$38,$e9,$04,$8d,$d5,$5f,$ad,$ca,$5c,$4a ; 1769 |\..\JJ8...._..\J|
-        .byte $4a,$4a,$8d,$d6,$5f,$20,$a3,$5f,$a0,$00,$b1,$3c,$29,$44,$f0,$21 ; 1779 |JJ.._ ._...<)D.!|
-        .byte $38,$ad,$cb,$5c,$e9,$04,$8d,$d7,$5c,$ad,$ca,$5c,$8d,$d6,$5c,$a9 ; 1789 |8..\....\..\..\.|
-        .byte $25,$8d,$d5,$5c,$a9,$27,$8d,$c9,$5c,$a9,$02,$8d,$c7,$5c,$4c,$b4 ; 1799 |%..\.'..\....\L.|
-        .byte $17,$a9,$24,$8d,$c9,$5c,$a9,$00,$8d,$c7,$5c,$20,$0d,$58,$a0,$00 ; 17a9 |..$..\....\ .X..|
-        .byte $b1,$3c,$09,$10,$91,$3c,$ce,$ed,$17,$d0,$0e,$18,$a5,$3e,$69,$03 ; 17b9 |.<...<.......>i.|
-        .byte $85,$3e,$90,$02,$e6,$3f,$4c,$4a,$17,$18,$ad,$ca,$5c,$69,$08,$8d ; 17c9 |.>...?LJ....\i..|
-        .byte $ca,$5c,$18,$a5,$3c,$69,$50,$85,$3c,$90,$02,$e6,$3d,$4c,$81,$17 ; 17d9 |.\..<iP.<...=L..|
-        .byte $68,$a8,$68,$60,$80                                      ; 17e9 |h.h`.|
-loc_17EE:
+obj_walkway_prepare:
+        .byte $a0                                                      ; 1669 |.|
+loc_166A:
+        pha                          ; 166a: 48
+loc_166B:
+        tya                          ; 166b: 98
+loc_166C:
+        pha                          ; 166c: 48
+loc_166D:
+        ldy #$00                     ; 166d: a0 00
+loc_166F:
+        lda ($3e),y                  ; 166f: b1 3e
+loc_1671:
+        sta $1746                    ; 1671: 8d 46 17
+loc_1674:
+        bne loc_167F                 ; 1674: d0 09
+loc_1676:
+        inc $3e                      ; 1676: e6 3e
+loc_1678:
+        bne loc_167C                 ; 1678: d0 02
+loc_167A:
+        inc $3f                      ; 167a: e6 3f
+loc_167C:
+        jmp loc_1740                 ; 167c: 4c 40 17
+loc_167F:
+        ldy #$01                     ; 167f: a0 01
+loc_1681:
+        lda ($3e),y                  ; 1681: b1 3e
+loc_1683:
+        sta $5ccb                    ; 1683: 8d cb 5c
+loc_1686:
+        ldy #$02                     ; 1686: a0 02
+loc_1688:
+        lda ($3e),y                  ; 1688: b1 3e
+loc_168A:
+        sta $5cca                    ; 168a: 8d ca 5c
+loc_168D:
+        lda #$01                     ; 168d: a9 01
+loc_168F:
+        sta $1744                    ; 168f: 8d 44 17
+loc_1692:
+        lda $5ccb                    ; 1692: ad cb 5c
+loc_1695:
+        lsr a                        ; 1695: 4a
+loc_1696:
+        lsr a                        ; 1696: 4a
+loc_1697:
+        sec                          ; 1697: 38
+loc_1698:
+        sbc #$04                     ; 1698: e9 04
+loc_169A:
+        sta $5fd5                    ; 169a: 8d d5 5f
+loc_169D:
+        lda $5cca                    ; 169d: ad ca 5c
+loc_16A0:
+        lsr a                        ; 16a0: 4a
+loc_16A1:
+        lsr a                        ; 16a1: 4a
+loc_16A2:
+        lsr a                        ; 16a2: 4a
+loc_16A3:
+        sta $5fd6                    ; 16a3: 8d d6 5f
+loc_16A6:
+        jsr word_3c_calculate        ; 16a6: 20 a3 5f
+loc_16A9:
+        lda $1744                    ; 16a9: ad 44 17
+loc_16AC:
+        cmp #$01                     ; 16ac: c9 01
+loc_16AE:
+        beq loc_16BA                 ; 16ae: f0 0a
+loc_16B0:
+        cmp $1746                    ; 16b0: cd 46 17
+loc_16B3:
+        beq loc_16BF                 ; 16b3: f0 0a
+loc_16B5:
+        lda #$1c                     ; 16b5: a9 1c
+loc_16B7:
+        jmp loc_16C1                 ; 16b7: 4c c1 16
+loc_16BA:
+        lda #$1b                     ; 16ba: a9 1b
+loc_16BC:
+        jmp loc_16C1                 ; 16bc: 4c c1 16
+loc_16BF:
+        lda #$1d                     ; 16bf: a9 1d
+loc_16C1:
+        sta $5cc9                    ; 16c1: 8d c9 5c
+loc_16C4:
+        lda #$00                     ; 16c4: a9 00
+loc_16C6:
+        sta $5cc7                    ; 16c6: 8d c7 5c
+loc_16C9:
+        jsr screen_draw              ; 16c9: 20 0d 58
+loc_16CC:
+        lda #$01                     ; 16cc: a9 01
+loc_16CE:
+        sta $1745                    ; 16ce: 8d 45 17
+loc_16D1:
+        lda $1744                    ; 16d1: ad 44 17
+loc_16D4:
+        cmp #$01                     ; 16d4: c9 01
+loc_16D6:
+        beq loc_16E2                 ; 16d6: f0 0a
+loc_16D8:
+        cmp $1746                    ; 16d8: cd 46 17
+loc_16DB:
+        beq loc_16EE                 ; 16db: f0 11
+loc_16DD:
+        lda #$44                     ; 16dd: a9 44
+loc_16DF:
+        jmp loc_16F8                 ; 16df: 4c f8 16
+loc_16E2:
+        lda $1745                    ; 16e2: ad 45 17
+loc_16E5:
+        cmp #$01                     ; 16e5: c9 01
+loc_16E7:
+        bne loc_16DD                 ; 16e7: d0 f4
+loc_16E9:
+        lda #$04                     ; 16e9: a9 04
+loc_16EB:
+        jmp loc_16F8                 ; 16eb: 4c f8 16
+loc_16EE:
+        lda $1745                    ; 16ee: ad 45 17
+loc_16F1:
+        cmp $5ccd                    ; 16f1: cd cd 5c
+loc_16F4:
+        bne loc_16DD                 ; 16f4: d0 e7
+loc_16F6:
+        lda #$40                     ; 16f6: a9 40
+loc_16F8:
+        ldy #$00                     ; 16f8: a0 00
+loc_16FA:
+        ora ($3c),y                  ; 16fa: 11 3c
+loc_16FC:
+        sta ($3c),y                  ; 16fc: 91 3c
+loc_16FE:
+        inc $1745                    ; 16fe: ee 45 17
+loc_1701:
+        clc                          ; 1701: 18
+loc_1702:
+        lda $3c                      ; 1702: a5 3c
+loc_1704:
+        adc #$02                     ; 1704: 69 02
+loc_1706:
+        sta $3c                      ; 1706: 85 3c
+loc_1708:
+        bcc loc_170C                 ; 1708: 90 02
+loc_170A:
+        inc $3d                      ; 170a: e6 3d
+loc_170C:
+        lda $1745                    ; 170c: ad 45 17
+loc_170F:
+        cmp $5ccd                    ; 170f: cd cd 5c
+loc_1712:
+        bcc loc_16D1                 ; 1712: 90 bd
+loc_1714:
+        beq loc_16D1                 ; 1714: f0 bb
+loc_1716:
+        lda $5ccd                    ; 1716: ad cd 5c
+loc_1719:
+        asl a                        ; 1719: 0a
+loc_171A:
+        asl a                        ; 171a: 0a
+loc_171B:
+        clc                          ; 171b: 18
+loc_171C:
+        adc $5ccb                    ; 171c: 6d cb 5c
+loc_171F:
+        sta $5ccb                    ; 171f: 8d cb 5c
+loc_1722:
+        inc $1744                    ; 1722: ee 44 17
+loc_1725:
+        lda $1744                    ; 1725: ad 44 17
+loc_1728:
+        cmp $1746                    ; 1728: cd 46 17
+loc_172B:
+        beq loc_172F                 ; 172b: f0 02
+loc_172D:
+        bcs loc_1732                 ; 172d: b0 03
+loc_172F:
+        jmp loc_16A9                 ; 172f: 4c a9 16
+loc_1732:
+        lda $3e                      ; 1732: a5 3e
+loc_1734:
+        clc                          ; 1734: 18
+loc_1735:
+        adc #$03                     ; 1735: 69 03
+loc_1737:
+        sta $3e                      ; 1737: 85 3e
+loc_1739:
+        bcc loc_173D                 ; 1739: 90 02
+loc_173B:
+        inc $3f                      ; 173b: e6 3f
+loc_173D:
+        jmp loc_166D                 ; 173d: 4c 6d 16
+loc_1740:
+        pla                          ; 1740: 68
+loc_1741:
+        tay                          ; 1741: a8
+loc_1742:
+        pla                          ; 1742: 68
+loc_1743:
+        rts                          ; 1743: 60
+        .byte $a0,$a0,$a9                                              ; 1744 |...|
+loc_1747:
+        pha                          ; 1747: 48
+loc_1748:
+        tya                          ; 1748: 98
+loc_1749:
+        pha                          ; 1749: 48
+loc_174A:
+        ldy #$00                     ; 174a: a0 00
+loc_174C:
+        lda ($3e),y                  ; 174c: b1 3e
+loc_174E:
+        bne loc_1759                 ; 174e: d0 09
+loc_1750:
+        inc $3e                      ; 1750: e6 3e
+loc_1752:
+        bne loc_1756                 ; 1752: d0 02
+loc_1754:
+        inc $3f                      ; 1754: e6 3f
+loc_1756:
+        jmp loc_17E9                 ; 1756: 4c e9 17
+loc_1759:
+        sta $17ed                    ; 1759: 8d ed 17
+loc_175C:
+        ldy #$01                     ; 175c: a0 01
+loc_175E:
+        lda ($3e),y                  ; 175e: b1 3e
+loc_1760:
+        sta $5ccb                    ; 1760: 8d cb 5c
+loc_1763:
+        ldy #$02                     ; 1763: a0 02
+loc_1765:
+        lda ($3e),y                  ; 1765: b1 3e
+loc_1767:
+        sta $5cca                    ; 1767: 8d ca 5c
+loc_176A:
+        lda $5ccb                    ; 176a: ad cb 5c
+loc_176D:
+        lsr a                        ; 176d: 4a
+loc_176E:
+        lsr a                        ; 176e: 4a
+loc_176F:
+        sec                          ; 176f: 38
+loc_1770:
+        sbc #$04                     ; 1770: e9 04
+loc_1772:
+        sta $5fd5                    ; 1772: 8d d5 5f
+loc_1775:
+        lda $5cca                    ; 1775: ad ca 5c
+loc_1778:
+        lsr a                        ; 1778: 4a
+loc_1779:
+        lsr a                        ; 1779: 4a
+loc_177A:
+        lsr a                        ; 177a: 4a
+loc_177B:
+        sta $5fd6                    ; 177b: 8d d6 5f
+loc_177E:
+        jsr word_3c_calculate        ; 177e: 20 a3 5f
+loc_1781:
+        ldy #$00                     ; 1781: a0 00
+loc_1783:
+        lda ($3c),y                  ; 1783: b1 3c
+loc_1785:
+        and #$44                     ; 1785: 29 44
+loc_1787:
+        beq loc_17AA                 ; 1787: f0 21
+loc_1789:
+        sec                          ; 1789: 38
+loc_178A:
+        lda $5ccb                    ; 178a: ad cb 5c
+loc_178D:
+        sbc #$04                     ; 178d: e9 04
+loc_178F:
+        sta $5cd7                    ; 178f: 8d d7 5c
+loc_1792:
+        lda $5cca                    ; 1792: ad ca 5c
+loc_1795:
+        sta $5cd6                    ; 1795: 8d d6 5c
+loc_1798:
+        lda #$25                     ; 1798: a9 25
+loc_179A:
+        sta $5cd5                    ; 179a: 8d d5 5c
+loc_179D:
+        lda #$27                     ; 179d: a9 27
+loc_179F:
+        sta $5cc9                    ; 179f: 8d c9 5c
+loc_17A2:
+        lda #$02                     ; 17a2: a9 02
+loc_17A4:
+        sta $5cc7                    ; 17a4: 8d c7 5c
+loc_17A7:
+        jmp loc_17B4                 ; 17a7: 4c b4 17
+loc_17AA:
+        lda #$24                     ; 17aa: a9 24
+loc_17AC:
+        sta $5cc9                    ; 17ac: 8d c9 5c
+loc_17AF:
+        lda #$00                     ; 17af: a9 00
+loc_17B1:
+        sta $5cc7                    ; 17b1: 8d c7 5c
+loc_17B4:
+        jsr screen_draw              ; 17b4: 20 0d 58
+loc_17B7:
+        ldy #$00                     ; 17b7: a0 00
+loc_17B9:
+        lda ($3c),y                  ; 17b9: b1 3c
+loc_17BB:
+        ora #$10                     ; 17bb: 09 10
+loc_17BD:
+        sta ($3c),y                  ; 17bd: 91 3c
+loc_17BF:
+        dec $17ed                    ; 17bf: ce ed 17
+loc_17C2:
+        bne loc_17D2                 ; 17c2: d0 0e
+loc_17C4:
+        clc                          ; 17c4: 18
+loc_17C5:
+        lda $3e                      ; 17c5: a5 3e
+loc_17C7:
+        adc #$03                     ; 17c7: 69 03
+loc_17C9:
+        sta $3e                      ; 17c9: 85 3e
+loc_17CB:
+        bcc loc_17CF                 ; 17cb: 90 02
+loc_17CD:
+        inc $3f                      ; 17cd: e6 3f
+loc_17CF:
+        jmp loc_174A                 ; 17cf: 4c 4a 17
+loc_17D2:
+        clc                          ; 17d2: 18
+loc_17D3:
+        lda $5cca                    ; 17d3: ad ca 5c
+loc_17D6:
+        adc #$08                     ; 17d6: 69 08
+loc_17D8:
+        sta $5cca                    ; 17d8: 8d ca 5c
+loc_17DB:
+        clc                          ; 17db: 18
+loc_17DC:
+        lda $3c                      ; 17dc: a5 3c
+loc_17DE:
+        adc #$50                     ; 17de: 69 50
+loc_17E0:
+        sta $3c                      ; 17e0: 85 3c
+loc_17E2:
+        bcc loc_17E6                 ; 17e2: 90 02
+loc_17E4:
+        inc $3d                      ; 17e4: e6 3d
+loc_17E6:
+        jmp loc_1781                 ; 17e6: 4c 81 17
+loc_17E9:
+        pla                          ; 17e9: 68
+loc_17EA:
+        tay                          ; 17ea: a8
+loc_17EB:
+        pla                          ; 17eb: 68
+loc_17EC:
+        rts                          ; 17ec: 60
+        .byte $80                                                      ; 17ed |.|
+obj_ladder_prepare:
         pha                          ; 17ee: 48
 loc_17EF:
         tya                          ; 17ef: 98
@@ -3093,7 +3378,7 @@ loc_1821:
 loc_1822:
         sta $5fd6                    ; 1822: 8d d6 5f
 loc_1825:
-        jsr sub_5FA3                 ; 1825: 20 a3 5f
+        jsr word_3c_calculate        ; 1825: 20 a3 5f
 loc_1828:
         ldy #$00                     ; 1828: a0 00
 loc_182A:
@@ -3151,7 +3436,7 @@ loc_1868:
 loc_186B:
         sta $5cd6                    ; 186b: 8d d6 5c
 loc_186E:
-        jsr sub_580D                 ; 186e: 20 0d 58
+        jsr screen_draw              ; 186e: 20 0d 58
 loc_1871:
         jmp loc_189C                 ; 1871: 4c 9c 18
 loc_1874:
@@ -3177,7 +3462,7 @@ loc_188A:
 loc_188D:
         sta $5cd6                    ; 188d: 8d d6 5c
 loc_1890:
-        jsr sub_580D                 ; 1890: 20 0d 58
+        jsr screen_draw              ; 1890: 20 0d 58
 loc_1893:
         clc                          ; 1893: 18
 loc_1894:
@@ -3259,9 +3544,7 @@ loc_18E1:
 loc_18E2:
         rts                          ; 18e2: 60
         .byte $d2                                                      ; 18e3 |.|
-
-; ---------- routine (called from $0bd3,$0e83,$0f12,$0f99,$13f5,$1955,$1d47,$2558,$25b9) ----------
-sub_18E4:
+screen_clear:
         pha                          ; 18e4: 48
 loc_18E5:
         tya                          ; 18e5: 98
@@ -3345,9 +3628,7 @@ loc_1933:
         pla                          ; 1933: 68
 loc_1934:
         rts                          ; 1934: 60
-
-; ---------- routine (called from $0f55,$1aa9,$2568) ----------
-sub_1935:
+hw_int_sleep:
         sta $194f                    ; 1935: 8d 4f 19
 loc_1938:
         pha                          ; 1938: 48
@@ -3378,9 +3659,7 @@ loc_194D:
 loc_194E:
         rts                          ; 194e: 60
         .byte $a0                                                      ; 194f |.|
-
-; ---------- routine (called from $0ea5) ----------
-sub_1950:
+game_escape_castle:
         pha                          ; 1950: 48
 loc_1951:
         tya                          ; 1951: 98
@@ -3391,7 +3670,7 @@ loc_1953:
 loc_1954:
         pha                          ; 1954: 48
 loc_1955:
-        jsr sub_18E4                 ; 1955: 20 e4 18
+        jsr screen_clear             ; 1955: 20 e4 18
 loc_1958:
         lda #$06                     ; 1958: a9 06
 loc_195A:
@@ -3411,7 +3690,7 @@ loc_1969:
 loc_196C:
         sta $3f                      ; 196c: 85 3f
 loc_196E:
-        jsr sub_15E0                 ; 196e: 20 e0 15
+        jsr room_prepare             ; 196e: 20 e0 15
 loc_1971:
         clc                          ; 1971: 18
 loc_1972:
@@ -3429,7 +3708,7 @@ loc_197E:
 loc_1980:
         sta $3f                      ; 1980: 85 3f
 loc_1982:
-        jsr sub_2A6D                 ; 1982: 20 6d 2a
+        jsr obj_string_print_list    ; 1982: 20 6d 2a
 loc_1985:
         lda $1ab2                    ; 1985: ad b2 1a
 loc_1988:
@@ -3449,7 +3728,7 @@ loc_1991:
 loc_1993:
         sta $3f                      ; 1993: 85 3f
 loc_1995:
-        jsr sub_29AE                 ; 1995: 20 ae 29
+        jsr convert_timer_to_digits  ; 1995: 20 ae 29
 loc_1998:
         lda #$93                     ; 1998: a9 93
 loc_199A:
@@ -3467,7 +3746,7 @@ loc_19A7:
 loc_19A9:
         sta $5cc7                    ; 19a9: 8d c7 5c
 loc_19AC:
-        jsr sub_580D                 ; 19ac: 20 0d 58
+        jsr screen_draw              ; 19ac: 20 0d 58
 loc_19AF:
         lda VIC_CTRL1                ; 19af: ad 11 d0
 loc_19B2:
@@ -3489,7 +3768,7 @@ loc_19C4:
 loc_19C6:
         sta $bd01,x                  ; 19c6: 9d 01 bd
 loc_19C9:
-        jsr sub_5ED5                 ; 19c9: 20 d5 5e
+        jsr seed_get                 ; 19c9: 20 d5 5e
 loc_19CC:
         and #$0e                     ; 19cc: 29 0e
 loc_19CE:
@@ -3649,7 +3928,7 @@ loc_1A77:
 loc_1A79:
         sta $0018,y                  ; 1a79: 99 18 00
 loc_1A7C:
-        jsr sub_5D26                 ; 1a7c: 20 26 5d
+        jsr hw_sprite_prepare        ; 1a7c: 20 26 5d
 loc_1A7F:
         lda $2f82,y                  ; 1a7f: b9 82 2f
 loc_1A82:
@@ -3683,7 +3962,7 @@ loc_1AA4:
 loc_1AA7:
         lda #$0a                     ; 1aa7: a9 0a
 loc_1AA9:
-        jsr sub_1935                 ; 1aa9: 20 35 19
+        jsr hw_int_sleep             ; 1aa9: 20 35 19
 loc_1AAC:
         pla                          ; 1aac: 68
 loc_1AAD:
@@ -3700,7 +3979,7 @@ loc_1AB1:
         .byte $43,$41,$50,$45,$d3,$38,$18,$07,$21,$54,$49,$4d,$45,$ba,$00,$80 ; 1ac2 |CAPE.8..!TIME...|
         .byte $00,$19,$02,$2d,$00,$00,$00,$ac,$00,$2c,$01,$19,$02,$2d,$00,$00 ; 1ad2 |...-.....,...-..|
         .byte $00,$a5,$a0,$a0                                          ; 1ae2 |....|
-loc_1AE6:
+obj_image_draw:
         pha                          ; 1ae6: 48
 loc_1AE7:
         tya                          ; 1ae7: 98
@@ -3871,7 +4150,7 @@ loc_1B81:
 loc_1B83:
         sta $5cca                    ; 1b83: 8d ca 5c
 loc_1B86:
-        jsr sub_580D                 ; 1b86: 20 0d 58
+        jsr screen_draw              ; 1b86: 20 0d 58
 loc_1B89:
         clc                          ; 1b89: 18
 loc_1B8A:
@@ -3900,9 +4179,7 @@ loc_1B9D:
         pla                          ; 1b9d: 68
 loc_1B9E:
         rts                          ; 1b9e: 60
-
-; ---------- routine (called from $0ed8) ----------
-sub_1B9F:
+game_high_scores_handle:
         pha                          ; 1b9f: 48
 loc_1BA0:
         tya                          ; 1ba0: 98
@@ -4083,7 +4360,7 @@ loc_1C59:
 loc_1C5B:
         sta ($30),y                  ; 1c5b: 91 30
 loc_1C5D:
-        jsr sub_1D42                 ; 1c5d: 20 42 1d
+        jsr game_high_scores_display ; 1c5d: 20 42 1d
 loc_1C60:
         lda #$05                     ; 1c60: a9 05
 loc_1C62:
@@ -4099,7 +4376,7 @@ loc_1C6B:
 loc_1C6E:
         sta $1d10                    ; 1c6e: 8d 10 1d
 loc_1C71:
-        jsr sub_2A6D                 ; 1c71: 20 6d 2a
+        jsr obj_string_print_list    ; 1c71: 20 6d 2a
 loc_1C74:
         lda #$03                     ; 1c74: a9 03
 loc_1C76:
@@ -4115,7 +4392,7 @@ loc_1C81:
 loc_1C83:
         sta VIC_CTRL1                ; 1c83: 8d 11 d0
 loc_1C86:
-        jsr sub_268F                 ; 1c86: 20 8f 26
+        jsr string_input_edit_loop   ; 1c86: 20 8f 26
 loc_1C89:
         ldy #$00                     ; 1c89: a0 00
 loc_1C8B:
@@ -4195,17 +4472,17 @@ loc_1CDE:
 loc_1CE0:
         sta $28d1                    ; 1ce0: 8d d1 28
 loc_1CE3:
-        jsr sub_2920                 ; 1ce3: 20 20 29
+        jsr disk_io_prepare_hardware ; 1ce3: 20 20 29
 loc_1CE6:
-        jsr sub_1E8F                 ; 1ce6: 20 8f 1e
+        jsr verify_master_disk       ; 1ce6: 20 8f 1e
 loc_1CE9:
         cmp #$00                     ; 1ce9: c9 00
 loc_1CEB:
         bne loc_1CF0                 ; 1ceb: d0 03
 loc_1CED:
-        jsr sub_288E                 ; 1ced: 20 8e 28
+        jsr kernal_save_file         ; 1ced: 20 8e 28
 loc_1CF0:
-        jsr sub_2973                 ; 1cf0: 20 73 29
+        jsr disk_io_settle_delay     ; 1cf0: 20 73 29
 loc_1CF3:
         pla                          ; 1cf3: 68
 loc_1CF4:
@@ -4223,9 +4500,7 @@ loc_1CF8:
         .byte $52,$20,$59,$4f,$55,$52,$20,$49,$4e,$49,$54,$49,$41,$4c,$d3,$18 ; 1d19 |R YOUR INITIAL..|
         .byte $c0,$0c,$21,$46,$4f,$4c,$4c,$4f,$57,$45,$44,$20,$42,$d9,$78,$c0 ; 1d29 |..!FOLLOWED B.x.|
         .byte $0c,$31,$52,$45,$54,$55,$52,$ce,$00                      ; 1d39 |.1RETUR..|
-
-; ---------- routine (called from $1c5d,$234f) ----------
-sub_1D42:
+game_high_scores_display:
         pha                          ; 1d42: 48
 loc_1D43:
         tya                          ; 1d43: 98
@@ -4236,7 +4511,7 @@ loc_1D45:
 loc_1D46:
         pha                          ; 1d46: 48
 loc_1D47:
-        jsr sub_18E4                 ; 1d47: 20 e4 18
+        jsr screen_clear             ; 1d47: 20 e4 18
 loc_1D4A:
         ldx $2399                    ; 1d4a: ae 99 23
 loc_1D4D:
@@ -4316,7 +4591,7 @@ loc_1D99:
 loc_1D9B:
         sta $2be6                    ; 1d9b: 8d e6 2b
 loc_1D9E:
-        jsr sub_2AA9                 ; 1d9e: 20 a9 2a
+        jsr string_print_render      ; 1d9e: 20 a9 2a
 loc_1DA1:
         lda #$18                     ; 1da1: a9 18
 loc_1DA3:
@@ -4376,7 +4651,7 @@ loc_1DE7:
 loc_1DE9:
         sta $3f                      ; 1de9: 85 3f
 loc_1DEB:
-        jsr sub_2AA9                 ; 1deb: 20 a9 2a
+        jsr string_print_render      ; 1deb: 20 a9 2a
 loc_1DEE:
         lda $b802,x                  ; 1dee: bd 02 b8
 loc_1DF1:
@@ -4398,7 +4673,7 @@ loc_1DFD:
 loc_1DFF:
         sta $3f                      ; 1dff: 85 3f
 loc_1E01:
-        jsr sub_29AE                 ; 1e01: 20 ae 29
+        jsr convert_timer_to_digits  ; 1e01: 20 ae 29
 loc_1E04:
         lda $2be3                    ; 1e04: ad e3 2b
 loc_1E07:
@@ -4420,7 +4695,7 @@ loc_1E18:
 loc_1E1A:
         sta $5cc9                    ; 1e1a: 8d c9 5c
 loc_1E1D:
-        jsr sub_580D                 ; 1e1d: 20 0d 58
+        jsr screen_draw              ; 1e1d: 20 0d 58
 loc_1E20:
         clc                          ; 1e20: 18
 loc_1E21:
@@ -4468,7 +4743,7 @@ loc_1E4E:
 loc_1E50:
         sta $3f                      ; 1e50: 85 3f
 loc_1E52:
-        jsr sub_2A6D                 ; 1e52: 20 6d 2a
+        jsr obj_string_print_list    ; 1e52: 20 6d 2a
 loc_1E55:
         pla                          ; 1e55: 68
 loc_1E56:
@@ -4485,9 +4760,7 @@ loc_1E5A:
         .byte $4f,$d2,$18,$28,$0d,$21,$31,$20,$50,$4c,$41,$59,$45,$52,$20,$20 ; 1e6b |O..(.!1 PLAYER  |
         .byte $32,$20,$50,$4c,$41,$59,$45,$52,$d3,$00,$01,$07,$07,$08,$08,$08 ; 1e7b |2 PLAYER........|
         .byte $0a,$0a,$0a,$0a                                          ; 1e8b |....|
-
-; ---------- routine (called from $0c65,$1ce6,$2406,$24d4,$2529) ----------
-sub_1E8F:
+verify_master_disk:
         pha                          ; 1e8f: 48
 loc_1E90:
         tya                          ; 1e90: 98
@@ -4618,9 +4891,7 @@ loc_1F15:
 loc_1F18:
         rts                          ; 1f18: 60
         .byte $24,$44,$55,$4e,$47,$45,$4f,$4e,$4d,$41,$53,$54,$45,$d2,$a0,$49 ; 1f19 |$DUNGEONMASTE..I|
-
-; ---------- routine (called from $0b68) ----------
-sub_1F29:
+music_buffer_feed:
         pha                          ; 1f29: 48
 loc_1F2A:
         tya                          ; 1f2a: 98
@@ -4699,7 +4970,7 @@ loc_1F6F:
 loc_1F71:
         bne loc_1FA2                 ; 1f71: d0 2f
 loc_1F73:
-        jsr sub_20A9                 ; 1f73: 20 a9 20
+        jsr music_voice_ptrs_set     ; 1f73: 20 a9 20
 loc_1F76:
         lda $20cb                    ; 1f76: ad cb 20
 loc_1F79:
@@ -4747,7 +5018,7 @@ loc_1FA2:
 loc_1FA4:
         bne loc_1FB6                 ; 1fa4: d0 10
 loc_1FA6:
-        jsr sub_20A9                 ; 1fa6: 20 a9 20
+        jsr music_voice_ptrs_set     ; 1fa6: 20 a9 20
 loc_1FA9:
         ldy #$04                     ; 1fa9: a0 04
 loc_1FAB:
@@ -4785,7 +5056,7 @@ loc_1FD0:
 loc_1FD2:
         bne loc_1FFA                 ; 1fd2: d0 26
 loc_1FD4:
-        jsr sub_20A9                 ; 1fd4: 20 a9 20
+        jsr music_voice_ptrs_set     ; 1fd4: 20 a9 20
 loc_1FD7:
         ldy #$02                     ; 1fd7: a0 02
 loc_1FD9:
@@ -4964,9 +5235,7 @@ loc_20A7:
         pla                          ; 20a7: 68
 loc_20A8:
         rts                          ; 20a8: 60
-
-; ---------- routine (called from $1f73,$1fa6,$1fd4) ----------
-sub_20A9:
+music_voice_ptrs_set:
         pha                          ; 20a9: 48
 loc_20AA:
         txa                          ; 20aa: 8a
@@ -5020,9 +5289,7 @@ loc_20CA:
         .byte $13,$15,$16,$17,$19,$1a,$1c,$1d,$1f,$21,$23,$25,$27,$2a,$2c,$2f ; 219b |.........!#%'*,/|
         .byte $32,$35,$38,$3b,$3f,$43,$47,$4b,$4f,$54,$59,$5e,$64,$6a,$70,$77 ; 21ab |258;?CGKOTY^djpw|
         .byte $7e,$86,$8e,$96,$9f,$a8,$b3,$bd,$c8,$d4,$e1,$ee,$fd      ; 21bb |~............|
-
-; ---------- routine (called from $11bb,$300a,$3822,$3a95,$3b7f,$4022,$45d1,$45f3,$4658,$49a9,$4e43,$4f03,$517a,$5418) ----------
-sub_21C8:
+sound_play_effect:
         pha                          ; 21c8: 48
 loc_21C9:
         sta $2231                    ; 21c9: 8d 31 22
@@ -5055,7 +5322,7 @@ loc_21E7:
 loc_21E8:
         tay                          ; 21e8: a8
 loc_21E9:
-        lda sub_7572,y               ; 21e9: b9 72 75
+        lda options_menu_prepare,y   ; 21e9: b9 72 75
 loc_21EC:
         sta $44                      ; 21ec: 85 44
 loc_21EE:
@@ -5117,9 +5384,7 @@ loc_222F:
 loc_2230:
         rts                          ; 2230: 60
         .byte $a0,$ff                                                  ; 2231 |..|
-
-; ---------- routine (called from $0c3c) ----------
-sub_2233:
+options_menu:
         pha                          ; 2233: 48
 loc_2234:
         tya                          ; 2234: 98
@@ -5182,7 +5447,7 @@ loc_226B:
 loc_226E:
         lda #$00                     ; 226e: a9 00
 loc_2270:
-        jsr sub_5EFC                 ; 2270: 20 fc 5e
+        jsr poll_joystick_and_runstop ; 2270: 20 fc 5e
 loc_2273:
         lda $5f57                    ; 2273: ad 57 5f
 loc_2276:
@@ -5342,7 +5607,7 @@ loc_231C:
 loc_231E:
         bcc loc_2310                 ; 231e: 90 f0
 loc_2320:
-        jsr sub_237C                 ; 2320: 20 7c 23
+        jsr wait_for_keypress_release ; 2320: 20 7c 23
 loc_2323:
         jmp loc_226E                 ; 2323: 4c 6e 22
 loc_2326:
@@ -5352,7 +5617,7 @@ loc_2328:
 loc_232A:
         ldx $2398                    ; 232a: ae 98 23
 loc_232D:
-        jsr sub_23BB                 ; 232d: 20 bb 23
+        jsr castle_select_and_load   ; 232d: 20 bb 23
 loc_2330:
         jmp loc_2238                 ; 2330: 4c 38 22
 loc_2333:
@@ -5360,7 +5625,7 @@ loc_2333:
 loc_2335:
         bne loc_2341                 ; 2335: d0 0a
 loc_2337:
-        jsr sub_24A7                 ; 2337: 20 a7 24
+        jsr game_position_load       ; 2337: 20 a7 24
 loc_233A:
         lda $24fd                    ; 233a: ad fd 24
 loc_233D:
@@ -5378,9 +5643,9 @@ loc_2348:
 loc_234A:
         beq loc_2330                 ; 234a: f0 e4
 loc_234C:
-        jsr sub_095F                 ; 234c: 20 5f 09
+        jsr disable_sprites_and_stop_sound ; 234c: 20 5f 09
 loc_234F:
-        jsr sub_1D42                 ; 234f: 20 42 1d
+        jsr game_high_scores_display ; 234f: 20 42 1d
 loc_2352:
         lda #$9c                     ; 2352: a9 9c
 loc_2354:
@@ -5390,7 +5655,7 @@ loc_2356:
 loc_2358:
         sta $3f                      ; 2358: 85 3f
 loc_235A:
-        jsr sub_2A6D                 ; 235a: 20 6d 2a
+        jsr obj_string_print_list    ; 235a: 20 6d 2a
 loc_235D:
         lda VIC_CTRL1                ; 235d: ad 11 d0
 loc_2360:
@@ -5402,13 +5667,13 @@ loc_2365:
 loc_2367:
         sta $278c                    ; 2367: 8d 8c 27
 loc_236A:
-        jsr sub_268F                 ; 236a: 20 8f 26
+        jsr string_input_edit_loop   ; 236a: 20 8f 26
 loc_236D:
         jmp loc_2238                 ; 236d: 4c 38 22
 loc_2370:
-        jsr sub_237C                 ; 2370: 20 7c 23
+        jsr wait_for_keypress_release ; 2370: 20 7c 23
 loc_2373:
-        jsr sub_095F                 ; 2373: 20 5f 09
+        jsr disable_sprites_and_stop_sound ; 2373: 20 5f 09
 loc_2376:
         pla                          ; 2376: 68
 loc_2377:
@@ -5421,9 +5686,7 @@ loc_237A:
         pla                          ; 237a: 68
 loc_237B:
         rts                          ; 237b: 60
-
-; ---------- routine (called from $2320,$2370) ----------
-sub_237C:
+wait_for_keypress_release:
         pha                          ; 237c: 48
 loc_237D:
         lda #$02                     ; 237d: a9 02
@@ -5436,7 +5699,7 @@ loc_2385:
 loc_2387:
         lda #$00                     ; 2387: a9 00
 loc_2389:
-        jsr sub_5EFC                 ; 2389: 20 fc 5e
+        jsr poll_joystick_and_runstop ; 2389: 20 fc 5e
 loc_238C:
         lda $5f56                    ; 238c: ad 56 5f
 loc_238F:
@@ -5452,9 +5715,7 @@ loc_2397:
         .byte $a0,$ff,$a0,$00,$10,$c0,$0c,$21,$50,$52,$45,$53,$d3,$78,$c0,$0c ; 2398 |.......!PRES.x..|
         .byte $21,$54,$4f,$20,$45,$58,$49,$d4,$40,$c0,$0c,$31,$52,$45,$54,$55 ; 23a8 |!TO EXI.@..1RETU|
         .byte $52,$ce,$00                                              ; 23b8 |R..|
-
-; ---------- routine (called from $094d,$232d) ----------
-sub_23BB:
+castle_select_and_load:
         pha                          ; 23bb: 48
 loc_23BC:
         tya                          ; 23bc: 98
@@ -5521,15 +5782,15 @@ loc_23FE:
 loc_2400:
         sta $29a7                    ; 2400: 8d a7 29
 loc_2403:
-        jsr sub_2920                 ; 2403: 20 20 29
+        jsr disk_io_prepare_hardware ; 2403: 20 20 29
 loc_2406:
-        jsr sub_1E8F                 ; 2406: 20 8f 1e
+        jsr verify_master_disk       ; 2406: 20 8f 1e
 loc_2409:
         cmp #$00                     ; 2409: c9 00
 loc_240B:
         bne loc_2417                 ; 240b: d0 0a
 loc_240D:
-        jsr sub_28EC                 ; 240d: 20 ec 28
+        jsr kernal_load_file         ; 240d: 20 ec 28
 loc_2410:
         jsr $ffb7                    ; 2410: 20 b7 ff
 loc_2413:
@@ -5537,7 +5798,7 @@ loc_2413:
 loc_2415:
         beq loc_241D                 ; 2415: f0 06
 loc_2417:
-        jsr sub_2973                 ; 2417: 20 73 29
+        jsr disk_io_settle_delay     ; 2417: 20 73 29
 loc_241A:
         jmp loc_24A2                 ; 241a: 4c a2 24
 loc_241D:
@@ -5549,7 +5810,7 @@ loc_2422:
 loc_2424:
         sta $29a7                    ; 2424: 8d a7 29
 loc_2427:
-        jsr sub_28EC                 ; 2427: 20 ec 28
+        jsr kernal_load_file         ; 2427: 20 ec 28
 loc_242A:
         jsr $ffb7                    ; 242a: 20 b7 ff
 loc_242D:
@@ -5575,7 +5836,7 @@ loc_2442:
 loc_2443:
         bpl loc_243F                 ; 2443: 10 fa
 loc_2445:
-        jsr sub_2973                 ; 2445: 20 73 29
+        jsr disk_io_settle_delay     ; 2445: 20 73 29
 loc_2448:
         ldy $ba01,x                  ; 2448: bc 01 ba
 loc_244B:
@@ -5665,22 +5926,20 @@ loc_24A4:
 loc_24A5:
         rts                          ; 24a5: 60
         .byte $86                                                      ; 24a6 |.|
-
-; ---------- routine (called from $2337) ----------
-sub_24A7:
+game_position_load:
         pha                          ; 24a7: 48
 loc_24A8:
         txa                          ; 24a8: 8a
 loc_24A9:
         pha                          ; 24a9: 48
 loc_24AA:
-        jsr sub_095F                 ; 24aa: 20 5f 09
+        jsr disable_sprites_and_stop_sound ; 24aa: 20 5f 09
 loc_24AD:
         lda #$01                     ; 24ad: a9 01
 loc_24AF:
         sta $2608                    ; 24af: 8d 08 26
 loc_24B2:
-        jsr sub_25B8                 ; 24b2: 20 b8 25
+        jsr game_filename_prompt_setup ; 24b2: 20 b8 25
 loc_24B5:
         ldx $278d                    ; 24b5: ae 8d 27
 loc_24B8:
@@ -5704,25 +5963,25 @@ loc_24CC:
 loc_24CE:
         sta $29a7                    ; 24ce: 8d a7 29
 loc_24D1:
-        jsr sub_2920                 ; 24d1: 20 20 29
+        jsr disk_io_prepare_hardware ; 24d1: 20 20 29
 loc_24D4:
-        jsr sub_1E8F                 ; 24d4: 20 8f 1e
+        jsr verify_master_disk       ; 24d4: 20 8f 1e
 loc_24D7:
         cmp #$01                     ; 24d7: c9 01
 loc_24D9:
         beq loc_24E1                 ; 24d9: f0 06
 loc_24DB:
-        jsr sub_2973                 ; 24db: 20 73 29
+        jsr disk_io_settle_delay     ; 24db: 20 73 29
 loc_24DE:
         jmp loc_24F9                 ; 24de: 4c f9 24
 loc_24E1:
-        jsr sub_28EC                 ; 24e1: 20 ec 28
+        jsr kernal_load_file         ; 24e1: 20 ec 28
 loc_24E4:
         jsr $ffb7                    ; 24e4: 20 b7 ff
 loc_24E7:
         sta $24fe                    ; 24e7: 8d fe 24
 loc_24EA:
-        jsr sub_2973                 ; 24ea: 20 73 29
+        jsr disk_io_settle_delay     ; 24ea: 20 73 29
 loc_24ED:
         lda $24fe                    ; 24ed: ad fe 24
 loc_24F0:
@@ -5742,9 +6001,7 @@ loc_24FB:
 loc_24FC:
         rts                          ; 24fc: 60
         .byte $00,$90                                                  ; 24fd |..|
-
-; ---------- routine (called from $1177) ----------
-sub_24FF:
+game_position_save:
         pha                          ; 24ff: 48
 loc_2500:
         txa                          ; 2500: 8a
@@ -5755,7 +6012,7 @@ loc_2502:
 loc_2504:
         sta $2608                    ; 2504: 8d 08 26
 loc_2507:
-        jsr sub_25B8                 ; 2507: 20 b8 25
+        jsr game_filename_prompt_setup ; 2507: 20 b8 25
 loc_250A:
         ldx $278d                    ; 250a: ae 8d 27
 loc_250D:
@@ -5779,15 +6036,15 @@ loc_2521:
 loc_2523:
         sta $28d1                    ; 2523: 8d d1 28
 loc_2526:
-        jsr sub_2920                 ; 2526: 20 20 29
+        jsr disk_io_prepare_hardware ; 2526: 20 20 29
 loc_2529:
-        jsr sub_1E8F                 ; 2529: 20 8f 1e
+        jsr verify_master_disk       ; 2529: 20 8f 1e
 loc_252C:
         cmp #$01                     ; 252c: c9 01
 loc_252E:
         bne loc_2540                 ; 252e: d0 10
 loc_2530:
-        jsr sub_288E                 ; 2530: 20 8e 28
+        jsr kernal_save_file         ; 2530: 20 8e 28
 loc_2533:
         jsr $ffb7                    ; 2533: 20 b7 ff
 loc_2536:
@@ -5795,11 +6052,11 @@ loc_2536:
 loc_2538:
         bne loc_2540                 ; 2538: d0 06
 loc_253A:
-        jsr sub_2973                 ; 253a: 20 73 29
+        jsr disk_io_settle_delay     ; 253a: 20 73 29
 loc_253D:
         jmp loc_256B                 ; 253d: 4c 6b 25
 loc_2540:
-        jsr sub_2973                 ; 2540: 20 73 29
+        jsr disk_io_settle_delay     ; 2540: 20 73 29
 loc_2543:
         cmp #$00                     ; 2543: c9 00
 loc_2545:
@@ -5821,9 +6078,9 @@ loc_2554:
 loc_2556:
         sta $3f                      ; 2556: 85 3f
 loc_2558:
-        jsr sub_18E4                 ; 2558: 20 e4 18
+        jsr screen_clear             ; 2558: 20 e4 18
 loc_255B:
-        jsr sub_2A6D                 ; 255b: 20 6d 2a
+        jsr obj_string_print_list    ; 255b: 20 6d 2a
 loc_255E:
         lda VIC_CTRL1                ; 255e: ad 11 d0
 loc_2561:
@@ -5833,7 +6090,7 @@ loc_2563:
 loc_2566:
         lda #$23                     ; 2566: a9 23
 loc_2568:
-        jsr sub_1935                 ; 2568: 20 35 19
+        jsr hw_int_sleep             ; 2568: 20 35 19
 loc_256B:
         pla                          ; 256b: 68
 loc_256C:
@@ -5847,12 +6104,10 @@ loc_256E:
         .byte $54,$49,$4f,$4e,$20,$54,$4f,$20,$54,$48,$c5,$34,$70,$0a,$22,$4d ; 258f |TION TO TH.4p."M|
         .byte $41,$53,$54,$45,$52,$20,$44,$49,$53,$cb,$00,$3c,$50,$0a,$22,$49 ; 259f |ASTER DIS..<P."I|
         .byte $2f,$4f,$20,$45,$52,$52,$4f,$d2,$00                      ; 25af |/O ERRO..|
-
-; ---------- routine (called from $24b2,$2507) ----------
-sub_25B8:
+game_filename_prompt_setup:
         pha                          ; 25b8: 48
 loc_25B9:
-        jsr sub_18E4                 ; 25b9: 20 e4 18
+        jsr screen_clear             ; 25b9: 20 e4 18
 loc_25BC:
         lda #$33                     ; 25bc: a9 33
 loc_25BE:
@@ -5862,7 +6117,7 @@ loc_25C0:
 loc_25C2:
         sta $3f                      ; 25c2: 85 3f
 loc_25C4:
-        jsr sub_15E0                 ; 25c4: 20 e0 15
+        jsr room_prepare             ; 25c4: 20 e0 15
 loc_25C7:
         lda $2608                    ; 25c7: ad 08 26
 loc_25CA:
@@ -5886,7 +6141,7 @@ loc_25DB:
 loc_25DD:
         sta $3f                      ; 25dd: 85 3f
 loc_25DF:
-        jsr sub_15E0                 ; 25df: 20 e0 15
+        jsr room_prepare             ; 25df: 20 e0 15
 loc_25E2:
         lda VIC_CTRL1                ; 25e2: ad 11 d0
 loc_25E5:
@@ -5914,7 +6169,7 @@ loc_25FE:
 loc_2600:
         sta $278b                    ; 2600: 8d 8b 27
 loc_2603:
-        jsr sub_268F                 ; 2603: 20 8f 26
+        jsr string_input_edit_loop   ; 2603: 20 8f 26
 loc_2606:
         pla                          ; 2606: 68
 loc_2607:
@@ -5928,9 +6183,7 @@ loc_2607:
         .byte $52,$45,$53,$53,$20,$20,$20,$20,$20,$20,$20,$20,$20,$54,$cf,$50 ; 2668 |RESS         T.P|
         .byte $78,$0a,$31,$52,$45,$53,$54,$4f,$52,$c5,$48,$80,$0a,$21,$43,$41 ; 2678 |x.1RESTOR.H..!CA|
         .byte $4e,$43,$45,$cc,$00,$00,$00                              ; 2688 |NCE....|
-
-; ---------- routine (called from $1c86,$236a,$2603) ----------
-sub_268F:
+string_input_edit_loop:
         pha                          ; 268f: 48
 loc_2690:
         txa                          ; 2690: 8a
@@ -5969,7 +6222,7 @@ loc_26B9:
 loc_26BB:
         beq loc_26CD                 ; 26bb: f0 10
 loc_26BD:
-        jsr sub_2772                 ; 26bd: 20 72 27
+        jsr string_print_one_char    ; 26bd: 20 72 27
 loc_26C0:
         dex                          ; 26c0: ca
 loc_26C1:
@@ -6017,9 +6270,9 @@ loc_26EE:
 loc_26F1:
         sta $2be3                    ; 26f1: 8d e3 2b
 loc_26F4:
-        jsr sub_2772                 ; 26f4: 20 72 27
+        jsr string_print_one_char    ; 26f4: 20 72 27
 loc_26F7:
-        jsr sub_27A8                 ; 26f7: 20 a8 27
+        jsr string_input_get_key     ; 26f7: 20 a8 27
 loc_26FA:
         cmp #$80                     ; 26fa: c9 80
 loc_26FC:
@@ -6079,7 +6332,7 @@ loc_273C:
 loc_273E:
         sta $27a2                    ; 273e: 8d a2 27
 loc_2741:
-        jsr sub_2772                 ; 2741: 20 72 27
+        jsr string_print_one_char    ; 2741: 20 72 27
 loc_2744:
         lda $278d                    ; 2744: ad 8d 27
 loc_2747:
@@ -6109,7 +6362,7 @@ loc_2762:
 loc_2765:
         sta $27a2                    ; 2765: 8d a2 27
 loc_2768:
-        jsr sub_2772                 ; 2768: 20 72 27
+        jsr string_print_one_char    ; 2768: 20 72 27
 loc_276B:
         jmp loc_26D0                 ; 276b: 4c d0 26
 loc_276E:
@@ -6120,9 +6373,7 @@ loc_2770:
         pla                          ; 2770: 68
 loc_2771:
         rts                          ; 2771: 60
-
-; ---------- routine (called from $26bd,$26f4,$2741,$2768) ----------
-sub_2772:
+string_print_one_char:
         pha                          ; 2772: 48
 loc_2773:
         lda $27a2                    ; 2773: ad a2 27
@@ -6139,16 +6390,14 @@ loc_277F:
 loc_2781:
         sta $3f                      ; 2781: 85 3f
 loc_2783:
-        jsr sub_2AA9                 ; 2783: 20 a9 2a
+        jsr string_print_render      ; 2783: 20 a9 2a
 loc_2786:
         pla                          ; 2786: 68
 loc_2787:
         rts                          ; 2787: 60
         .byte $a0,$a0,$a4,$b2,$a0,$ff,$a0,$e5,$b2,$a4,$b2,$a0,$c8,$c4,$96,$a0 ; 2788 |................|
         .byte $cc,$a0,$a0,$b2,$a0,$a0,$a0,$a5,$a0,$a0,$ff,$b9,$6c,$7b,$7e,$7c ; 2798 |............l{~||
-
-; ---------- routine (called from $26f7) ----------
-sub_27A8:
+string_input_get_key:
         pha                          ; 27a8: 48
 loc_27A9:
         tya                          ; 27a9: 98
@@ -6289,9 +6538,7 @@ loc_2841:
         .byte $39,$49,$4a,$30,$4d,$4b,$4f,$4e,$2b,$50,$4c,$2d,$2e,$3a,$40,$2c ; 2862 |9IJ0MKON+PL-.:@,|
         .byte $80,$2a,$3b,$80,$80,$3d,$80,$2f,$31,$08,$80,$32,$20,$80,$51,$80 ; 2872 |.*;..=./1..2 .Q.|
         .byte $a0,$a0,$d2,$a0,$00,$b2,$c6,$c8,$a0,$ae,$a0,$ff          ; 2882 |............|
-
-; ---------- routine (called from $1ced,$2530) ----------
-sub_288E:
+kernal_save_file:
         pha                          ; 288e: 48
 loc_288F:
         tya                          ; 288f: 98
@@ -6371,9 +6618,7 @@ loc_28D0:
         rts                          ; 28d0: 60
         .byte $a0,$ff,$40,$30,$3a,$f0,$b0,$b1,$b2,$a0,$f0,$a0,$96,$a0,$a0,$b8 ; 28d1 |..@0:...........|
         .byte $a0,$85,$a0,$d3,$a0,$00,$78,$00,$98,$00,$b8              ; 28e1 |......x....|
-
-; ---------- routine (called from $0c6c,$240d,$2427,$24e1,$7669) ----------
-sub_28EC:
+kernal_load_file:
         pha                          ; 28ec: 48
 loc_28ED:
         tya                          ; 28ed: 98
@@ -6426,9 +6671,7 @@ loc_291B:
 loc_291C:
         rts                          ; 291c: 60
         .byte $78,$98,$b8                                              ; 291d |x..|
-
-; ---------- routine (called from $0c62,$1ce3,$2403,$24d1,$2526,$7666) ----------
-sub_2920:
+disk_io_prepare_hardware:
         pha                          ; 2920: 48
 loc_2921:
         tya                          ; 2921: 98
@@ -6510,9 +6753,7 @@ loc_2971:
         pla                          ; 2971: 68
 loc_2972:
         rts                          ; 2972: 60
-
-; ---------- routine (called from $0c8d,$1cf0,$2417,$2445,$24db,$24ea,$253a,$2540,$766c) ----------
-sub_2973:
+disk_io_settle_delay:
         pha                          ; 2973: 48
 loc_2974:
         txa                          ; 2974: 8a
@@ -6539,7 +6780,7 @@ loc_298B:
 loc_298E:
         bne loc_2981                 ; 298e: d0 f1
 loc_2990:
-        jsr sub_095F                 ; 2990: 20 5f 09
+        jsr disable_sprites_and_stop_sound ; 2990: 20 5f 09
 loc_2993:
         pla                          ; 2993: 68
 loc_2994:
@@ -6550,9 +6791,7 @@ loc_2996:
         rts                          ; 2996: 60
         .byte $ef,$b6,$a0,$8a,$a0,$8d,$b3,$c3,$a0,$a0,$ca,$a0,$e5,$b5,$c9,$80 ; 2997 |................|
         .byte $a0,$b6,$a0,$ad,$f0,$a0,$b7                              ; 29a7 |.......|
-
-; ---------- routine (called from $1069,$1995,$1e01) ----------
-sub_29AE:
+convert_timer_to_digits:
         pha                          ; 29ae: 48
 loc_29AF:
         tya                          ; 29af: 98
@@ -6565,7 +6804,7 @@ loc_29B3:
 loc_29B5:
         ldy #$06                     ; 29b5: a0 06
 loc_29B7:
-        jsr sub_29D0                 ; 29b7: 20 d0 29
+        jsr convert_byte_to_digit_glyphs ; 29b7: 20 d0 29
 loc_29BA:
         ldy #$02                     ; 29ba: a0 02
 loc_29BC:
@@ -6573,7 +6812,7 @@ loc_29BC:
 loc_29BE:
         ldy #$03                     ; 29be: a0 03
 loc_29C0:
-        jsr sub_29D0                 ; 29c0: 20 d0 29
+        jsr convert_byte_to_digit_glyphs ; 29c0: 20 d0 29
 loc_29C3:
         ldy #$03                     ; 29c3: a0 03
 loc_29C5:
@@ -6581,7 +6820,7 @@ loc_29C5:
 loc_29C7:
         ldy #$00                     ; 29c7: a0 00
 loc_29C9:
-        jsr sub_29D0                 ; 29c9: 20 d0 29
+        jsr convert_byte_to_digit_glyphs ; 29c9: 20 d0 29
 loc_29CC:
         pla                          ; 29cc: 68
 loc_29CD:
@@ -6590,9 +6829,7 @@ loc_29CE:
         pla                          ; 29ce: 68
 loc_29CF:
         rts                          ; 29cf: 60
-
-; ---------- routine (called from $29b7,$29c0,$29c9) ----------
-sub_29D0:
+convert_byte_to_digit_glyphs:
         pha                          ; 29d0: 48
 loc_29D1:
         sta $2a6b                    ; 29d1: 8d 6b 2a
@@ -6690,9 +6927,7 @@ loc_2A1A:
         .byte $c0,$c0,$c0,$fc,$cc,$cc,$fc,$00,$fc,$0c,$0c,$0c,$0c,$0c,$0c,$00 ; 2a4b |................|
         .byte $fc,$cc,$cc,$fc,$cc,$cc,$fc,$00,$fc,$cc,$cc,$fc,$0c,$0c,$0c,$00 ; 2a5b |................|
         .byte $85,$a0                                                  ; 2a6b |..|
-
-; ---------- routine (called from $0833,$0f1d,$0f36,$0f48,$1058,$1982,$1c71,$1e52,$235a,$255b) ----------
-sub_2A6D:
+obj_string_print_list:
         pha                          ; 2a6d: 48
 loc_2A6E:
         tya                          ; 2a6e: 98
@@ -6737,7 +6972,7 @@ loc_2A95:
 loc_2A97:
         inc $3f                      ; 2a97: e6 3f
 loc_2A99:
-        jsr sub_2AA9                 ; 2a99: 20 a9 2a
+        jsr string_print_render      ; 2a99: 20 a9 2a
 loc_2A9C:
         jmp loc_2A70                 ; 2a9c: 4c 70 2a
 loc_2A9F:
@@ -6754,9 +6989,7 @@ loc_2AA7:
         pla                          ; 2aa7: 68
 loc_2AA8:
         rts                          ; 2aa8: 60
-
-; ---------- routine (called from $1d9e,$1deb,$2783,$2a99) ----------
-sub_2AA9:
+string_print_render:
         pha                          ; 2aa9: 48
 loc_2AAA:
         tya                          ; 2aaa: 98
@@ -7035,7 +7268,7 @@ loc_2BB5:
 loc_2BB7:
         bcc loc_2B50                 ; 2bb7: 90 97
 loc_2BB9:
-        jsr sub_580D                 ; 2bb9: 20 0d 58
+        jsr screen_draw              ; 2bb9: 20 0d 58
 loc_2BBC:
         ldy #$00                     ; 2bbc: a0 00
 loc_2BBE:
@@ -7081,21 +7314,17 @@ loc_2BE2:
         .byte $c5,$c4,$a0,$cc,$ca,$00,$d0,$00,$d4,$00,$d8,$00,$dc,$89,$ce,$f0 ; 2be3 |................|
         .byte $c1,$a0,$ba,$b1,$a0,$00,$01,$04,$05,$10,$11,$14,$15,$40,$41,$44 ; 2bf3 |.............@AD|
         .byte $45,$50,$51,$54,$55                                      ; 2c03 |EPQTU|
-
-; ---------- routine (called from $116a,$150b) ----------
-sub_2C08:
+forced_break_stub:
         brk                          ; 2c08: 00
         .byte $00,$00,$00,$00,$00,$00,$00                              ; 2c09 |.......|
-
-; ---------- routine (called from $091b) ----------
-sub_2C10:
+copy_protection_check:
         ldx #$33                     ; 2c10: a2 33
 loc_2C12:
         ldy #$35                     ; 2c12: a0 35
 loc_2C14:
         lda #$00                     ; 2c14: a9 00
 loc_2C16:
-        jsr sub_2C31                 ; 2c16: 20 31 2c
+        jsr disk_read_block_via_u1   ; 2c16: 20 31 2c
 loc_2C19:
         beq loc_2C26                 ; 2c19: f0 0b
 loc_2C1B:
@@ -7105,15 +7334,13 @@ loc_2C1D:
 loc_2C1F:
         lda #$01                     ; 2c1f: a9 01
 loc_2C21:
-        jsr sub_2C31                 ; 2c21: 20 31 2c
+        jsr disk_read_block_via_u1   ; 2c21: 20 31 2c
 loc_2C24:
         bne loc_2C26                 ; 2c24: d0 00
 loc_2C26:
         jmp loc_2CB1                 ; 2c26: 4c b1 2c
         .byte $00,$00,$00,$00,$00,$20,$32,$37                          ; 2c29 |..... 27|
-
-; ---------- routine (called from $2c16,$2c21) ----------
-sub_2C31:
+disk_read_block_via_u1:
         sta $fb                      ; 2c31: 85 fb
 loc_2C33:
         stx $2cab                    ; 2c33: 8e ab 2c
@@ -7251,7 +7478,7 @@ loc_2CCF:
 loc_2CD2:
         sta $0808                    ; 2cd2: 8d 08 08
 loc_2CD5:
-        jmp sub_095F                 ; 2cd5: 4c 5f 09
+        jmp disable_sprites_and_stop_sound ; 2cd5: 4c 5f 09
         .byte $ff,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00 ; 2cd8 |................|
         .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00 ; 2ce8 |................|
         .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00 ; 2cf8 |................|
@@ -7273,9 +7500,7 @@ loc_2CD5:
         .byte $44,$20,$53,$4f,$46,$54,$57,$41,$52,$c5,$b0,$d2,$ac,$a0,$f0,$0f ; 2df8 |D SOFTWAR.......|
         .byte $c4,$a0,$b0,$82,$a0,$82,$aa,$85,$c5,$a0,$a0,$a0,$92,$b8,$a0,$c6 ; 2e08 |................|
         .byte $a0,$cc,$a0,$86                                          ; 2e18 |....|
-
-; ---------- routine (called from $0c07,$14fc,$15cb) ----------
-sub_2E1C:
+events_execute:
         pha                          ; 2e1c: 48
 loc_2E1D:
         lda $2e35                    ; 2e1d: ad 35 2e
@@ -7286,11 +7511,11 @@ loc_2E22:
 loc_2E24:
         sta $2e35                    ; 2e24: 8d 35 2e
 loc_2E27:
-        jsr sub_2E37                 ; 2e27: 20 37 2e
+        jsr sprite_collision_set     ; 2e27: 20 37 2e
 loc_2E2A:
-        jsr sub_2E79                 ; 2e2a: 20 79 2e
+        jsr sprite_execute           ; 2e2a: 20 79 2e
 loc_2E2D:
-        jsr sub_3F4F                 ; 2e2d: 20 4f 3f
+        jsr object_execute           ; 2e2d: 20 4f 3f
 loc_2E30:
         inc $2e36                    ; 2e30: ee 36 2e
 loc_2E33:
@@ -7298,9 +7523,7 @@ loc_2E33:
 loc_2E34:
         rts                          ; 2e34: 60
         .byte $00,$a0                                                  ; 2e35 |..|
-
-; ---------- routine (called from $2e27) ----------
-sub_2E37:
+sprite_collision_set:
         pha                          ; 2e37: 48
 loc_2E38:
         txa                          ; 2e38: 8a
@@ -7363,9 +7586,7 @@ loc_2E75:
 loc_2E76:
         rts                          ; 2e76: 60
         .byte $c5,$d0                                                  ; 2e77 |..|
-
-; ---------- routine (called from $2e2a) ----------
-sub_2E79:
+sprite_execute:
         pha                          ; 2e79: 48
 loc_2E7A:
         tya                          ; 2e7a: 98
@@ -7402,7 +7623,7 @@ loc_2E9A:
 loc_2E9D:
         beq loc_2EAA                 ; 2e9d: f0 0b
 loc_2E9F:
-        jsr sub_3026                 ; 2e9f: 20 26 30
+        jsr sprite_collision_check   ; 2e9f: 20 26 30
 loc_2EA2:
         lda $bd04,x                  ; 2ea2: bd 04 bd
 loc_2EA5:
@@ -7420,7 +7641,7 @@ loc_2EB2:
 loc_2EB5:
         beq loc_2EC2                 ; 2eb5: f0 0b
 loc_2EB7:
-        jsr sub_311E                 ; 2eb7: 20 1e 31
+        jsr sprite_object_collision_check ; 2eb7: 20 1e 31
 loc_2EBA:
         lda $bd04,x                  ; 2eba: bd 04 bd
 loc_2EBD:
@@ -7434,7 +7655,7 @@ loc_2EC5:
 loc_2EC8:
         beq loc_2ED5                 ; 2ec8: f0 0b
 loc_2ECA:
-        jsr sub_3026                 ; 2eca: 20 26 30
+        jsr sprite_collision_check   ; 2eca: 20 26 30
 loc_2ECD:
         lda $bd04,x                  ; 2ecd: bd 04 bd
 loc_2ED0:
@@ -7468,7 +7689,7 @@ loc_2EEE:
 loc_2EF1:
         beq loc_2EF6                 ; 2ef1: f0 03
 loc_2EF3:
-        jsr sub_2F8A                 ; 2ef3: 20 8a 2f
+        jsr sprite_flash_on_off      ; 2ef3: 20 8a 2f
 loc_2EF6:
         lda $bd04,x                  ; 2ef6: bd 04 bd
 loc_2EF9:
@@ -7608,9 +7829,7 @@ loc_2F80:
 loc_2F81:
         rts                          ; 2f81: 60
         .byte $01,$02,$04,$08,$10,$20,$40,$80                          ; 2f82 |..... @.|
-
-; ---------- routine (called from $2ef3) ----------
-sub_2F8A:
+sprite_flash_on_off:
         pha                          ; 2f8a: 48
 loc_2F8B:
         tya                          ; 2f8b: 98
@@ -7735,7 +7954,7 @@ loc_3005:
 loc_3008:
         lda #$08                     ; 3008: a9 08
 loc_300A:
-        jsr sub_21C8                 ; 300a: 20 c8 21
+        jsr sound_play_effect        ; 300a: 20 c8 21
 loc_300D:
         jmp loc_301C                 ; 300d: 4c 1c 30
 loc_3010:
@@ -7768,9 +7987,7 @@ loc_3024:
         pla                          ; 3024: 68
 loc_3025:
         rts                          ; 3025: 60
-
-; ---------- routine (called from $2e9f,$2eca) ----------
-sub_3026:
+sprite_collision_check:
         pha                          ; 3026: 48
 loc_3027:
         tya                          ; 3027: 98
@@ -7899,13 +8116,13 @@ loc_30B4:
 loc_30B7:
         bcc loc_30C5                 ; 30b7: 90 0c
 loc_30B9:
-        jsr sub_30D9                 ; 30b9: 20 d9 30
+        jsr sprite_collision_resolve ; 30b9: 20 d9 30
 loc_30BC:
         ldx $3116                    ; 30bc: ae 16 31
 loc_30BF:
         ldy $3115                    ; 30bf: ac 15 31
 loc_30C2:
-        jsr sub_30D9                 ; 30c2: 20 d9 30
+        jsr sprite_collision_resolve ; 30c2: 20 d9 30
 loc_30C5:
         ldx $3115                    ; 30c5: ae 15 31
 loc_30C8:
@@ -7930,9 +8147,7 @@ loc_30D7:
         pla                          ; 30d7: 68
 loc_30D8:
         rts                          ; 30d8: 60
-
-; ---------- routine (called from $30b9,$30c2) ----------
-sub_30D9:
+sprite_collision_resolve:
         lda $bd04,x                  ; 30d9: bd 04 bd
 loc_30DC:
         bit $0884                    ; 30dc: 2c 84 08
@@ -7983,9 +8198,7 @@ loc_3111:
 loc_3114:
         rts                          ; 3114: 60
         .byte $ac,$b1,$c4,$a0,$92,$b9,$a0,$ff,$d3                      ; 3115 |.........|
-
-; ---------- routine (called from $2eb7) ----------
-sub_311E:
+sprite_object_collision_check:
         pha                          ; 311e: 48
 loc_311F:
         tya                          ; 311f: 98
@@ -8168,9 +8381,7 @@ loc_31ED:
 loc_31EE:
         rts                          ; 31ee: 60
         .byte $b0,$ff,$a0,$83,$a0,$8d,$c3                              ; 31ef |.......|
-
-; ---------- routine (called from ) ----------
-sub_31F6:
+obj_player_execute:
         lda $bd04,x                  ; 31f6: bd 04 bd
 loc_31F9:
         bit $0885                    ; 31f9: 2c 85 08
@@ -8265,7 +8476,7 @@ loc_325F:
 loc_3261:
         beq loc_32BC                 ; 3261: f0 59
 loc_3263:
-        jsr sub_3488                 ; 3263: 20 88 34
+        jsr obj_player_color_set     ; 3263: 20 88 34
 loc_3266:
         jmp loc_32DB                 ; 3266: 4c db 32
 loc_3269:
@@ -8343,7 +8554,7 @@ loc_32BF:
 loc_32C2:
         sta $bd03,x                  ; 32c2: 9d 03 bd
 loc_32C5:
-        jsr sub_3488                 ; 32c5: 20 88 34
+        jsr obj_player_color_set     ; 32c5: 20 88 34
 loc_32C8:
         jmp loc_3485                 ; 32c8: 4c 85 34
 loc_32CB:
@@ -8369,7 +8580,7 @@ loc_32E2:
 loc_32E5:
         beq loc_32EA                 ; 32e5: f0 03
 loc_32E7:
-        jsr sub_526F                 ; 32e7: 20 6f 52
+        jsr trapdoor_switch_check    ; 32e7: 20 6f 52
 loc_32EA:
         sta $bd19,x                  ; 32ea: 9d 19 bd
 loc_32ED:
@@ -8377,7 +8588,7 @@ loc_32ED:
 loc_32EF:
         sta $bd1a,x                  ; 32ef: 9d 1a bd
 loc_32F2:
-        jsr sub_5F6B                 ; 32f2: 20 6b 5f
+        jsr position_calculate       ; 32f2: 20 6b 5f
 loc_32F5:
         ldy #$00                     ; 32f5: a0 00
 loc_32F7:
@@ -8509,7 +8720,7 @@ loc_338B:
 loc_338E:
         lda $bd1c,x                  ; 338e: bd 1c bd
 loc_3391:
-        jsr sub_5EFC                 ; 3391: 20 fc 5e
+        jsr poll_joystick_and_runstop ; 3391: 20 fc 5e
 loc_3394:
         lda $5f57                    ; 3394: ad 57 5f
 loc_3397:
@@ -8707,13 +8918,11 @@ loc_347D:
 loc_347F:
         sta $bd03,x                  ; 347f: 9d 03 bd
 loc_3482:
-        jsr sub_3488                 ; 3482: 20 88 34
+        jsr obj_player_color_set     ; 3482: 20 88 34
 loc_3485:
         jmp loc_2EEB                 ; 3485: 4c eb 2e
-
-; ---------- routine (called from $3263,$32c5,$3482) ----------
-sub_3488:
-        jsr sub_5D26                 ; 3488: 20 26 5d
+obj_player_color_set:
+        jsr hw_sprite_prepare        ; 3488: 20 26 5d
 loc_348B:
         txa                          ; 348b: 8a
 loc_348C:
@@ -8743,9 +8952,7 @@ loc_34A0:
         .byte $ff,$00,$21,$ff,$ff,$01,$20,$ff,$ff,$00,$1f,$ff,$ff,$01,$1e,$00 ; 34c1 |..!... .........|
         .byte $80,$a0,$07,$08,$82,$d1,$00,$01,$01,$01,$00,$ff,$ff,$ff,$fe,$fe ; 34d1 |................|
         .byte $00,$02,$02,$02,$00,$fe,$08,$dc,$08,$dd,$55,$78,$59,$78  ; 34e1 |..........UxYx|
-
-; ---------- routine (called from ) ----------
-sub_34EF:
+obj_player_collision:
         lda $bf00,y                  ; 34ef: b9 00 bf
 loc_34F2:
         cmp #$0b                     ; 34f2: c9 0b
@@ -8803,9 +9010,7 @@ loc_352E:
         sta $780d,y                  ; 352e: 99 0d 78
 loc_3531:
         jmp loc_31AC                 ; 3531: 4c ac 31
-
-; ---------- routine (called from ) ----------
-sub_3534:
+obj_player_sprite_collision:
         lda $bd00,y                  ; 3534: b9 00 bd
 loc_3537:
         cmp #$02                     ; 3537: c9 02
@@ -8897,9 +9102,7 @@ loc_3598:
         sta $780d,y                  ; 3598: 99 0d 78
 loc_359B:
         jmp loc_3104                 ; 359b: 4c 04 31
-
-; ---------- routine (called from $14e2) ----------
-sub_359E:
+obj_player_add:
         pha                          ; 359e: 48
 loc_359F:
         tya                          ; 359f: 98
@@ -8910,7 +9113,7 @@ loc_35A1:
 loc_35A2:
         pha                          ; 35a2: 48
 loc_35A3:
-        jsr sub_3F14                 ; 35a3: 20 14 3f
+        jsr sprite_creepfindfree     ; 35a3: 20 14 3f
 loc_35A6:
         ldy $3638                    ; 35a6: ac 38 36
 loc_35A9:
@@ -9048,9 +9251,7 @@ loc_3636:
 loc_3637:
         rts                          ; 3637: 60
         .byte $ba                                                      ; 3638 |.|
-
-; ---------- routine (called from ) ----------
-sub_3639:
+obj_lightning_execute:
         lda $bd04,x                  ; 3639: bd 04 bd
 loc_363C:
         bit $0885                    ; 363c: 2c 85 08
@@ -9073,7 +9274,7 @@ loc_3652:
 loc_3655:
         sta $bd04,x                  ; 3655: 9d 04 bd
 loc_3658:
-        jsr sub_5ED5                 ; 3658: 20 d5 5e
+        jsr seed_get                 ; 3658: 20 d5 5e
 loc_365B:
         and #$03                     ; 365b: 29 03
 loc_365D:
@@ -9081,7 +9282,7 @@ loc_365D:
 loc_3660:
         inc $bd06,x                  ; 3660: fe 06 bd
 loc_3663:
-        jsr sub_5ED5                 ; 3663: 20 d5 5e
+        jsr seed_get                 ; 3663: 20 d5 5e
 loc_3666:
         and #$03                     ; 3666: 29 03
 loc_3668:
@@ -9105,20 +9306,16 @@ loc_3677:
 loc_3679:
         sta $bd03,x                  ; 3679: 9d 03 bd
 loc_367C:
-        jsr sub_5D26                 ; 367c: 20 26 5d
+        jsr hw_sprite_prepare        ; 367c: 20 26 5d
 loc_367F:
         jmp loc_2EEB                 ; 367f: 4c eb 2e
-
-; ---------- routine (called from ) ----------
-sub_3682:
+obj_lightning_sprite_collision_stub:
         lda #$00                     ; 3682: a9 00
 loc_3684:
         sta $311d                    ; 3684: 8d 1d 31
 loc_3687:
         jmp loc_3104                 ; 3687: 4c 04 31
-
-; ---------- routine (called from $42c9) ----------
-sub_368A:
+obj_lightning_sprite_create:
         pha                          ; 368a: 48
 loc_368B:
         tya                          ; 368b: 98
@@ -9131,7 +9328,7 @@ loc_368E:
 loc_368F:
         tay                          ; 368f: a8
 loc_3690:
-        jsr sub_3F14                 ; 3690: 20 14 3f
+        jsr sprite_creepfindfree     ; 3690: 20 14 3f
 loc_3693:
         lda #$01                     ; 3693: a9 01
 loc_3695:
@@ -9164,9 +9361,7 @@ loc_36B1:
         pla                          ; 36b1: 68
 loc_36B2:
         rts                          ; 36b2: 60
-
-; ---------- routine (called from ) ----------
-sub_36B3:
+obj_forcefield_execute:
         lda $bd04,x                  ; 36b3: bd 04 bd
 loc_36B6:
         bit $0885                    ; 36b6: 2c 85 08
@@ -9207,7 +9402,7 @@ loc_36E3:
 loc_36E5:
         sta $bd1e,x                  ; 36e5: 9d 1e bd
 loc_36E8:
-        jsr sub_5F6B                 ; 36e8: 20 6b 5f
+        jsr position_calculate       ; 36e8: 20 6b 5f
 loc_36EB:
         sec                          ; 36eb: 38
 loc_36EC:
@@ -9263,7 +9458,7 @@ loc_3721:
 loc_3723:
         sta $bd1e,x                  ; 3723: 9d 1e bd
 loc_3726:
-        jsr sub_5F6B                 ; 3726: 20 6b 5f
+        jsr position_calculate       ; 3726: 20 6b 5f
 loc_3729:
         sec                          ; 3729: 38
 loc_372A:
@@ -9297,20 +9492,16 @@ loc_3744:
 loc_3746:
         sta $bd03,x                  ; 3746: 9d 03 bd
 loc_3749:
-        jsr sub_5D26                 ; 3749: 20 26 5d
+        jsr hw_sprite_prepare        ; 3749: 20 26 5d
 loc_374C:
         jmp loc_2EEB                 ; 374c: 4c eb 2e
-
-; ---------- routine (called from ) ----------
-sub_374F:
+obj_forcefield_sprite_collision_stub:
         lda #$00                     ; 374f: a9 00
 loc_3751:
         sta $311d                    ; 3751: 8d 1d 31
 loc_3754:
         jmp loc_3104                 ; 3754: 4c 04 31
-
-; ---------- routine (called from $471a) ----------
-sub_3757:
+obj_forcefield_sprite_create:
         pha                          ; 3757: 48
 loc_3758:
         tya                          ; 3758: 98
@@ -9321,7 +9512,7 @@ loc_375A:
 loc_375B:
         pha                          ; 375b: 48
 loc_375C:
-        jsr sub_3F14                 ; 375c: 20 14 3f
+        jsr sprite_creepfindfree     ; 375c: 20 14 3f
 loc_375F:
         lda #$02                     ; 375f: a9 02
 loc_3761:
@@ -9378,9 +9569,7 @@ loc_3798:
         pla                          ; 3798: 68
 loc_3799:
         rts                          ; 3799: 60
-
-; ---------- routine (called from ) ----------
-sub_379A:
+obj_mummy_execute:
         lda $bd04,x                  ; 379a: bd 04 bd
 loc_379D:
         bit $0885                    ; 379d: 2c 85 08
@@ -9411,7 +9600,7 @@ loc_37BE:
 loc_37C0:
         sta $bd03,x                  ; 37c0: 9d 03 bd
 loc_37C3:
-        jsr sub_5D26                 ; 37c3: 20 26 5d
+        jsr hw_sprite_prepare        ; 37c3: 20 26 5d
 loc_37C6:
         lda $bd1c,x                  ; 37c6: bd 1c bd
 loc_37C9:
@@ -9423,7 +9612,7 @@ loc_37CD:
 loc_37D0:
         beq loc_37D5                 ; 37d0: f0 03
 loc_37D2:
-        jsr sub_526F                 ; 37d2: 20 6f 52
+        jsr trapdoor_switch_check    ; 37d2: 20 6f 52
 loc_37D5:
         sta $bd1b,x                  ; 37d5: 9d 1b bd
 loc_37D8:
@@ -9489,7 +9678,7 @@ loc_381D:
 loc_3820:
         lda #$0b                     ; 3820: a9 0b
 loc_3822:
-        jsr sub_21C8                 ; 3822: 20 c8 21
+        jsr sound_play_effect        ; 3822: 20 c8 21
 loc_3825:
         jmp loc_38C8                 ; 3825: 4c c8 38
 loc_3828:
@@ -9545,7 +9734,7 @@ loc_385E:
 loc_3861:
         tay                          ; 3861: a8
 loc_3862:
-        jsr sub_5F6B                 ; 3862: 20 6b 5f
+        jsr position_calculate       ; 3862: 20 6b 5f
 loc_3865:
         sec                          ; 3865: 38
 loc_3866:
@@ -9633,12 +9822,10 @@ loc_38C3:
 loc_38C6:
         sta ($40),y                  ; 38c6: 91 40
 loc_38C8:
-        jsr sub_5D26                 ; 38c8: 20 26 5d
+        jsr hw_sprite_prepare        ; 38c8: 20 26 5d
 loc_38CB:
         jmp loc_2EEB                 ; 38cb: 4c eb 2e
-
-; ---------- routine (called from ) ----------
-sub_38CE:
+obj_mummy_collision:
         sty $3a07                    ; 38ce: 8c 07 3a
 loc_38D1:
         lda $bf00,y                  ; 38d1: b9 00 bf
@@ -9736,9 +9923,7 @@ loc_393A:
         sta $bd1c,x                  ; 393a: 9d 1c bd
 loc_393D:
         jmp loc_31AC                 ; 393d: 4c ac 31
-
-; ---------- routine (called from ) ----------
-sub_3940:
+obj_mummy_sprite_collision:
         lda $bd00,y                  ; 3940: b9 00 bd
 loc_3943:
         beq loc_3949                 ; 3943: f0 04
@@ -9774,9 +9959,7 @@ loc_3965:
         sta ($40),y                  ; 3965: 91 40
 loc_3967:
         jmp loc_3104                 ; 3967: 4c 04 31
-
-; ---------- routine (called from $4863,$496b) ----------
-sub_396A:
+obj_mummy_sprite_create:
         pha                          ; 396a: 48
 loc_396B:
         sta $39ee                    ; 396b: 8d ee 39
@@ -9791,7 +9974,7 @@ loc_3971:
 loc_3972:
         tay                          ; 3972: a8
 loc_3973:
-        jsr sub_3F14                 ; 3973: 20 14 3f
+        jsr sprite_creepfindfree     ; 3973: 20 14 3f
 loc_3976:
         lda #$03                     ; 3976: a9 03
 loc_3978:
@@ -9902,9 +10085,7 @@ loc_39ED:
         rts                          ; 39ed: 60
         .byte $b3,$45,$46,$47,$48,$49,$4a,$4a,$ff,$00,$fe,$fe,$fe,$fe,$fe,$fe ; 39ee |.EFGHIJJ........|
         .byte $00,$00,$00,$00,$02,$02,$02,$02,$00,$ba                  ; 39fe |..........|
-
-; ---------- routine (called from ) ----------
-sub_3A08:
+obj_raygun_laser_execute:
         lda $bd04,x                  ; 3a08: bd 04 bd
 loc_3A0B:
         bit $0885                    ; 3a0b: 2c 85 08
@@ -9974,9 +10155,7 @@ loc_3A5A:
         sta $bd04,x                  ; 3a5a: 9d 04 bd
 loc_3A5D:
         jmp loc_2EEB                 ; 3a5d: 4c eb 2e
-
-; ---------- routine (called from ) ----------
-sub_3A60:
+obj_raygun_laser_collision:
         lda $bf00,y                  ; 3a60: b9 00 bf
 loc_3A63:
         cmp #$02                     ; 3a63: c9 02
@@ -10002,9 +10181,7 @@ loc_3A79:
         sta $31f5                    ; 3a79: 8d f5 31
 loc_3A7C:
         jmp loc_31AC                 ; 3a7c: 4c ac 31
-
-; ---------- routine (called from $4c4d) ----------
-sub_3A7F:
+obj_raygun_laser_sprite_create:
         pha                          ; 3a7f: 48
 loc_3A80:
         tya                          ; 3a80: 98
@@ -10033,9 +10210,9 @@ loc_3A90:
 loc_3A93:
         lda #$00                     ; 3a93: a9 00
 loc_3A95:
-        jsr sub_21C8                 ; 3a95: 20 c8 21
+        jsr sound_play_effect        ; 3a95: 20 c8 21
 loc_3A98:
-        jsr sub_3F14                 ; 3a98: 20 14 3f
+        jsr sprite_creepfindfree     ; 3a98: 20 14 3f
 loc_3A9B:
         lda #$04                     ; 3a9b: a9 04
 loc_3A9D:
@@ -10095,7 +10272,7 @@ loc_3ADD:
 loc_3ADF:
         sta $bd1f,x                  ; 3adf: 9d 1f bd
 loc_3AE2:
-        jsr sub_5D26                 ; 3ae2: 20 26 5d
+        jsr hw_sprite_prepare        ; 3ae2: 20 26 5d
 loc_3AE5:
         pla                          ; 3ae5: 68
 loc_3AE6:
@@ -10108,9 +10285,7 @@ loc_3AE9:
         pla                          ; 3ae9: 68
 loc_3AEA:
         rts                          ; 3aea: 60
-
-; ---------- routine (called from ) ----------
-sub_3AEB:
+obj_frankie_execute:
         lda $bd04,x                  ; 3aeb: bd 04 bd
 loc_3AEE:
         bit $0885                    ; 3aee: 2c 85 08
@@ -10229,7 +10404,7 @@ loc_3B7A:
 loc_3B7D:
         lda #$07                     ; 3b7d: a9 07
 loc_3B7F:
-        jsr sub_21C8                 ; 3b7f: 20 c8 21
+        jsr sound_play_effect        ; 3b7f: 20 c8 21
 loc_3B82:
         lda $bd1b,x                  ; 3b82: bd 1b bd
 loc_3B85:
@@ -10241,7 +10416,7 @@ loc_3B89:
 loc_3B8C:
         beq loc_3B91                 ; 3b8c: f0 03
 loc_3B8E:
-        jsr sub_526F                 ; 3b8e: 20 6f 52
+        jsr trapdoor_switch_check    ; 3b8e: 20 6f 52
 loc_3B91:
         sta $bd1a,x                  ; 3b91: 9d 1a bd
 loc_3B94:
@@ -10249,7 +10424,7 @@ loc_3B94:
 loc_3B96:
         sta $bd1b,x                  ; 3b96: 9d 1b bd
 loc_3B99:
-        jsr sub_5F6B                 ; 3b99: 20 6b 5f
+        jsr position_calculate       ; 3b99: 20 6b 5f
 loc_3B9C:
         ldy #$00                     ; 3b9c: a0 00
 loc_3B9E:
@@ -10615,7 +10790,7 @@ loc_3D47:
 loc_3D49:
         sta $bd03,x                  ; 3d49: 9d 03 bd
 loc_3D4C:
-        jsr sub_5D26                 ; 3d4c: 20 26 5d
+        jsr hw_sprite_prepare        ; 3d4c: 20 26 5d
 loc_3D4F:
         lda $bd1d,x                  ; 3d4f: bd 1d bd
 loc_3D52:
@@ -10642,9 +10817,7 @@ loc_3D69:
         sta ($40),y                  ; 3d69: 91 40
 loc_3D6B:
         jmp loc_2EEB                 ; 3d6b: 4c eb 2e
-
-; ---------- routine (called from ) ----------
-sub_3D6E:
+obj_frankie_collision:
         clc                          ; 3d6e: 18
 loc_3D6F:
         lda $bd01,x                  ; 3d6f: bd 01 bd
@@ -10738,9 +10911,7 @@ loc_3DD8:
         sta $bd1e,x                  ; 3dd8: 9d 1e bd
 loc_3DDB:
         jmp loc_31AC                 ; 3ddb: 4c ac 31
-
-; ---------- routine (called from ) ----------
-sub_3DDE:
+obj_frankie_sprite_collision:
         lda $bd1e,x                  ; 3dde: bd 1e bd
 loc_3DE1:
         bit $574e                    ; 3de1: 2c 4e 57
@@ -10880,9 +11051,7 @@ loc_3E81:
         sta $311d                    ; 3e81: 8d 1d 31
 loc_3E84:
         jmp loc_3104                 ; 3e84: 4c 04 31
-
-; ---------- routine (called from $5728) ----------
-sub_3E87:
+obj_frankie_sprite_create:
         pha                          ; 3e87: 48
 loc_3E88:
         tya                          ; 3e88: 98
@@ -10901,7 +11070,7 @@ loc_3E90:
 loc_3E93:
         bne loc_3F04                 ; 3e93: d0 6f
 loc_3E95:
-        jsr sub_3F14                 ; 3e95: 20 14 3f
+        jsr sprite_creepfindfree     ; 3e95: 20 14 3f
 loc_3E98:
         lda #$05                     ; 3e98: a9 05
 loc_3E9A:
@@ -10975,7 +11144,7 @@ loc_3EE9:
 loc_3EEB:
         sta $bd0d,x                  ; 3eeb: 9d 0d bd
 loc_3EEE:
-        jsr sub_5D26                 ; 3eee: 20 26 5d
+        jsr hw_sprite_prepare        ; 3eee: 20 26 5d
 loc_3EF1:
         lda #$ff                     ; 3ef1: a9 ff
 loc_3EF3:
@@ -11003,9 +11172,7 @@ loc_3F08:
 loc_3F09:
         rts                          ; 3f09: 60
         .byte $85,$a0,$a5,$c4,$85,$c1,$ba,$c9,$a0,$85                  ; 3f0a |..........|
-
-; ---------- routine (called from $0fd4,$35a3,$3690,$375c,$3973,$3a98,$3e95) ----------
-sub_3F14:
+sprite_creepfindfree:
         pha                          ; 3f14: 48
 loc_3F15:
         tya                          ; 3f15: 98
@@ -11073,9 +11240,7 @@ loc_3F4D:
         pla                          ; 3f4d: 68
 loc_3F4E:
         rts                          ; 3f4e: 60
-
-; ---------- routine (called from $2e2d) ----------
-sub_3F4F:
+object_execute:
         pha                          ; 3f4f: 48
 loc_3F50:
         tya                          ; 3f50: 98
@@ -11146,7 +11311,7 @@ loc_3F96:
 loc_3F99:
         beq loc_3FC7                 ; 3f99: f0 2c
 loc_3F9B:
-        jsr sub_57DF                 ; 3f9b: 20 df 57
+        jsr room_anim_disable        ; 3f9b: 20 df 57
 loc_3F9E:
         dec $083e                    ; 3f9e: ce 3e 08
 loc_3FA1:
@@ -11202,9 +11367,7 @@ loc_3FD1:
 loc_3FD2:
         rts                          ; 3fd2: 60
         .byte $d8,$84                                                  ; 3fd3 |..|
-
-; ---------- routine (called from ) ----------
-sub_3FD5:
+obj_door_execute:
         lda $be01,x                  ; 3fd5: bd 01 be
 loc_3FD8:
         bne loc_4017                 ; 3fd8: d0 3d
@@ -11255,11 +11418,11 @@ loc_4004:
 loc_4006:
         lda ($40),y                  ; 4006: b1 40
 loc_4008:
-        jsr sub_5FD9                 ; 4008: 20 d9 5f
+        jsr room_ptr_set             ; 4008: 20 d9 5f
 loc_400B:
         pla                          ; 400b: 68
 loc_400C:
-        jsr sub_6009                 ; 400c: 20 09 60
+        jsr room_extra_record_lookup ; 400c: 20 09 60
 loc_400F:
         ldy #$02                     ; 400f: a0 02
 loc_4011:
@@ -11279,7 +11442,7 @@ loc_401D:
 loc_4020:
         lda #$03                     ; 4020: a9 03
 loc_4022:
-        jsr sub_21C8                 ; 4022: 20 c8 21
+        jsr sound_play_effect        ; 4022: 20 c8 21
 loc_4025:
         lda $be02,x                  ; 4025: bd 02 be
 loc_4028:
@@ -11305,7 +11468,7 @@ loc_403F:
 loc_4041:
         sta $5cc7                    ; 4041: 8d c7 5c
 loc_4044:
-        jsr sub_580D                 ; 4044: 20 0d 58
+        jsr screen_draw              ; 4044: 20 0d 58
 loc_4047:
         jmp loc_4072                 ; 4047: 4c 72 40
 loc_404A:
@@ -11337,12 +11500,10 @@ loc_4069:
 loc_406C:
         sta $5cca                    ; 406c: 8d ca 5c
 loc_406F:
-        jsr sub_5783                 ; 406f: 20 83 57
+        jsr draw_room_anim_object    ; 406f: 20 83 57
 loc_4072:
         jmp loc_3F87                 ; 4072: 4c 87 3f
-
-; ---------- routine (called from ) ----------
-sub_4075:
+obj_door_infront:
         sty $41d5                    ; 4075: 8c d5 41
 loc_4078:
         lda $be01,y                  ; 4078: b9 01 be
@@ -11447,7 +11608,7 @@ loc_40E6:
 loc_40E8:
         sta $41d6                    ; 40e8: 8d d6 41
 loc_40EB:
-        jsr sub_5FD9                 ; 40eb: 20 d9 5f
+        jsr room_ptr_set             ; 40eb: 20 d9 5f
 loc_40EE:
         ldy #$00                     ; 40ee: a0 00
 loc_40F0:
@@ -11470,22 +11631,190 @@ loc_4106:
         ldy $41d5                    ; 4106: ac d5 41
 loc_4109:
         jmp loc_31DC                 ; 4109: 4c dc 31
-        .byte $48,$98,$48,$8a,$48,$a0,$00,$b1,$3e,$8d,$d0,$41,$e6,$3e,$d0,$02 ; 410c |H.H.H...>..A.>..|
-        .byte $e6,$3f,$a5,$3e,$8d,$d3,$41,$a5,$3f,$8d,$d4,$41,$a9,$00,$8d,$cf ; 411c |.?.>..A.?..A....|
-        .byte $41,$ad,$cf,$41,$cd,$d0,$41,$d0,$03,$4c,$c9,$41,$a0,$07,$b1,$3e ; 412c |A..A..A..L.A...>|
-        .byte $aa,$bd,$d1,$41,$8d,$c9,$5c,$a0,$00,$b1,$3e,$8d,$cb,$5c,$a0,$01 ; 413c |...A..\...>..\..|
-        .byte $b1,$3e,$8d,$ca,$5c,$a9,$00,$8d,$c7,$5c,$20,$0d,$58,$20,$50,$57 ; 414c |.>..\....\ .X PW|
-        .byte $18,$ad,$cb,$5c,$69,$04,$8d,$cb,$5c,$18,$ad,$ca,$5c,$69,$10,$8d ; 415c |...\i...\...\i..|
-        .byte $ca,$5c,$ad,$cf,$41,$9d,$00,$be,$a9,$00,$9d,$00,$bf,$a0,$03,$b1 ; 416c |.\..A...........|
-        .byte $3e,$20,$d9,$5f,$a0,$00,$b1,$42,$29,$0f,$9d,$03,$be,$0a,$0a,$0a ; 417c |> ._...B).......|
-        .byte $0a,$1d,$03,$be,$9d,$03,$be,$a0,$02,$b1,$3e,$29,$80,$d0,$05,$a9 ; 418c |..........>)....|
-        .byte $07,$4c,$b2,$41,$a9,$01,$9d,$01,$be,$a0,$05,$bd,$03,$be,$99,$90 ; 419c |.L.A............|
-        .byte $63,$88,$10,$fa,$a9,$08,$8d,$c9,$5c,$20,$83,$57,$18,$a5,$3e,$69 ; 41ac |c.......\ .W..>i|
-        .byte $08,$85,$3e,$90,$02,$e6,$3f,$ee,$cf,$41,$4c,$2d,$41,$68,$aa,$68 ; 41bc |..>...?..AL-Ah.h|
-        .byte $a8,$68,$60,$a0,$a0,$06,$96,$ac,$b4,$a0,$9e,$a0          ; 41cc |.h`.........|
-
-; ---------- routine (called from ) ----------
-sub_41D8:
+loc_410C:
+        pha                          ; 410c: 48
+loc_410D:
+        tya                          ; 410d: 98
+loc_410E:
+        pha                          ; 410e: 48
+loc_410F:
+        txa                          ; 410f: 8a
+loc_4110:
+        pha                          ; 4110: 48
+loc_4111:
+        ldy #$00                     ; 4111: a0 00
+loc_4113:
+        lda ($3e),y                  ; 4113: b1 3e
+loc_4115:
+        sta $41d0                    ; 4115: 8d d0 41
+loc_4118:
+        inc $3e                      ; 4118: e6 3e
+loc_411A:
+        bne loc_411E                 ; 411a: d0 02
+loc_411C:
+        inc $3f                      ; 411c: e6 3f
+loc_411E:
+        lda $3e                      ; 411e: a5 3e
+loc_4120:
+        sta $41d3                    ; 4120: 8d d3 41
+loc_4123:
+        lda $3f                      ; 4123: a5 3f
+loc_4125:
+        sta $41d4                    ; 4125: 8d d4 41
+loc_4128:
+        lda #$00                     ; 4128: a9 00
+loc_412A:
+        sta $41cf                    ; 412a: 8d cf 41
+loc_412D:
+        lda $41cf                    ; 412d: ad cf 41
+loc_4130:
+        cmp $41d0                    ; 4130: cd d0 41
+loc_4133:
+        bne loc_4138                 ; 4133: d0 03
+loc_4135:
+        jmp loc_41C9                 ; 4135: 4c c9 41
+loc_4138:
+        ldy #$07                     ; 4138: a0 07
+loc_413A:
+        lda ($3e),y                  ; 413a: b1 3e
+loc_413C:
+        tax                          ; 413c: aa
+loc_413D:
+        lda $41d1,x                  ; 413d: bd d1 41
+loc_4140:
+        sta $5cc9                    ; 4140: 8d c9 5c
+loc_4143:
+        ldy #$00                     ; 4143: a0 00
+loc_4145:
+        lda ($3e),y                  ; 4145: b1 3e
+loc_4147:
+        sta $5ccb                    ; 4147: 8d cb 5c
+loc_414A:
+        ldy #$01                     ; 414a: a0 01
+loc_414C:
+        lda ($3e),y                  ; 414c: b1 3e
+loc_414E:
+        sta $5cca                    ; 414e: 8d ca 5c
+loc_4151:
+        lda #$00                     ; 4151: a9 00
+loc_4153:
+        sta $5cc7                    ; 4153: 8d c7 5c
+loc_4156:
+        jsr screen_draw              ; 4156: 20 0d 58
+loc_4159:
+        jsr anim_object_allocate_and_clear ; 4159: 20 50 57
+loc_415C:
+        clc                          ; 415c: 18
+loc_415D:
+        lda $5ccb                    ; 415d: ad cb 5c
+loc_4160:
+        adc #$04                     ; 4160: 69 04
+loc_4162:
+        sta $5ccb                    ; 4162: 8d cb 5c
+loc_4165:
+        clc                          ; 4165: 18
+loc_4166:
+        lda $5cca                    ; 4166: ad ca 5c
+loc_4169:
+        adc #$10                     ; 4169: 69 10
+loc_416B:
+        sta $5cca                    ; 416b: 8d ca 5c
+loc_416E:
+        lda $41cf                    ; 416e: ad cf 41
+loc_4171:
+        sta $be00,x                  ; 4171: 9d 00 be
+loc_4174:
+        lda #$00                     ; 4174: a9 00
+loc_4176:
+        sta $bf00,x                  ; 4176: 9d 00 bf
+loc_4179:
+        ldy #$03                     ; 4179: a0 03
+loc_417B:
+        lda ($3e),y                  ; 417b: b1 3e
+loc_417D:
+        jsr room_ptr_set             ; 417d: 20 d9 5f
+loc_4180:
+        ldy #$00                     ; 4180: a0 00
+loc_4182:
+        lda ($42),y                  ; 4182: b1 42
+loc_4184:
+        and #$0f                     ; 4184: 29 0f
+loc_4186:
+        sta $be03,x                  ; 4186: 9d 03 be
+loc_4189:
+        asl a                        ; 4189: 0a
+loc_418A:
+        asl a                        ; 418a: 0a
+loc_418B:
+        asl a                        ; 418b: 0a
+loc_418C:
+        asl a                        ; 418c: 0a
+loc_418D:
+        ora $be03,x                  ; 418d: 1d 03 be
+loc_4190:
+        sta $be03,x                  ; 4190: 9d 03 be
+loc_4193:
+        ldy #$02                     ; 4193: a0 02
+loc_4195:
+        lda ($3e),y                  ; 4195: b1 3e
+loc_4197:
+        and #$80                     ; 4197: 29 80
+loc_4199:
+        bne loc_41A0                 ; 4199: d0 05
+loc_419B:
+        lda #$07                     ; 419b: a9 07
+loc_419D:
+        jmp loc_41B2                 ; 419d: 4c b2 41
+loc_41A0:
+        lda #$01                     ; 41a0: a9 01
+loc_41A2:
+        sta $be01,x                  ; 41a2: 9d 01 be
+loc_41A5:
+        ldy #$05                     ; 41a5: a0 05
+loc_41A7:
+        lda $be03,x                  ; 41a7: bd 03 be
+loc_41AA:
+        sta $6390,y                  ; 41aa: 99 90 63
+loc_41AD:
+        dey                          ; 41ad: 88
+loc_41AE:
+        bpl loc_41AA                 ; 41ae: 10 fa
+loc_41B0:
+        lda #$08                     ; 41b0: a9 08
+loc_41B2:
+        sta $5cc9                    ; 41b2: 8d c9 5c
+loc_41B5:
+        jsr draw_room_anim_object    ; 41b5: 20 83 57
+loc_41B8:
+        clc                          ; 41b8: 18
+loc_41B9:
+        lda $3e                      ; 41b9: a5 3e
+loc_41BB:
+        adc #$08                     ; 41bb: 69 08
+loc_41BD:
+        sta $3e                      ; 41bd: 85 3e
+loc_41BF:
+        bcc loc_41C3                 ; 41bf: 90 02
+loc_41C1:
+        inc $3f                      ; 41c1: e6 3f
+loc_41C3:
+        inc $41cf                    ; 41c3: ee cf 41
+loc_41C6:
+        jmp loc_412D                 ; 41c6: 4c 2d 41
+loc_41C9:
+        pla                          ; 41c9: 68
+loc_41CA:
+        tax                          ; 41ca: aa
+loc_41CB:
+        pla                          ; 41cb: 68
+loc_41CC:
+        tay                          ; 41cc: a8
+loc_41CD:
+        pla                          ; 41cd: 68
+loc_41CE:
+        rts                          ; 41ce: 60
+        .byte $a0,$a0,$06,$96,$ac,$b4,$a0,$9e,$a0                      ; 41cf |.........|
+obj_door_button_infront:
         stx $42ac                    ; 41d8: 8e ac 42
 loc_41DB:
         lda $bd00,x                  ; 41db: bd 00 bd
@@ -11555,18 +11884,138 @@ loc_4224:
         ldx $42ac                    ; 4224: ae ac 42
 loc_4227:
         jmp loc_31DC                 ; 4227: 4c dc 31
-        .byte $48,$98,$48,$8a,$48,$a0,$00,$b1,$3e,$8d,$ab,$42,$e6,$3e,$d0,$02 ; 422a |H.H.H...>..B.>..|
-        .byte $e6,$3f,$ad,$ab,$42,$f0,$64,$20,$50,$57,$a9,$01,$9d,$00,$bf,$a0 ; 423a |.?..B.d PW......|
-        .byte $00,$b1,$3e,$8d,$cb,$5c,$a0,$01,$b1,$3e,$8d,$ca,$5c,$a9,$09,$8d ; 424a |..>..\...>..\...|
-        .byte $c9,$5c,$a0,$02,$b1,$3e,$9d,$00,$be,$a0,$00,$b9,$00,$bf,$d0,$0e ; 425a |.\...>..........|
-        .byte $b9,$00,$be,$dd,$00,$be,$d0,$06,$b9,$03,$be,$4c,$80,$42,$98,$18 ; 426a |...........L.B..|
-        .byte $69,$08,$a8,$4c,$65,$42,$a0,$08,$99,$d2,$63,$88,$10,$fa,$4a,$4a ; 427a |i..LeB....c...JJ|
-        .byte $4a,$4a,$09,$10,$8d,$d6,$63,$20,$83,$57,$18,$a5,$3e,$69,$03,$85 ; 428a |JJ....c .W..>i..|
-        .byte $3e,$90,$02,$e6,$3f,$ce,$ab,$42,$4c,$3c,$42,$68,$aa,$68,$a8,$68 ; 429a |>...?..BL<Bh.h.h|
-        .byte $60,$a0,$ff                                              ; 42aa |`..|
-
-; ---------- routine (called from ) ----------
-sub_42AD:
+loc_422A:
+        pha                          ; 422a: 48
+loc_422B:
+        tya                          ; 422b: 98
+loc_422C:
+        pha                          ; 422c: 48
+loc_422D:
+        txa                          ; 422d: 8a
+loc_422E:
+        pha                          ; 422e: 48
+loc_422F:
+        ldy #$00                     ; 422f: a0 00
+loc_4231:
+        lda ($3e),y                  ; 4231: b1 3e
+loc_4233:
+        sta $42ab                    ; 4233: 8d ab 42
+loc_4236:
+        inc $3e                      ; 4236: e6 3e
+loc_4238:
+        bne loc_423C                 ; 4238: d0 02
+loc_423A:
+        inc $3f                      ; 423a: e6 3f
+loc_423C:
+        lda $42ab                    ; 423c: ad ab 42
+loc_423F:
+        beq loc_42A5                 ; 423f: f0 64
+loc_4241:
+        jsr anim_object_allocate_and_clear ; 4241: 20 50 57
+loc_4244:
+        lda #$01                     ; 4244: a9 01
+loc_4246:
+        sta $bf00,x                  ; 4246: 9d 00 bf
+loc_4249:
+        ldy #$00                     ; 4249: a0 00
+loc_424B:
+        lda ($3e),y                  ; 424b: b1 3e
+loc_424D:
+        sta $5ccb                    ; 424d: 8d cb 5c
+loc_4250:
+        ldy #$01                     ; 4250: a0 01
+loc_4252:
+        lda ($3e),y                  ; 4252: b1 3e
+loc_4254:
+        sta $5cca                    ; 4254: 8d ca 5c
+loc_4257:
+        lda #$09                     ; 4257: a9 09
+loc_4259:
+        sta $5cc9                    ; 4259: 8d c9 5c
+loc_425C:
+        ldy #$02                     ; 425c: a0 02
+loc_425E:
+        lda ($3e),y                  ; 425e: b1 3e
+loc_4260:
+        sta $be00,x                  ; 4260: 9d 00 be
+loc_4263:
+        ldy #$00                     ; 4263: a0 00
+loc_4265:
+        lda $bf00,y                  ; 4265: b9 00 bf
+loc_4268:
+        bne loc_4278                 ; 4268: d0 0e
+loc_426A:
+        lda $be00,y                  ; 426a: b9 00 be
+loc_426D:
+        cmp $be00,x                  ; 426d: dd 00 be
+loc_4270:
+        bne loc_4278                 ; 4270: d0 06
+loc_4272:
+        lda $be03,y                  ; 4272: b9 03 be
+loc_4275:
+        jmp loc_4280                 ; 4275: 4c 80 42
+loc_4278:
+        tya                          ; 4278: 98
+loc_4279:
+        clc                          ; 4279: 18
+loc_427A:
+        adc #$08                     ; 427a: 69 08
+loc_427C:
+        tay                          ; 427c: a8
+loc_427D:
+        jmp loc_4265                 ; 427d: 4c 65 42
+loc_4280:
+        ldy #$08                     ; 4280: a0 08
+loc_4282:
+        sta $63d2,y                  ; 4282: 99 d2 63
+loc_4285:
+        dey                          ; 4285: 88
+loc_4286:
+        bpl loc_4282                 ; 4286: 10 fa
+loc_4288:
+        lsr a                        ; 4288: 4a
+loc_4289:
+        lsr a                        ; 4289: 4a
+loc_428A:
+        lsr a                        ; 428a: 4a
+loc_428B:
+        lsr a                        ; 428b: 4a
+loc_428C:
+        ora #$10                     ; 428c: 09 10
+loc_428E:
+        sta $63d6                    ; 428e: 8d d6 63
+loc_4291:
+        jsr draw_room_anim_object    ; 4291: 20 83 57
+loc_4294:
+        clc                          ; 4294: 18
+loc_4295:
+        lda $3e                      ; 4295: a5 3e
+loc_4297:
+        adc #$03                     ; 4297: 69 03
+loc_4299:
+        sta $3e                      ; 4299: 85 3e
+loc_429B:
+        bcc loc_429F                 ; 429b: 90 02
+loc_429D:
+        inc $3f                      ; 429d: e6 3f
+loc_429F:
+        dec $42ab                    ; 429f: ce ab 42
+loc_42A2:
+        jmp loc_423C                 ; 42a2: 4c 3c 42
+loc_42A5:
+        pla                          ; 42a5: 68
+loc_42A6:
+        tax                          ; 42a6: aa
+loc_42A7:
+        pla                          ; 42a7: 68
+loc_42A8:
+        tay                          ; 42a8: a8
+loc_42A9:
+        pla                          ; 42a9: 68
+loc_42AA:
+        rts                          ; 42aa: 60
+        .byte $a0,$ff                                                  ; 42ab |..|
+obj_lightning_pole_execute:
         clc                          ; 42ad: 18
 loc_42AE:
         lda $45db                    ; 42ae: ad db 45
@@ -11591,7 +12040,7 @@ loc_42C4:
 loc_42C6:
         sta $be01,x                  ; 42c6: 9d 01 be
 loc_42C9:
-        jsr sub_368A                 ; 42c9: 20 8a 36
+        jsr obj_lightning_sprite_create ; 42c9: 20 8a 36
 loc_42CC:
         jmp loc_435B                 ; 42cc: 4c 5b 43
 loc_42CF:
@@ -11649,7 +12098,7 @@ loc_430D:
 loc_4310:
         beq loc_4324                 ; 4310: f0 12
 loc_4312:
-        jsr sub_580D                 ; 4312: 20 0d 58
+        jsr screen_draw              ; 4312: 20 0d 58
 loc_4315:
         clc                          ; 4315: 18
 loc_4316:
@@ -11789,7 +12238,7 @@ loc_43B9:
 loc_43BB:
         sta $66e7                    ; 43bb: 8d e7 66
 loc_43BE:
-        jsr sub_580D                 ; 43be: 20 0d 58
+        jsr screen_draw              ; 43be: 20 0d 58
 loc_43C1:
         inc $43e3                    ; 43c1: ee e3 43
 loc_43C4:
@@ -11856,7 +12305,7 @@ loc_4405:
 loc_4407:
         jmp loc_44DF                 ; 4407: 4c df 44
 loc_440A:
-        jsr sub_5750                 ; 440a: 20 50 57
+        jsr anim_object_allocate_and_clear ; 440a: 20 50 57
 loc_440D:
         lda $44e5                    ; 440d: ad e5 44
 loc_4410:
@@ -11890,7 +12339,7 @@ loc_442F:
 loc_4431:
         sta $5cc9                    ; 4431: 8d c9 5c
 loc_4434:
-        jsr sub_580D                 ; 4434: 20 0d 58
+        jsr screen_draw              ; 4434: 20 0d 58
 loc_4437:
         clc                          ; 4437: 18
 loc_4438:
@@ -11928,7 +12377,7 @@ loc_445C:
 loc_445E:
         sta $5cc9                    ; 445e: 8d c9 5c
 loc_4461:
-        jsr sub_5783                 ; 4461: 20 83 57
+        jsr draw_room_anim_object    ; 4461: 20 83 57
 loc_4464:
         jmp loc_44C8                 ; 4464: 4c c8 44
 loc_4467:
@@ -11968,7 +12417,7 @@ loc_448E:
 loc_4491:
         beq loc_44A5                 ; 4491: f0 12
 loc_4493:
-        jsr sub_580D                 ; 4493: 20 0d 58
+        jsr screen_draw              ; 4493: 20 0d 58
 loc_4496:
         clc                          ; 4496: 18
 loc_4497:
@@ -11994,7 +12443,7 @@ loc_44AE:
 loc_44B0:
         sta $5cc9                    ; 44b0: 8d c9 5c
 loc_44B3:
-        jsr sub_5783                 ; 44b3: 20 83 57
+        jsr draw_room_anim_object    ; 44b3: 20 83 57
 loc_44B6:
         ldy #$00                     ; 44b6: a0 00
 loc_44B8:
@@ -12044,9 +12493,7 @@ loc_44E3:
 loc_44E4:
         rts                          ; 44e4: 60
         .byte $95,$80                                                  ; 44e5 |..|
-
-; ---------- routine (called from ) ----------
-sub_44E7:
+lightning_switch_infront:
         lda $bd00,x                  ; 44e7: bd 00 bd
 loc_44EA:
         bne loc_4504                 ; 44ea: d0 18
@@ -12235,7 +12682,7 @@ loc_45C0:
 loc_45C3:
         ldx $45d8                    ; 45c3: ae d8 45
 loc_45C6:
-        jsr sub_5783                 ; 45c6: 20 83 57
+        jsr draw_room_anim_object    ; 45c6: 20 83 57
 loc_45C9:
         ldx $45d9                    ; 45c9: ae d9 45
 loc_45CC:
@@ -12243,13 +12690,11 @@ loc_45CC:
 loc_45CF:
         lda #$06                     ; 45cf: a9 06
 loc_45D1:
-        jsr sub_21C8                 ; 45d1: 20 c8 21
+        jsr sound_play_effect        ; 45d1: 20 c8 21
 loc_45D4:
         jmp loc_31DC                 ; 45d4: 4c dc 31
         .byte $99,$80,$a0,$c8,$a0,$ce,$80,$40,$20                      ; 45d7 |.......@ |
-
-; ---------- routine (called from ) ----------
-sub_45E0:
+forcefield_timer_execute:
         dec $be01,x                  ; 45e0: de 01 be
 loc_45E3:
         bne loc_4644                 ; 45e3: d0 5f
@@ -12264,7 +12709,7 @@ loc_45EE:
 loc_45F1:
         lda #$02                     ; 45f1: a9 02
 loc_45F3:
-        jsr sub_21C8                 ; 45f3: 20 c8 21
+        jsr sound_play_effect        ; 45f3: 20 c8 21
 loc_45F6:
         ldy #$00                     ; 45f6: a0 00
 loc_45F8:
@@ -12304,7 +12749,7 @@ loc_461E:
 loc_4620:
         sta $5cc7                    ; 4620: 8d c7 5c
 loc_4623:
-        jsr sub_580D                 ; 4623: 20 0d 58
+        jsr screen_draw              ; 4623: 20 0d 58
 loc_4626:
         lda $be02,x                  ; 4626: bd 02 be
 loc_4629:
@@ -12329,9 +12774,7 @@ loc_4641:
         sta $4750,y                  ; 4641: 99 50 47
 loc_4644:
         jmp loc_3F87                 ; 4644: 4c 87 3f
-
-; ---------- routine (called from ) ----------
-sub_4647:
+forcefield_timer_infront:
         lda $bd00,x                  ; 4647: bd 00 bd
 loc_464A:
         bne loc_46AB                 ; 464a: d0 5f
@@ -12346,7 +12789,7 @@ loc_4653:
 loc_4656:
         lda #$02                     ; 4656: a9 02
 loc_4658:
-        jsr sub_21C8                 ; 4658: 20 c8 21
+        jsr sound_play_effect        ; 4658: 20 c8 21
 loc_465B:
         lda $bf04,y                  ; 465b: b9 04 bf
 loc_465E:
@@ -12396,7 +12839,7 @@ loc_469A:
 loc_469C:
         sta $5cc7                    ; 469c: 8d c7 5c
 loc_469F:
-        jsr sub_580D                 ; 469f: 20 0d 58
+        jsr screen_draw              ; 469f: 20 0d 58
 loc_46A2:
         lda $be00,y                  ; 46a2: b9 00 be
 loc_46A5:
@@ -12407,7 +12850,7 @@ loc_46A8:
         sta $4750,y                  ; 46a8: 99 50 47
 loc_46AB:
         jmp loc_31DC                 ; 46ab: 4c dc 31
-loc_46AE:
+forcefield_prepare:
         pha                          ; 46ae: 48
 loc_46AF:
         tya                          ; 46af: 98
@@ -12436,7 +12879,7 @@ loc_46C2:
 loc_46C4:
         jmp loc_4749                 ; 46c4: 4c 49 47
 loc_46C7:
-        jsr sub_5750                 ; 46c7: 20 50 57
+        jsr anim_object_allocate_and_clear ; 46c7: 20 50 57
 loc_46CA:
         lda #$04                     ; 46ca: a9 04
 loc_46CC:
@@ -12462,7 +12905,7 @@ loc_46E2:
 loc_46E4:
         sta $5cc7                    ; 46e4: 8d c7 5c
 loc_46E7:
-        jsr sub_580D                 ; 46e7: 20 0d 58
+        jsr screen_draw              ; 46e7: 20 0d 58
 loc_46EA:
         clc                          ; 46ea: 18
 loc_46EB:
@@ -12494,7 +12937,7 @@ loc_4708:
 loc_4709:
         bpl loc_4705                 ; 4709: 10 fa
 loc_470B:
-        jsr sub_5783                 ; 470b: 20 83 57
+        jsr draw_room_anim_object    ; 470b: 20 83 57
 loc_470E:
         lda $474f                    ; 470e: ad 4f 47
 loc_4711:
@@ -12506,7 +12949,7 @@ loc_4715:
 loc_4717:
         sta $4750,y                  ; 4717: 99 50 47
 loc_471A:
-        jsr sub_3757                 ; 471a: 20 57 37
+        jsr obj_forcefield_sprite_create ; 471a: 20 57 37
 loc_471D:
         ldy #$02                     ; 471d: a0 02
 loc_471F:
@@ -12528,7 +12971,7 @@ loc_4730:
 loc_4732:
         sta $5cc7                    ; 4732: 8d c7 5c
 loc_4735:
-        jsr sub_580D                 ; 4735: 20 0d 58
+        jsr screen_draw              ; 4735: 20 0d 58
 loc_4738:
         inc $474f                    ; 4738: ee 4f 47
 loc_473B:
@@ -12558,9 +13001,7 @@ loc_474D:
 loc_474E:
         rts                          ; 474e: 60
         .byte $ba,$a0,$a4,$b2,$fe,$a0,$a0,$3a,$39,$37,$35,$33,$32,$30,$2e ; 474f |.......:975320.|
-
-; ---------- routine (called from ) ----------
-sub_475E:
+mummy_tomb_execute:
         lda $2e36                    ; 475e: ad 36 2e
 loc_4761:
         and #$03                     ; 4761: 29 03
@@ -12613,12 +13054,10 @@ loc_479B:
 loc_479E:
         sta $5cc9                    ; 479e: 8d c9 5c
 loc_47A1:
-        jsr sub_5783                 ; 47a1: 20 83 57
+        jsr draw_room_anim_object    ; 47a1: 20 83 57
 loc_47A4:
         jmp loc_3F87                 ; 47a4: 4c 87 3f
-
-; ---------- routine (called from ) ----------
-sub_47A7:
+mummy_infront:
         stx $486f                    ; 47a7: 8e 6f 48
 loc_47AA:
         sty $4870                    ; 47aa: 8c 70 48
@@ -12743,7 +13182,7 @@ loc_482C:
 loc_482E:
         sta $5cc7                    ; 482e: 8d c7 5c
 loc_4831:
-        jsr sub_580D                 ; 4831: 20 0d 58
+        jsr screen_draw              ; 4831: 20 0d 58
 loc_4834:
         clc                          ; 4834: 18
 loc_4835:
@@ -12777,13 +13216,13 @@ loc_4856:
 loc_4858:
         sta $5cc7                    ; 4858: 8d c7 5c
 loc_485B:
-        jsr sub_580D                 ; 485b: 20 0d 58
+        jsr screen_draw              ; 485b: 20 0d 58
 loc_485E:
         ldx $4870                    ; 485e: ae 70 48
 loc_4861:
         lda #$00                     ; 4861: a9 00
 loc_4863:
-        jsr sub_396A                 ; 4863: 20 6a 39
+        jsr obj_mummy_sprite_create  ; 4863: 20 6a 39
 loc_4866:
         ldx $486f                    ; 4866: ae 6f 48
 loc_4869:
@@ -12791,7 +13230,7 @@ loc_4869:
 loc_486C:
         jmp loc_31DC                 ; 486c: 4c dc 31
         .byte $ff,$a0,$b5                                              ; 486f |...|
-loc_4872:
+mummy_prepare:
         pha                          ; 4872: 48
 loc_4873:
         tya                          ; 4873: 98
@@ -12830,7 +13269,7 @@ loc_4892:
 loc_4894:
         jmp loc_4985                 ; 4894: 4c 85 49
 loc_4897:
-        jsr sub_5750                 ; 4897: 20 50 57
+        jsr anim_object_allocate_and_clear ; 4897: 20 50 57
 loc_489A:
         lda #$05                     ; 489a: a9 05
 loc_489C:
@@ -12868,7 +13307,7 @@ loc_48C2:
 loc_48C3:
         bpl loc_48BF                 ; 48c3: 10 fa
 loc_48C5:
-        jsr sub_5783                 ; 48c5: 20 83 57
+        jsr draw_room_anim_object    ; 48c5: 20 83 57
 loc_48C8:
         lda #$03                     ; 48c8: a9 03
 loc_48CA:
@@ -12898,7 +13337,7 @@ loc_48E5:
 loc_48E7:
         sta $5ccb                    ; 48e7: 8d cb 5c
 loc_48EA:
-        jsr sub_580D                 ; 48ea: 20 0d 58
+        jsr screen_draw              ; 48ea: 20 0d 58
 loc_48ED:
         clc                          ; 48ed: 18
 loc_48EE:
@@ -12964,7 +13403,7 @@ loc_492F:
 loc_4931:
         sta $498e                    ; 4931: 8d 8e 49
 loc_4934:
-        jsr sub_580D                 ; 4934: 20 0d 58
+        jsr screen_draw              ; 4934: 20 0d 58
 loc_4937:
         clc                          ; 4937: 18
 loc_4938:
@@ -12998,7 +13437,7 @@ loc_4959:
 loc_495B:
         sta $5cc7                    ; 495b: 8d c7 5c
 loc_495E:
-        jsr sub_580D                 ; 495e: 20 0d 58
+        jsr screen_draw              ; 495e: 20 0d 58
 loc_4961:
         ldy #$00                     ; 4961: a0 00
 loc_4963:
@@ -13010,7 +13449,7 @@ loc_4967:
 loc_4969:
         lda #$ff                     ; 4969: a9 ff
 loc_496B:
-        jsr sub_396A                 ; 496b: 20 6a 39
+        jsr obj_mummy_sprite_create  ; 496b: 20 6a 39
 loc_496E:
         lda $3e                      ; 496e: a5 3e
 loc_4970:
@@ -13046,9 +13485,7 @@ loc_4989:
 loc_498A:
         rts                          ; 498a: 60
         .byte $a0,$cc,$a5,$90,$a0                                      ; 498b |.....|
-
-; ---------- routine (called from ) ----------
-sub_4990:
+key_infront:
         sty $4a67                    ; 4990: 8c 67 4a
 loc_4993:
         lda $bd00,x                  ; 4993: bd 00 bd
@@ -13069,7 +13506,7 @@ loc_49A5:
 loc_49A7:
         lda #$0c                     ; 49a7: a9 0c
 loc_49A9:
-        jsr sub_21C8                 ; 49a9: 20 c8 21
+        jsr sound_play_effect        ; 49a9: 20 c8 21
 loc_49AC:
         ldy $4a67                    ; 49ac: ac 67 4a
 loc_49AF:
@@ -13128,7 +13565,7 @@ loc_49F2:
         sta $7815,y                  ; 49f2: 99 15 78
 loc_49F5:
         jmp loc_31DC                 ; 49f5: 4c dc 31
-loc_49F8:
+key_prepare:
         pha                          ; 49f8: 48
 loc_49F9:
         tya                          ; 49f9: 98
@@ -13171,7 +13608,7 @@ loc_4A1D:
 loc_4A1F:
         beq loc_4A47                 ; 4a1f: f0 26
 loc_4A21:
-        jsr sub_5750                 ; 4a21: 20 50 57
+        jsr anim_object_allocate_and_clear ; 4a21: 20 50 57
 loc_4A24:
         lda #$06                     ; 4a24: a9 06
 loc_4A26:
@@ -13199,7 +13636,7 @@ loc_4A3E:
 loc_4A41:
         sta $be00,x                  ; 4a41: 9d 00 be
 loc_4A44:
-        jsr sub_5783                 ; 4a44: 20 83 57
+        jsr draw_room_anim_object    ; 4a44: 20 83 57
 loc_4A47:
         clc                          ; 4a47: 18
 loc_4A48:
@@ -13235,9 +13672,7 @@ loc_4A62:
 loc_4A63:
         rts                          ; 4a63: 60
         .byte $a0,$98,$a0,$a0                                          ; 4a64 |....|
-
-; ---------- routine (called from ) ----------
-sub_4A68:
+door_lock_infront:
         stx $4b19                    ; 4a68: 8e 19 4b
 loc_4A6B:
         lda $bd00,x                  ; 4a6b: bd 00 bd
@@ -13262,7 +13697,7 @@ loc_4A81:
 loc_4A83:
         lda $be00,y                  ; 4a83: b9 00 be
 loc_4A86:
-        jsr sub_5E8E                 ; 4a86: 20 8e 5e
+        jsr obj_key_not_found        ; 4a86: 20 8e 5e
 loc_4A89:
         bcs loc_4AB0                 ; 4a89: b0 25
 loc_4A8B:
@@ -13301,7 +13736,7 @@ loc_4AB0:
         ldx $4b19                    ; 4ab0: ae 19 4b
 loc_4AB3:
         jmp loc_31DC                 ; 4ab3: 4c dc 31
-loc_4AB6:
+door_lock_prepare:
         pha                          ; 4ab6: 48
 loc_4AB7:
         tya                          ; 4ab7: 98
@@ -13318,7 +13753,7 @@ loc_4ABD:
 loc_4ABF:
         beq loc_4B0D                 ; 4abf: f0 4c
 loc_4AC1:
-        jsr sub_5750                 ; 4ac1: 20 50 57
+        jsr anim_object_allocate_and_clear ; 4ac1: 20 50 57
 loc_4AC4:
         lda #$07                     ; 4ac4: a9 07
 loc_4AC6:
@@ -13374,7 +13809,7 @@ loc_4AF7:
 loc_4AF9:
         sta $be01,x                  ; 4af9: 9d 01 be
 loc_4AFC:
-        jsr sub_5783                 ; 4afc: 20 83 57
+        jsr draw_room_anim_object    ; 4afc: 20 83 57
 loc_4AFF:
         clc                          ; 4aff: 18
 loc_4B00:
@@ -13408,9 +13843,7 @@ loc_4B17:
 loc_4B18:
         rts                          ; 4b18: 60
         .byte $c2                                                      ; 4b19 |.|
-
-; ---------- routine (called from ) ----------
-sub_4B1A:
+raygun_execute:
         lda $2e36                    ; 4b1a: ad 36 2e
 loc_4B1D:
         and #$03                     ; 4b1d: 29 03
@@ -13563,7 +13996,7 @@ loc_4BCA:
 loc_4BCC:
         lda #$5c                     ; 4bcc: a9 5c
 loc_4BCE:
-        jsr sub_4DE9                 ; 4bce: 20 e9 4d
+        jsr raygun_control_update    ; 4bce: 20 e9 4d
 loc_4BD1:
         jmp loc_4BF4                 ; 4bd1: 4c f4 4b
 loc_4BD4:
@@ -13573,7 +14006,7 @@ loc_4BD7:
 loc_4BD9:
         lda #$cc                     ; 4bd9: a9 cc
 loc_4BDB:
-        jsr sub_4DE9                 ; 4bdb: 20 e9 4d
+        jsr raygun_control_update    ; 4bdb: 20 e9 4d
 loc_4BDE:
         jmp loc_4C27                 ; 4bde: 4c 27 4c
 loc_4BE1:
@@ -13593,7 +14026,7 @@ loc_4BED:
 loc_4BEF:
         lda #$c2                     ; 4bef: a9 c2
 loc_4BF1:
-        jsr sub_4DE9                 ; 4bf1: 20 e9 4d
+        jsr raygun_control_update    ; 4bf1: 20 e9 4d
 loc_4BF4:
         lda $bf01,x                  ; 4bf4: bd 01 bf
 loc_4BF7:
@@ -13635,7 +14068,7 @@ loc_4C1E:
 loc_4C21:
         sta $5cc9                    ; 4c21: 8d c9 5c
 loc_4C24:
-        jsr sub_5783                 ; 4c24: 20 83 57
+        jsr draw_room_anim_object    ; 4c24: 20 83 57
 loc_4C27:
         ldy #$00                     ; 4c27: a0 00
 loc_4C29:
@@ -13669,14 +14102,14 @@ loc_4C48:
 loc_4C4B:
         bne loc_4C55                 ; 4c4b: d0 08
 loc_4C4D:
-        jsr sub_3A7F                 ; 4c4d: 20 7f 3a
+        jsr obj_raygun_laser_sprite_create ; 4c4d: 20 7f 3a
 loc_4C50:
         ora $4d61                    ; 4c50: 0d 61 4d
 loc_4C53:
         sta ($40),y                  ; 4c53: 91 40
 loc_4C55:
         jmp loc_3F87                 ; 4c55: 4c 87 3f
-loc_4C58:
+raygun_prepare:
         pha                          ; 4c58: 48
 loc_4C59:
         tya                          ; 4c59: 98
@@ -13765,7 +14198,7 @@ loc_4CB4:
 loc_4CB7:
         beq loc_4CCB                 ; 4cb7: f0 12
 loc_4CB9:
-        jsr sub_580D                 ; 4cb9: 20 0d 58
+        jsr screen_draw              ; 4cb9: 20 0d 58
 loc_4CBC:
         clc                          ; 4cbc: 18
 loc_4CBD:
@@ -13787,7 +14220,7 @@ loc_4CCF:
 loc_4CD2:
         bne loc_4D1A                 ; 4cd2: d0 46
 loc_4CD4:
-        jsr sub_5750                 ; 4cd4: 20 50 57
+        jsr anim_object_allocate_and_clear ; 4cd4: 20 50 57
 loc_4CD7:
         lda #$08                     ; 4cd7: a9 08
 loc_4CD9:
@@ -13853,7 +14286,7 @@ loc_4D15:
 loc_4D17:
         sta $bf01,x                  ; 4d17: 9d 01 bf
 loc_4D1A:
-        jsr sub_5750                 ; 4d1a: 20 50 57
+        jsr anim_object_allocate_and_clear ; 4d1a: 20 50 57
 loc_4D1D:
         lda #$09                     ; 4d1d: a9 09
 loc_4D1F:
@@ -13875,7 +14308,7 @@ loc_4D30:
 loc_4D32:
         sta $5cc9                    ; 4d32: 8d c9 5c
 loc_4D35:
-        jsr sub_5783                 ; 4d35: 20 83 57
+        jsr draw_room_anim_object    ; 4d35: 20 83 57
 loc_4D38:
         lda $4d5d                    ; 4d38: ad 5d 4d
 loc_4D3B:
@@ -13916,9 +14349,7 @@ loc_4D5A:
         rts                          ; 4d5a: 60
         .byte $80,$b7,$a0,$80,$c2,$80,$40,$20,$10,$08,$04,$02,$01,$64,$61,$62 ; 4d5b |......@ .....dab|
         .byte $63,$68,$65,$66,$67                                      ; 4d6b |chefg|
-
-; ---------- routine (called from ) ----------
-sub_4D70:
+raygun_control_infront:
         sty $4e30                    ; 4d70: 8c 30 4e
 loc_4D73:
         lda $bd00,x                  ; 4d73: bd 00 bd
@@ -14018,9 +14449,7 @@ loc_4DE4:
         sta ($40),y                  ; 4de4: 91 40
 loc_4DE6:
         jmp loc_31DC                 ; 4de6: 4c dc 31
-
-; ---------- routine (called from $4bce,$4bdb,$4bf1) ----------
-sub_4DE9:
+raygun_control_update:
         pha                          ; 4de9: 48
 loc_4DEA:
         sta $4e31                    ; 4dea: 8d 31 4e
@@ -14055,7 +14484,7 @@ loc_4E0B:
 loc_4E0D:
         sta $5cc9                    ; 4e0d: 8d c9 5c
 loc_4E10:
-        jsr sub_580D                 ; 4e10: 20 0d 58
+        jsr screen_draw              ; 4e10: 20 0d 58
 loc_4E13:
         lda $4e31                    ; 4e13: ad 31 4e
 loc_4E16:
@@ -14079,7 +14508,7 @@ loc_4E24:
 loc_4E26:
         sta $5cca                    ; 4e26: 8d ca 5c
 loc_4E29:
-        jsr sub_580D                 ; 4e29: 20 0d 58
+        jsr screen_draw              ; 4e29: 20 0d 58
 loc_4E2C:
         pla                          ; 4e2c: 68
 loc_4E2D:
@@ -14089,16 +14518,14 @@ loc_4E2E:
 loc_4E2F:
         rts                          ; 4e2f: 60
         .byte $9f,$a7                                                  ; 4e30 |..|
-
-; ---------- routine (called from ) ----------
-sub_4E32:
+teleport_execute:
         lda $2e36                    ; 4e32: ad 36 2e
 loc_4E35:
         and #$01                     ; 4e35: 29 01
 loc_4E37:
         bne loc_4EA5                 ; 4e37: d0 6c
 loc_4E39:
-        jsr sub_5ED5                 ; 4e39: 20 d5 5e
+        jsr seed_get                 ; 4e39: 20 d5 5e
 loc_4E3C:
         and #$3f                     ; 4e3c: 29 3f
 loc_4E3E:
@@ -14106,7 +14533,7 @@ loc_4E3E:
 loc_4E41:
         lda #$04                     ; 4e41: a9 04
 loc_4E43:
-        jsr sub_21C8                 ; 4e43: 20 c8 21
+        jsr sound_play_effect        ; 4e43: 20 c8 21
 loc_4E46:
         lda $2e36                    ; 4e46: ad 36 2e
 loc_4E49:
@@ -14152,7 +14579,7 @@ loc_4E76:
 loc_4E78:
         sta $5cc9                    ; 4e78: 8d c9 5c
 loc_4E7B:
-        jsr sub_580D                 ; 4e7b: 20 0d 58
+        jsr screen_draw              ; 4e7b: 20 0d 58
 loc_4E7E:
         lda $2e36                    ; 4e7e: ad 36 2e
 loc_4E81:
@@ -14166,7 +14593,7 @@ loc_4E87:
 loc_4E8A:
         lda $be02,x                  ; 4e8a: bd 02 be
 loc_4E8D:
-        jsr sub_505C                 ; 4e8d: 20 5c 50
+        jsr teleport_set_colour      ; 4e8d: 20 5c 50
 loc_4E90:
         lda $2e36                    ; 4e90: ad 36 2e
 loc_4E93:
@@ -14185,9 +14612,7 @@ loc_4EA2:
         sta $bf04,x                  ; 4ea2: 9d 04 bf
 loc_4EA5:
         jmp loc_3F87                 ; 4ea5: 4c 87 3f
-
-; ---------- routine (called from ) ----------
-sub_4EA8:
+teleport_infront:
         lda $bf04,y                  ; 4ea8: b9 04 bf
 loc_4EAB:
         bit $0840                    ; 4eab: 2c 40 08
@@ -14270,7 +14695,7 @@ loc_4EFE:
 loc_4F01:
         lda #$05                     ; 4f01: a9 05
 loc_4F03:
-        jsr sub_21C8                 ; 4f03: 20 c8 21
+        jsr sound_play_effect        ; 4f03: 20 c8 21
 loc_4F06:
         lda ($40),y                  ; 4f06: b1 40
 loc_4F08:
@@ -14282,7 +14707,7 @@ loc_4F0B:
 loc_4F0E:
         ldx $50cf                    ; 4f0e: ae cf 50
 loc_4F11:
-        jsr sub_505C                 ; 4f11: 20 5c 50
+        jsr teleport_set_colour      ; 4f11: 20 5c 50
 loc_4F14:
         ldx $50ce                    ; 4f14: ae ce 50
 loc_4F17:
@@ -14347,7 +14772,7 @@ loc_4F56:
         sta $bd01,x                  ; 4f56: 9d 01 bd
 loc_4F59:
         jmp loc_31DC                 ; 4f59: 4c dc 31
-loc_4F5C:
+teleport_prepare:
         pha                          ; 4f5c: 48
 loc_4F5D:
         tya                          ; 4f5d: 98
@@ -14386,7 +14811,7 @@ loc_4F7C:
 loc_4F7E:
         sta $50d0                    ; 4f7e: 8d d0 50
 loc_4F81:
-        jsr sub_580D                 ; 4f81: 20 0d 58
+        jsr screen_draw              ; 4f81: 20 0d 58
 loc_4F84:
         clc                          ; 4f84: 18
 loc_4F85:
@@ -14420,7 +14845,7 @@ loc_4FA5:
 loc_4FA7:
         sta $5cc7                    ; 4fa7: 8d c7 5c
 loc_4FAA:
-        jsr sub_580D                 ; 4faa: 20 0d 58
+        jsr screen_draw              ; 4faa: 20 0d 58
 loc_4FAD:
         clc                          ; 4fad: 18
 loc_4FAE:
@@ -14442,9 +14867,9 @@ loc_4FBF:
 loc_4FC1:
         sta $5cc9                    ; 4fc1: 8d c9 5c
 loc_4FC4:
-        jsr sub_580D                 ; 4fc4: 20 0d 58
+        jsr screen_draw              ; 4fc4: 20 0d 58
 loc_4FC7:
-        jsr sub_5750                 ; 4fc7: 20 50 57
+        jsr anim_object_allocate_and_clear ; 4fc7: 20 50 57
 loc_4FCA:
         lda #$0a                     ; 4fca: a9 0a
 loc_4FCC:
@@ -14482,7 +14907,7 @@ loc_4FED:
 loc_4FEF:
         sta $be01,x                  ; 4fef: 9d 01 be
 loc_4FF2:
-        jsr sub_5783                 ; 4ff2: 20 83 57
+        jsr draw_room_anim_object    ; 4ff2: 20 83 57
 loc_4FF5:
         ldy #$02                     ; 4ff5: a0 02
 loc_4FF7:
@@ -14492,7 +14917,7 @@ loc_4FF9:
 loc_4FFA:
         adc #$02                     ; 4ffa: 69 02
 loc_4FFC:
-        jsr sub_505C                 ; 4ffc: 20 5c 50
+        jsr teleport_set_colour      ; 4ffc: 20 5c 50
 loc_4FFF:
         lda #$00                     ; 4fff: a9 00
 loc_5001:
@@ -14534,7 +14959,7 @@ loc_502C:
 loc_502E:
         sta $5cca                    ; 502e: 8d ca 5c
 loc_5031:
-        jsr sub_580D                 ; 5031: 20 0d 58
+        jsr screen_draw              ; 5031: 20 0d 58
 loc_5034:
         clc                          ; 5034: 18
 loc_5035:
@@ -14581,9 +15006,7 @@ loc_505A:
         pla                          ; 505a: 68
 loc_505B:
         rts                          ; 505b: 60
-
-; ---------- routine (called from $4e8d,$4f11,$4ffc) ----------
-sub_505C:
+teleport_set_colour:
         pha                          ; 505c: 48
 loc_505D:
         sta $50d1                    ; 505d: 8d d1 50
@@ -14650,7 +15073,7 @@ loc_509F:
 loc_50A1:
         sta $5cc9                    ; 50a1: 8d c9 5c
 loc_50A4:
-        jsr sub_580D                 ; 50a4: 20 0d 58
+        jsr screen_draw              ; 50a4: 20 0d 58
 loc_50A7:
         clc                          ; 50a7: 18
 loc_50A8:
@@ -14668,7 +15091,7 @@ loc_50B5:
 loc_50B8:
         sta $6e75                    ; 50b8: 8d 75 6e
 loc_50BB:
-        jsr sub_580D                 ; 50bb: 20 0d 58
+        jsr screen_draw              ; 50bb: 20 0d 58
 loc_50BE:
         clc                          ; 50be: 18
 loc_50BF:
@@ -14678,7 +15101,7 @@ loc_50C2:
 loc_50C4:
         sta $5cca                    ; 50c4: 8d ca 5c
 loc_50C7:
-        jsr sub_580D                 ; 50c7: 20 0d 58
+        jsr screen_draw              ; 50c7: 20 0d 58
 loc_50CA:
         pla                          ; 50ca: 68
 loc_50CB:
@@ -14688,9 +15111,7 @@ loc_50CC:
 loc_50CD:
         rts                          ; 50cd: 60
         .byte $a0,$ff,$d5,$c3                                          ; 50ce |....|
-
-; ---------- routine (called from ) ----------
-sub_50D2:
+trapdoor_switch_execute:
         clc                          ; 50d2: 18
 loc_50D3:
         lda $be00,x                  ; 50d3: bd 00 be
@@ -14725,13 +15146,13 @@ loc_50F5:
 loc_50F8:
         sta $5cd5                    ; 50f8: 8d d5 5c
 loc_50FB:
-        jsr sub_5171                 ; 50fb: 20 71 51
+        jsr trapdoor_play_sound      ; 50fb: 20 71 51
 loc_50FE:
         lda #$01                     ; 50fe: a9 01
 loc_5100:
         sta $5cc7                    ; 5100: 8d c7 5c
 loc_5103:
-        jsr sub_580D                 ; 5103: 20 0d 58
+        jsr screen_draw              ; 5103: 20 0d 58
 loc_5106:
         lda $be02,x                  ; 5106: bd 02 be
 loc_5109:
@@ -14759,7 +15180,7 @@ loc_511E:
 loc_5120:
         sta $5cc9                    ; 5120: 8d c9 5c
 loc_5123:
-        jsr sub_5783                 ; 5123: 20 83 57
+        jsr draw_room_anim_object    ; 5123: 20 83 57
 loc_5126:
         jmp loc_5165                 ; 5126: 4c 65 51
 loc_5129:
@@ -14769,7 +15190,7 @@ loc_512C:
 loc_512E:
         bne loc_5133                 ; 512e: d0 03
 loc_5130:
-        jsr sub_57DF                 ; 5130: 20 df 57
+        jsr room_anim_disable        ; 5130: 20 df 57
 loc_5133:
         ldy #$01                     ; 5133: a0 01
 loc_5135:
@@ -14787,13 +15208,13 @@ loc_5141:
 loc_5144:
         sta $5cc9                    ; 5144: 8d c9 5c
 loc_5147:
-        jsr sub_5171                 ; 5147: 20 71 51
+        jsr trapdoor_play_sound      ; 5147: 20 71 51
 loc_514A:
         lda #$00                     ; 514a: a9 00
 loc_514C:
         sta $5cc7                    ; 514c: 8d c7 5c
 loc_514F:
-        jsr sub_580D                 ; 514f: 20 0d 58
+        jsr screen_draw              ; 514f: 20 0d 58
 loc_5152:
         lda $be02,x                  ; 5152: bd 02 be
 loc_5155:
@@ -14816,9 +15237,7 @@ loc_516B:
         sta $bf04,x                  ; 516b: 9d 04 bf
 loc_516E:
         jmp loc_3F87                 ; 516e: 4c 87 3f
-
-; ---------- routine (called from $50fb,$5147) ----------
-sub_5171:
+trapdoor_play_sound:
         pha                          ; 5171: 48
 loc_5172:
         sec                          ; 5172: 38
@@ -14829,12 +15248,12 @@ loc_5175:
 loc_5178:
         lda #$01                     ; 5178: a9 01
 loc_517A:
-        jsr sub_21C8                 ; 517a: 20 c8 21
+        jsr sound_play_effect        ; 517a: 20 c8 21
 loc_517D:
         pla                          ; 517d: 68
 loc_517E:
         rts                          ; 517e: 60
-loc_517F:
+trapdoor_prepare:
         pha                          ; 517f: 48
 loc_5180:
         tya                          ; 5180: 98
@@ -14873,7 +15292,7 @@ loc_51A0:
 loc_51A2:
         jmp loc_5269                 ; 51a2: 4c 69 52
 loc_51A5:
-        jsr sub_5750                 ; 51a5: 20 50 57
+        jsr anim_object_allocate_and_clear ; 51a5: 20 50 57
 loc_51A8:
         lda #$0b                     ; 51a8: a9 0b
 loc_51AA:
@@ -14921,7 +15340,7 @@ loc_51DC:
 loc_51DE:
         sta $5cd5                    ; 51de: 8d d5 5c
 loc_51E1:
-        jsr sub_580D                 ; 51e1: 20 0d 58
+        jsr screen_draw              ; 51e1: 20 0d 58
 loc_51E4:
         clc                          ; 51e4: 18
 loc_51E5:
@@ -14939,7 +15358,7 @@ loc_51F3:
 loc_51F5:
         sta $5cc9                    ; 51f5: 8d c9 5c
 loc_51F8:
-        jsr sub_5783                 ; 51f8: 20 83 57
+        jsr draw_room_anim_object    ; 51f8: 20 83 57
 loc_51FB:
         lda #$20                     ; 51fb: a9 20
 loc_51FD:
@@ -14975,7 +15394,7 @@ loc_5217:
 loc_5218:
         sta $5fd6                    ; 5218: 8d d6 5f
 loc_521B:
-        jsr sub_5FA3                 ; 521b: 20 a3 5f
+        jsr word_3c_calculate        ; 521b: 20 a3 5f
 loc_521E:
         ldy #$00                     ; 521e: a0 00
 loc_5220:
@@ -14993,7 +15412,7 @@ loc_522A:
 loc_522C:
         sta ($3c),y                  ; 522c: 91 3c
 loc_522E:
-        jsr sub_5750                 ; 522e: 20 50 57
+        jsr anim_object_allocate_and_clear ; 522e: 20 50 57
 loc_5231:
         lda #$0c                     ; 5231: a9 0c
 loc_5233:
@@ -15019,7 +15438,7 @@ loc_5249:
 loc_524C:
         sta $be00,x                  ; 524c: 9d 00 be
 loc_524F:
-        jsr sub_5783                 ; 524f: 20 83 57
+        jsr draw_room_anim_object    ; 524f: 20 83 57
 loc_5252:
         clc                          ; 5252: 18
 loc_5253:
@@ -15054,9 +15473,7 @@ loc_526D:
         pla                          ; 526d: 68
 loc_526E:
         rts                          ; 526e: 60
-
-; ---------- routine (called from $32e7,$37d2,$3b8e) ----------
-sub_526F:
+trapdoor_switch_check:
         pha                          ; 526f: 48
 loc_5270:
         sta $5382                    ; 5270: 8d 82 53
@@ -15187,7 +15604,7 @@ loc_52F5:
 loc_52F6:
         sta $5fd6                    ; 52f6: 8d d6 5f
 loc_52F9:
-        jsr sub_5FA3                 ; 52f9: 20 a3 5f
+        jsr word_3c_calculate        ; 52f9: 20 a3 5f
 loc_52FC:
         ldy #$00                     ; 52fc: a0 00
 loc_52FE:
@@ -15249,7 +15666,7 @@ loc_5335:
 loc_5336:
         sta $5fd6                    ; 5336: 8d d6 5f
 loc_5339:
-        jsr sub_5FA3                 ; 5339: 20 a3 5f
+        jsr word_3c_calculate        ; 5339: 20 a3 5f
 loc_533C:
         ldy #$00                     ; 533c: a0 00
 loc_533E:
@@ -15287,7 +15704,7 @@ loc_535F:
 loc_5361:
         sta $5cc7                    ; 5361: 8d c7 5c
 loc_5364:
-        jsr sub_580D                 ; 5364: 20 0d 58
+        jsr screen_draw              ; 5364: 20 0d 58
 loc_5367:
         lda $5383                    ; 5367: ad 83 53
 loc_536A:
@@ -15317,9 +15734,7 @@ loc_537F:
 loc_5380:
         rts                          ; 5380: 60
         .byte $a5,$a0,$a0,$a0,$a0,$80,$a5,$a0,$80,$01                  ; 5381 |..........|
-
-; ---------- routine (called from ) ----------
-sub_538B:
+conveyor_execute:
         clc                          ; 538b: 18
 loc_538C:
         lda $564b                    ; 538c: ad 4b 56
@@ -15430,11 +15845,11 @@ loc_540E:
 loc_5410:
         sta $5cc7                    ; 5410: 8d c7 5c
 loc_5413:
-        jsr sub_580D                 ; 5413: 20 0d 58
+        jsr screen_draw              ; 5413: 20 0d 58
 loc_5416:
         lda #$0a                     ; 5416: a9 0a
 loc_5418:
-        jsr sub_21C8                 ; 5418: 20 c8 21
+        jsr sound_play_effect        ; 5418: 20 c8 21
 loc_541B:
         ldy #$00                     ; 541b: a0 00
 loc_541D:
@@ -15518,12 +15933,10 @@ loc_547F:
 loc_5482:
         sta $5cca                    ; 5482: 8d ca 5c
 loc_5485:
-        jsr sub_5783                 ; 5485: 20 83 57
+        jsr draw_room_anim_object    ; 5485: 20 83 57
 loc_5488:
         jmp loc_3F87                 ; 5488: 4c 87 3f
-
-; ---------- routine (called from ) ----------
-sub_548B:
+conveyor_infront:
         clc                          ; 548b: 18
 loc_548C:
         lda $564b                    ; 548c: ad 4b 56
@@ -15623,7 +16036,7 @@ loc_54FB:
         sta $bd01,x                  ; 54fb: 9d 01 bd
 loc_54FE:
         jmp loc_31DC                 ; 54fe: 4c dc 31
-loc_5501:
+conveyor_prepare:
         pha                          ; 5501: 48
 loc_5502:
         tya                          ; 5502: 98
@@ -15676,7 +16089,7 @@ loc_5535:
 loc_5537:
         sta ($3e),y                  ; 5537: 91 3e
 loc_5539:
-        jsr sub_5750                 ; 5539: 20 50 57
+        jsr anim_object_allocate_and_clear ; 5539: 20 50 57
 loc_553C:
         lda #$0d                     ; 553c: a9 0d
 loc_553E:
@@ -15712,7 +16125,7 @@ loc_5563:
 loc_5565:
         sta $5cc7                    ; 5565: 8d c7 5c
 loc_5568:
-        jsr sub_580D                 ; 5568: 20 0d 58
+        jsr screen_draw              ; 5568: 20 0d 58
 loc_556B:
         lda $5cd7                    ; 556b: ad d7 5c
 loc_556E:
@@ -15726,9 +16139,9 @@ loc_5577:
 loc_5579:
         sta $5cc9                    ; 5579: 8d c9 5c
 loc_557C:
-        jsr sub_5783                 ; 557c: 20 83 57
+        jsr draw_room_anim_object    ; 557c: 20 83 57
 loc_557F:
-        jsr sub_5750                 ; 557f: 20 50 57
+        jsr anim_object_allocate_and_clear ; 557f: 20 50 57
 loc_5582:
         lda #$0e                     ; 5582: a9 0e
 loc_5584:
@@ -15796,7 +16209,7 @@ loc_55D0:
 loc_55D2:
         sta $70a8                    ; 55d2: 8d a8 70
 loc_55D5:
-        jsr sub_580D                 ; 55d5: 20 0d 58
+        jsr screen_draw              ; 55d5: 20 0d 58
 loc_55D8:
         ldy #$03                     ; 55d8: a0 03
 loc_55DA:
@@ -15822,7 +16235,7 @@ loc_55EC:
 loc_55EE:
         sta $5cc9                    ; 55ee: 8d c9 5c
 loc_55F1:
-        jsr sub_5783                 ; 55f1: 20 83 57
+        jsr draw_room_anim_object    ; 55f1: 20 83 57
 loc_55F4:
         clc                          ; 55f4: 18
 loc_55F5:
@@ -15857,9 +16270,7 @@ loc_560F:
         pla                          ; 560f: 68
 loc_5610:
         rts                          ; 5610: 60
-
-; ---------- routine (called from ) ----------
-sub_5611:
+obj_conveyor_control_infront:
         lda $bd00,x                  ; 5611: bd 00 bd
 loc_5614:
         bne loc_563F                 ; 5614: d0 29
@@ -15900,7 +16311,7 @@ loc_563D:
 loc_563F:
         jmp loc_31DC                 ; 563f: 4c dc 31
         .byte $80,$20,$10,$08,$04,$02,$01,$a4,$b9,$a0,$b6,$a0          ; 5642 |. ..........|
-loc_564E:
+obj_frankie_prepare:
         pha                          ; 564e: 48
 loc_564F:
         tya                          ; 564f: 98
@@ -15963,7 +16374,7 @@ loc_568A:
 loc_568C:
         sta $5cc7                    ; 568c: 8d c7 5c
 loc_568F:
-        jsr sub_580D                 ; 568f: 20 0d 58
+        jsr screen_draw              ; 568f: 20 0d 58
 loc_5692:
         lda $5cd7                    ; 5692: ad d7 5c
 loc_5695:
@@ -15987,7 +16398,7 @@ loc_56A2:
 loc_56A3:
         sta $5fd6                    ; 56a3: 8d d6 5f
 loc_56A6:
-        jsr sub_5FA3                 ; 56a6: 20 a3 5f
+        jsr word_3c_calculate        ; 56a6: 20 a3 5f
 loc_56A9:
         ldy #$00                     ; 56a9: a0 00
 loc_56AB:
@@ -16031,7 +16442,7 @@ loc_56D1:
 loc_56D2:
         bpl loc_56C9                 ; 56d2: 10 f5
 loc_56D4:
-        jsr sub_5750                 ; 56d4: 20 50 57
+        jsr anim_object_allocate_and_clear ; 56d4: 20 50 57
 loc_56D7:
         lda #$0f                     ; 56d7: a9 0f
 loc_56D9:
@@ -16065,7 +16476,7 @@ loc_56F8:
 loc_56FA:
         sta $5cc9                    ; 56fa: 8d c9 5c
 loc_56FD:
-        jsr sub_5783                 ; 56fd: 20 83 57
+        jsr draw_room_anim_object    ; 56fd: 20 83 57
 loc_5700:
         ldy #$00                     ; 5700: a0 00
 loc_5702:
@@ -16099,9 +16510,9 @@ loc_5720:
 loc_5722:
         sta $5cc7                    ; 5722: 8d c7 5c
 loc_5725:
-        jsr sub_580D                 ; 5725: 20 0d 58
+        jsr screen_draw              ; 5725: 20 0d 58
 loc_5728:
-        jsr sub_3E87                 ; 5728: 20 87 3e
+        jsr obj_frankie_sprite_create ; 5728: 20 87 3e
 loc_572B:
         clc                          ; 572b: 18
 loc_572C:
@@ -16137,9 +16548,7 @@ loc_5746:
 loc_5747:
         rts                          ; 5747: 60
         .byte $90,$a0,$c1,$a0,$80,$04,$02,$01                          ; 5748 |........|
-
-; ---------- routine (called from $440a,$46c7,$4897,$4a21,$4ac1,$4cd4,$4d1a,$4fc7,$51a5,$522e,$5539,$557f,$56d4) ----------
-sub_5750:
+anim_object_allocate_and_clear:
         pha                          ; 5750: 48
 loc_5751:
         tya                          ; 5751: 98
@@ -16201,9 +16610,7 @@ loc_5781:
         pla                          ; 5781: 68
 loc_5782:
         rts                          ; 5782: 60
-
-; ---------- routine (called from $406f,$4461,$44b3,$45c6,$470b,$47a1,$48c5,$4a44,$4afc,$4c24,$4d35,$4ff2,$5123,$51f8,$524f,$5485,$557c,$55f1,$56fd) ----------
-sub_5783:
+draw_room_anim_object:
         pha                          ; 5783: 48
 loc_5784:
         lda $bf04,x                  ; 5784: bd 04 bf
@@ -16234,7 +16641,7 @@ loc_57A6:
 loc_57A8:
         sta $5cc7                    ; 57a8: 8d c7 5c
 loc_57AB:
-        jsr sub_580D                 ; 57ab: 20 0d 58
+        jsr screen_draw              ; 57ab: 20 0d 58
 loc_57AE:
         lda $083f                    ; 57ae: ad 3f 08
 loc_57B1:
@@ -16271,9 +16678,7 @@ loc_57DD:
         pla                          ; 57dd: 68
 loc_57DE:
         rts                          ; 57de: 60
-
-; ---------- routine (called from $3f9b,$5130) ----------
-sub_57DF:
+room_anim_disable:
         pha                          ; 57df: 48
 loc_57E0:
         lda $bf04,x                  ; 57e0: bd 04 bf
@@ -16298,7 +16703,7 @@ loc_57F9:
 loc_57FC:
         sta $5cd6                    ; 57fc: 8d d6 5c
 loc_57FF:
-        jsr sub_580D                 ; 57ff: 20 0d 58
+        jsr screen_draw              ; 57ff: 20 0d 58
 loc_5802:
         lda $bf04,x                  ; 5802: bd 04 bf
 loc_5805:
@@ -16309,9 +16714,7 @@ loc_580B:
         pla                          ; 580b: 68
 loc_580C:
         rts                          ; 580c: 60
-
-; ---------- routine (called from $1084,$126c,$12a7,$12d4,$12fc,$132d,$13d0,$1630,$186e,$1890,$19ac,$1b86,$1e1d,$2bb9,$4044,$4312,$43be,$4434,$4493,$4623,$469f,$46e7,$4735,$4831,$485b,$48ea,$4934,$495e,$4cb9,$4e10,$4e29,$4e7b,$4f81,$4faa,$4fc4,$5031,$50a4,$50bb,$50c7,$5103,$514f,$51e1,$5364,$5413,$5568,$55d5,$568f,$5725,$57ab,$57ff) ----------
-sub_580D:
+screen_draw:
         pha                          ; 580d: 48
 loc_580E:
         tya                          ; 580e: 98
@@ -17372,9 +17775,7 @@ loc_5CC3:
         .byte $fb,$d0,$a0,$e0,$c4,$e9,$a0,$af,$c3,$a0,$b5,$d3,$89,$c2,$94,$c4 ; 5d04 |................|
         .byte $a0,$c3,$a0,$d6,$a0,$88,$a0,$a0,$c5,$a0,$86,$a0,$89,$a0,$f5,$b6 ; 5d14 |................|
         .byte $c3,$97                                                  ; 5d24 |..|
-
-; ---------- routine (called from $102f,$1a7c,$3488,$367c,$3749,$37c3,$38c8,$3ae2,$3d4c,$3eee) ----------
-sub_5D26:
+hw_sprite_prepare:
         pha                          ; 5d26: 48
 loc_5D27:
         tya                          ; 5d27: 98
@@ -17697,9 +18098,7 @@ loc_5E86:
 loc_5E87:
         rts                          ; 5e87: 60
         .byte $8c,$00,$00,$00,$a0,$8a                                  ; 5e88 |......|
-
-; ---------- routine (called from $4a86) ----------
-sub_5E8E:
+obj_key_not_found:
         pha                          ; 5e8e: 48
 loc_5E8F:
         sta $5ed4                    ; 5e8f: 8d d4 5e
@@ -17768,9 +18167,7 @@ loc_5ED1:
 loc_5ED2:
         rts                          ; 5ed2: 60
         .byte $b5,$d4                                                  ; 5ed3 |..|
-
-; ---------- routine (called from $19c9,$3658,$3663,$4e39) ----------
-sub_5ED5:
+seed_get:
         lda $5efb                    ; 5ed5: ad fb 5e
 loc_5ED8:
         ror a                        ; 5ed8: 6a
@@ -17801,9 +18198,7 @@ loc_5EF5:
 loc_5EF8:
         rts                          ; 5ef8: 60
         .byte $a0,$c6,$57                                              ; 5ef9 |..W|
-
-; ---------- routine (called from $0c1a,$115b,$11a7,$11b1,$151f,$153c,$1550,$2270,$2389,$3391) ----------
-sub_5EFC:
+poll_joystick_and_runstop:
         pha                          ; 5efc: 48
 loc_5EFD:
         sta $5f58                    ; 5efd: 8d 58 5f
@@ -17887,9 +18282,7 @@ loc_5F55:
         rts                          ; 5f55: 60
         .byte $82,$a0,$bf,$80,$80,$80,$80,$80,$03,$01,$02,$80,$05,$07,$06,$80 ; 5f56 |................|
         .byte $04,$00,$80,$00,$00                                      ; 5f66 |.....|
-
-; ---------- routine (called from $32f2,$36e8,$3726,$3862,$3b99) ----------
-sub_5F6B:
+position_calculate:
         pha                          ; 5f6b: 48
 loc_5F6C:
         tya                          ; 5f6c: 98
@@ -17943,9 +18336,7 @@ loc_5F9D:
         sta $5fd6                    ; 5f9d: 8d d6 5f
 loc_5FA0:
         jmp loc_5FA6                 ; 5fa0: 4c a6 5f
-
-; ---------- routine (called from $1825,$521b,$52f9,$5339,$56a6) ----------
-sub_5FA3:
+word_3c_calculate:
         pha                          ; 5fa3: 48
 loc_5FA4:
         tya                          ; 5fa4: 98
@@ -18002,9 +18393,7 @@ loc_5FD3:
 loc_5FD4:
         rts                          ; 5fd4: 60
         .byte $ac,$85,$c8,$a0                                          ; 5fd5 |....|
-
-; ---------- routine (called from $0bbc,$0fb9,$142f,$4008,$40eb) ----------
-sub_5FD9:
+room_ptr_set:
         pha                          ; 5fd9: 48
 loc_5FDA:
         sta $42                      ; 5fda: 85 42
@@ -18056,9 +18445,7 @@ loc_6007:
         pla                          ; 6007: 68
 loc_6008:
         rts                          ; 6008: 60
-
-; ---------- routine (called from $0fc8,$1340,$400c) ----------
-sub_6009:
+room_extra_record_lookup:
         pha                          ; 6009: 48
 loc_600A:
         sta $603a                    ; 600a: 8d 3a 60
@@ -18420,60 +18807,48 @@ loc_6039:
         .byte $00,$aa,$00,$aa,$00,$aa,$00,$aa,$00,$ff,$00,$ff,$00,$a7,$a7,$a7 ; 72ea |................|
         .byte $a7,$a7,$a7,$a7,$a7,$01,$01,$00,$00,$00,$00,$09,$09,$02,$20,$00 ; 72fa |.............. .|
         .byte $00,$00                                                  ; 730a |..|
-loc_730C:
-        brk                          ; 730c: 00
-        .byte $00,$03,$fc,$03,$fc,$0f,$f8,$0f,$f8,$3f,$e8,$3f,$e8,$aa,$a8,$aa ; 730d |.........?.?....|
-        .byte $a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa ; 731d |................|
-        .byte $a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa ; 732d |................|
-        .byte $ac,$aa,$ac,$aa,$b0,$aa,$b0,$aa,$c0,$ff,$c0,$ff,$00,$a7,$a7,$a7 ; 733d |................|
-        .byte $a7,$a7,$a7,$a7,$a7,$01,$01,$00,$00,$00,$00,$09,$09,$02,$06,$00 ; 734d |................|
-        .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$08,$07,$00,$00 ; 735d |................|
-        .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$30,$00,$00,$30,$00,$00,$00 ; 736d |.........0..0...|
-        .byte $00,$30,$00,$00,$30,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00 ; 737d |.0..0...........|
-        .byte $00,$30,$00,$00,$30,$00,$00,$00,$00,$30,$00,$00,$30,$00,$00,$00 ; 738d |.0..0....0..0...|
-        .byte $00,$00,$00,$00,$00,$00,$00,$a0,$a5,$a0,$a2,$a0,$a0,$b0,$a0,$01 ; 739d |................|
-        .byte $01,$01,$01,$01,$01,$01,$01,$02,$18,$00,$ff,$ff,$ff,$ff,$ff,$ff ; 73ad |................|
-        .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff ; 73bd |................|
-        .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff ; 73cd |................|
-        .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$02,$18,$00,$d2,$a0,$e8 ; 73dd |................|
-        .byte $c2,$a0,$85,$a0,$aa,$b7,$d5,$80,$c6,$a9,$a0,$e8,$c6,$8c,$a0,$81 ; 73ed |................|
-        .byte $85,$ba,$a4,$e5,$a0,$f5,$a0,$a5,$c6,$b0,$e0,$c4,$a5,$a0,$aa,$a0 ; 73fd |................|
-        .byte $a0,$b3,$c2,$a1,$a0,$c9,$b5,$a0,$c3,$a0,$84,$a0,$85,$d2,$b7,$85 ; 740d |................|
-        .byte $80,$a0,$89,$05,$20,$00,$00,$00,$28,$00,$00,$00,$00,$aa,$00,$00 ; 741d |.... ...(.......|
-        .byte $00,$00,$aa,$00,$00,$00,$02,$be,$80,$00,$00,$0a,$ff,$a0,$00,$00 ; 742d |................|
-        .byte $0a,$ff,$a0,$00,$00,$2b,$ff,$e8,$00,$00,$af,$ff,$fa,$00,$00,$af ; 743d |.....+..........|
-        .byte $ff,$fa,$00,$02,$bf,$ff,$fe,$80,$0a,$ff,$ff,$ff,$a0,$0a,$ff,$ff ; 744d |................|
-        .byte $ff,$a0,$2b,$ff,$ff,$ff,$e8,$aa,$aa,$aa,$aa,$aa,$aa,$aa,$aa,$aa ; 745d |..+.............|
-        .byte $aa,$aa,$80,$00,$02,$aa,$15,$00,$00,$00,$54,$15,$00,$00,$00,$54 ; 746d |..........T....T|
-        .byte $15,$00,$00,$00,$54,$15,$00,$00,$00,$54,$15,$00,$00,$00,$54,$15 ; 747d |....T....T....T.|
-        .byte $00,$00,$00,$54,$15,$00,$00,$00,$54,$15,$00,$00,$00,$54,$15,$00 ; 748d |...T....T....T..|
-        .byte $00,$00,$54,$15,$00,$00,$00,$54,$15,$00,$00,$00,$54,$15,$00,$00 ; 749d |..T....T....T...|
-        .byte $00,$54,$15,$00,$00,$00,$54,$15,$00,$00,$00,$54,$15,$00,$00,$00 ; 74ad |.T....T....T....|
-        .byte $54,$15,$00,$00,$00,$54,$77,$77,$77,$77,$77,$77,$77,$77,$77,$77 ; 74bd |T....Twwwwwwwwww|
-        .byte $a7,$a7,$a7,$a7,$a7,$a7,$a7,$a7,$a7,$a7,$08,$08,$08,$08,$08,$08 ; 74cd |................|
-        .byte $08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$02,$15 ; 74dd |................|
-        .byte $07,$00,$08,$02,$08,$0a,$84,$0a,$84,$0a,$84,$0a,$84,$02,$04,$05 ; 74ed |................|
-        .byte $50,$15,$40,$45,$40,$45,$40,$45,$40,$25,$40,$0f,$c0,$0f,$c0,$0c ; 74fd |P.@E@E@E@%@.....|
-        .byte $c0,$0c,$c0,$0c,$c0,$0c,$c0,$28,$a0,$20,$20,$02,$15,$07,$00,$02 ; 750d |.......(.  .....|
-        .byte $02,$02,$0a,$81,$0a,$84,$0a,$84,$0a,$84,$02,$04,$05      ; 751d |.............|
-loc_752A:
-        bvc loc_7541                 ; 752a: 50 15
-loc_752C:
-        rti                          ; 752c: 40
-        .byte $45,$40,$45,$40,$45,$40,$25,$40,$0f,$c0,$0f,$c0,$0c,$c0,$0c,$c0 ; 752d |E@E@E@%@........|
-        .byte $0c,$c0,$0c,$c0                                          ; 753d |....|
-loc_7541:
-        plp                          ; 7541: 28
-loc_7542:
-        ldy #$20                     ; 7542: a0 20
-loc_7544:
-        jsr sub_1502                 ; 7544: 20 02 15
-        .byte $07,$00,$20,$02,$20,$0a,$90,$0a,$84,$0a,$84,$0a,$84,$02,$04,$05 ; 7547 |.. . ...........|
-        .byte $50,$15,$40,$45,$40,$45,$40,$45,$40,$25,$40,$0f,$c0,$0f,$c0,$0c ; 7557 |P.@E@E@E@%@.....|
-        .byte $c0,$0c,$c0,$0c,$c0,$0c,$c0,$28,$a0,$20,$20              ; 7567 |.......(.  |
-
-; ---------- routine (called from $091e) ----------
-sub_7572:
+obj_door_prepare:
+        .byte $00,$00,$03,$fc,$03,$fc,$0f,$f8,$0f,$f8,$3f,$e8,$3f,$e8,$aa,$a8 ; 730c |..........?.?...|
+        .byte $aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8 ; 731c |................|
+        .byte $aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8,$aa,$a8 ; 732c |................|
+        .byte $aa,$ac,$aa,$ac,$aa,$b0,$aa,$b0,$aa,$c0,$ff,$c0,$ff,$00,$a7,$a7 ; 733c |................|
+        .byte $a7,$a7,$a7,$a7,$a7,$a7,$01,$01,$00,$00,$00,$00,$09,$09,$02,$06 ; 734c |................|
+        .byte $00,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$08,$07,$00 ; 735c |................|
+        .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$30,$00,$00,$30,$00,$00 ; 736c |..........0..0..|
+        .byte $00,$00,$30,$00,$00,$30,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00 ; 737c |..0..0..........|
+        .byte $00,$00,$30,$00,$00,$30,$00,$00,$00,$00,$30,$00,$00,$30,$00,$00 ; 738c |..0..0....0..0..|
+        .byte $00,$00,$00,$00,$00,$00,$00,$00,$a0,$a5,$a0,$a2,$a0,$a0,$b0,$a0 ; 739c |................|
+        .byte $01,$01,$01,$01,$01,$01,$01,$01,$02,$18,$00,$ff,$ff,$ff,$ff,$ff ; 73ac |................|
+        .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff ; 73bc |................|
+        .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff ; 73cc |................|
+        .byte $ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$ff,$02,$18,$00,$d2,$a0 ; 73dc |................|
+        .byte $e8,$c2,$a0,$85,$a0,$aa,$b7,$d5,$80,$c6,$a9,$a0,$e8,$c6,$8c,$a0 ; 73ec |................|
+        .byte $81,$85,$ba,$a4,$e5,$a0,$f5,$a0,$a5,$c6,$b0,$e0,$c4,$a5,$a0,$aa ; 73fc |................|
+        .byte $a0,$a0,$b3,$c2,$a1,$a0,$c9,$b5,$a0,$c3,$a0,$84,$a0,$85,$d2,$b7 ; 740c |................|
+        .byte $85,$80,$a0,$89,$05,$20,$00,$00,$00,$28,$00,$00,$00,$00,$aa,$00 ; 741c |..... ...(......|
+        .byte $00,$00,$00,$aa,$00,$00,$00,$02,$be,$80,$00,$00,$0a,$ff,$a0,$00 ; 742c |................|
+        .byte $00,$0a,$ff,$a0,$00,$00,$2b,$ff,$e8,$00,$00,$af,$ff,$fa,$00,$00 ; 743c |......+.........|
+        .byte $af,$ff,$fa,$00,$02,$bf,$ff,$fe,$80,$0a,$ff,$ff,$ff,$a0,$0a,$ff ; 744c |................|
+        .byte $ff,$ff,$a0,$2b,$ff,$ff,$ff,$e8,$aa,$aa,$aa,$aa,$aa,$aa,$aa,$aa ; 745c |...+............|
+        .byte $aa,$aa,$aa,$80,$00,$02,$aa,$15,$00,$00,$00,$54,$15,$00,$00,$00 ; 746c |...........T....|
+        .byte $54,$15,$00,$00,$00,$54,$15,$00,$00,$00,$54,$15,$00,$00,$00,$54 ; 747c |T....T....T....T|
+        .byte $15,$00,$00,$00,$54,$15,$00,$00,$00,$54,$15,$00,$00,$00,$54,$15 ; 748c |....T....T....T.|
+        .byte $00,$00,$00,$54,$15,$00,$00,$00,$54,$15,$00,$00,$00,$54,$15,$00 ; 749c |...T....T....T..|
+        .byte $00,$00,$54,$15,$00,$00,$00,$54,$15,$00,$00,$00,$54,$15,$00,$00 ; 74ac |..T....T....T...|
+        .byte $00,$54,$15,$00,$00,$00,$54,$77,$77,$77,$77,$77,$77,$77,$77,$77 ; 74bc |.T....Twwwwwwwww|
+        .byte $77,$a7,$a7,$a7,$a7,$a7,$a7,$a7,$a7,$a7,$a7,$08,$08,$08,$08,$08 ; 74cc |w...............|
+        .byte $08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$08,$02 ; 74dc |................|
+        .byte $15,$07,$00,$08,$02,$08,$0a,$84,$0a,$84,$0a,$84,$0a,$84,$02,$04 ; 74ec |................|
+        .byte $05,$50,$15,$40,$45,$40,$45,$40,$45,$40,$25,$40,$0f,$c0,$0f,$c0 ; 74fc |.P.@E@E@E@%@....|
+        .byte $0c,$c0,$0c,$c0,$0c,$c0,$0c,$c0,$28,$a0,$20,$20,$02,$15,$07,$00 ; 750c |........(.  ....|
+        .byte $02,$02,$02,$0a,$81,$0a,$84,$0a,$84,$0a,$84,$02,$04,$05  ; 751c |..............|
+obj_door_button_prepare:
+        .byte $50,$15,$40,$45,$40,$45,$40,$45,$40,$25,$40,$0f,$c0,$0f,$c0,$0c ; 752a |P.@E@E@E@%@.....|
+        .byte $c0,$0c,$c0,$0c,$c0,$0c,$c0,$28,$a0,$20,$20,$02,$15,$07,$00,$20 ; 753a |.......(.  .... |
+        .byte $02,$20,$0a,$90,$0a,$84,$0a,$84,$0a,$84,$02,$04,$05,$50,$15,$40 ; 754a |. ...........P.@|
+        .byte $45,$40,$45,$40,$45,$40,$25,$40,$0f,$c0,$0f,$c0,$0c,$c0,$0c,$c0 ; 755a |E@E@E@%@........|
+        .byte $0c,$c0,$0c,$c0,$28,$a0,$20,$20                          ; 756a |....(.  |
+options_menu_prepare:
         pha                          ; 7572: 48
 loc_7573:
         tya                          ; 7573: 98
@@ -18720,11 +19095,11 @@ loc_7661:
 loc_7663:
         sta $29a7                    ; 7663: 8d a7 29
 loc_7666:
-        jsr sub_2920                 ; 7666: 20 20 29
+        jsr disk_io_prepare_hardware ; 7666: 20 20 29
 loc_7669:
-        jsr sub_28EC                 ; 7669: 20 ec 28
+        jsr kernal_load_file         ; 7669: 20 ec 28
 loc_766C:
-        jsr sub_2973                 ; 766c: 20 73 29
+        jsr disk_io_settle_delay     ; 766c: 20 73 29
 loc_766F:
         lda #$00                     ; 766f: a9 00
 loc_7671:

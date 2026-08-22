@@ -294,6 +294,7 @@ def main() -> None:
     ap.add_argument("--entry", action="append", default=[])
     ap.add_argument("--data", action="append", default=[])
     ap.add_argument("--vector", action="append", default=[])
+    ap.add_argument("--symbols", help="JSON file: {routines:[{address,name,...}]} — names applied to labels")
     ap.add_argument("--json")
     ap.add_argument("-o", "--output")
     args = ap.parse_args()
@@ -318,6 +319,13 @@ def main() -> None:
 
     d.trace()
     d.assign_labels()
+
+    if args.symbols:
+        symdoc = json.loads(pathlib.Path(args.symbols).read_text())
+        for r in symdoc.get("routines", []):
+            addr = int(r["address"], 16)
+            if d.in_range(addr):
+                d.labels[addr] = r["name"]
 
     out = open(args.output, "w") if args.output else sys.stdout
     d.emit(out)
