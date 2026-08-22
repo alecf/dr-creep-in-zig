@@ -1,0 +1,12 @@
+{
+ "file": "extracted/creepload.prg",
+ "load": "0xC000",
+ "routines": [
+  {
+   "address": "0xC000",
+   "name": "sub_C000",
+   "callers": []
+  }
+ ],
+ "indirect_jumps": []
+}

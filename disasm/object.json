@@ -1,0 +1,1011 @@
+{
+ "file": "extracted/object.prg",
+ "load": "0x0800",
+ "routines": [
+  {
+   "address": "0x0800",
+   "name": "sub_0800",
+   "callers": []
+  },
+  {
+   "address": "0x0803",
+   "name": "sub_0803",
+   "callers": []
+  },
+  {
+   "address": "0x0806",
+   "name": "sub_0806",
+   "callers": []
+  },
+  {
+   "address": "0x0809",
+   "name": "sub_0809",
+   "callers": []
+  },
+  {
+   "address": "0x080C",
+   "name": "sub_080C",
+   "callers": []
+  },
+  {
+   "address": "0x080F",
+   "name": "sub_080F",
+   "callers": []
+  },
+  {
+   "address": "0x0812",
+   "name": "sub_0812",
+   "callers": []
+  },
+  {
+   "address": "0x0815",
+   "name": "sub_0815",
+   "callers": []
+  },
+  {
+   "address": "0x0818",
+   "name": "sub_0818",
+   "callers": []
+  },
+  {
+   "address": "0x081B",
+   "name": "sub_081B",
+   "callers": []
+  },
+  {
+   "address": "0x081E",
+   "name": "sub_081E",
+   "callers": []
+  },
+  {
+   "address": "0x0821",
+   "name": "sub_0821",
+   "callers": []
+  },
+  {
+   "address": "0x0824",
+   "name": "sub_0824",
+   "callers": []
+  },
+  {
+   "address": "0x0827",
+   "name": "sub_0827",
+   "callers": []
+  },
+  {
+   "address": "0x082A",
+   "name": "sub_082A",
+   "callers": []
+  },
+  {
+   "address": "0x082D",
+   "name": "sub_082D",
+   "callers": []
+  },
+  {
+   "address": "0x0830",
+   "name": "sub_0830",
+   "callers": []
+  },
+  {
+   "address": "0x0833",
+   "name": "sub_0833",
+   "callers": []
+  },
+  {
+   "address": "0x0836",
+   "name": "sub_0836",
+   "callers": []
+  },
+  {
+   "address": "0x095F",
+   "name": "sub_095F",
+   "callers": [
+    "0x234C",
+    "0x2373",
+    "0x24AA",
+    "0x2990",
+    "0x2CD5"
+   ]
+  },
+  {
+   "address": "0x0A42",
+   "name": "sub_0A42",
+   "callers": [
+    "0x0953"
+   ]
+  },
+  {
+   "address": "0x0A7B",
+   "name": "sub_0A7B",
+   "callers": []
+  },
+  {
+   "address": "0x0A82",
+   "name": "sub_0A82",
+   "callers": []
+  },
+  {
+   "address": "0x0B8D",
+   "name": "sub_0B8D",
+   "callers": [
+    "0x0B84"
+   ]
+  },
+  {
+   "address": "0x0D71",
+   "name": "sub_0D71",
+   "callers": [
+    "0x0B87"
+   ]
+  },
+  {
+   "address": "0x0F94",
+   "name": "sub_0F94",
+   "callers": [
+    "0x0E7D"
+   ]
+  },
+  {
+   "address": "0x1203",
+   "name": "sub_1203",
+   "callers": [
+    "0x1094"
+   ]
+  },
+  {
+   "address": "0x13F0",
+   "name": "sub_13F0",
+   "callers": [
+    "0x0BCD",
+    "0x14D3"
+   ]
+  },
+  {
+   "address": "0x14CE",
+   "name": "sub_14CE",
+   "callers": [
+    "0x0E80"
+   ]
+  },
+  {
+   "address": "0x1502",
+   "name": "sub_1502",
+   "callers": [
+    "0x7544"
+   ]
+  },
+  {
+   "address": "0x15E0",
+   "name": "sub_15E0",
+   "callers": [
+    "0x0BDE",
+    "0x14C5",
+    "0x196E",
+    "0x25C4",
+    "0x25DF"
+   ]
+  },
+  {
+   "address": "0x1601",
+   "name": "sub_1601",
+   "callers": [
+    "0x1600"
+   ]
+  },
+  {
+   "address": "0x18E4",
+   "name": "sub_18E4",
+   "callers": [
+    "0x0BD3",
+    "0x0E83",
+    "0x0F12",
+    "0x0F99",
+    "0x13F5",
+    "0x1955",
+    "0x1D47",
+    "0x2558",
+    "0x25B9"
+   ]
+  },
+  {
+   "address": "0x1935",
+   "name": "sub_1935",
+   "callers": [
+    "0x0F55",
+    "0x1AA9",
+    "0x2568"
+   ]
+  },
+  {
+   "address": "0x1950",
+   "name": "sub_1950",
+   "callers": [
+    "0x0EA5"
+   ]
+  },
+  {
+   "address": "0x1B9F",
+   "name": "sub_1B9F",
+   "callers": [
+    "0x0ED8"
+   ]
+  },
+  {
+   "address": "0x1D42",
+   "name": "sub_1D42",
+   "callers": [
+    "0x1C5D",
+    "0x234F"
+   ]
+  },
+  {
+   "address": "0x1E8F",
+   "name": "sub_1E8F",
+   "callers": [
+    "0x0C65",
+    "0x1CE6",
+    "0x2406",
+    "0x24D4",
+    "0x2529"
+   ]
+  },
+  {
+   "address": "0x1F29",
+   "name": "sub_1F29",
+   "callers": [
+    "0x0B68"
+   ]
+  },
+  {
+   "address": "0x20A9",
+   "name": "sub_20A9",
+   "callers": [
+    "0x1F73",
+    "0x1FA6",
+    "0x1FD4"
+   ]
+  },
+  {
+   "address": "0x21C8",
+   "name": "sub_21C8",
+   "callers": [
+    "0x11BB",
+    "0x300A",
+    "0x3822",
+    "0x3A95",
+    "0x3B7F",
+    "0x4022",
+    "0x45D1",
+    "0x45F3",
+    "0x4658",
+    "0x49A9",
+    "0x4E43",
+    "0x4F03",
+    "0x517A",
+    "0x5418"
+   ]
+  },
+  {
+   "address": "0x2233",
+   "name": "sub_2233",
+   "callers": [
+    "0x0C3C"
+   ]
+  },
+  {
+   "address": "0x237C",
+   "name": "sub_237C",
+   "callers": [
+    "0x2320",
+    "0x2370"
+   ]
+  },
+  {
+   "address": "0x23BB",
+   "name": "sub_23BB",
+   "callers": [
+    "0x094D",
+    "0x232D"
+   ]
+  },
+  {
+   "address": "0x24A7",
+   "name": "sub_24A7",
+   "callers": [
+    "0x2337"
+   ]
+  },
+  {
+   "address": "0x24FF",
+   "name": "sub_24FF",
+   "callers": [
+    "0x1177"
+   ]
+  },
+  {
+   "address": "0x25B8",
+   "name": "sub_25B8",
+   "callers": [
+    "0x24B2",
+    "0x2507"
+   ]
+  },
+  {
+   "address": "0x268F",
+   "name": "sub_268F",
+   "callers": [
+    "0x1C86",
+    "0x236A",
+    "0x2603"
+   ]
+  },
+  {
+   "address": "0x2772",
+   "name": "sub_2772",
+   "callers": [
+    "0x26BD",
+    "0x26F4",
+    "0x2741",
+    "0x2768"
+   ]
+  },
+  {
+   "address": "0x27A8",
+   "name": "sub_27A8",
+   "callers": [
+    "0x26F7"
+   ]
+  },
+  {
+   "address": "0x288E",
+   "name": "sub_288E",
+   "callers": [
+    "0x1CED",
+    "0x2530"
+   ]
+  },
+  {
+   "address": "0x28EC",
+   "name": "sub_28EC",
+   "callers": [
+    "0x0C6C",
+    "0x240D",
+    "0x2427",
+    "0x24E1",
+    "0x7669"
+   ]
+  },
+  {
+   "address": "0x2920",
+   "name": "sub_2920",
+   "callers": [
+    "0x0C62",
+    "0x1CE3",
+    "0x2403",
+    "0x24D1",
+    "0x2526",
+    "0x7666"
+   ]
+  },
+  {
+   "address": "0x2973",
+   "name": "sub_2973",
+   "callers": [
+    "0x0C8D",
+    "0x1CF0",
+    "0x2417",
+    "0x2445",
+    "0x24DB",
+    "0x24EA",
+    "0x253A",
+    "0x2540",
+    "0x766C"
+   ]
+  },
+  {
+   "address": "0x29AE",
+   "name": "sub_29AE",
+   "callers": [
+    "0x1069",
+    "0x1995",
+    "0x1E01"
+   ]
+  },
+  {
+   "address": "0x29D0",
+   "name": "sub_29D0",
+   "callers": [
+    "0x29B7",
+    "0x29C0",
+    "0x29C9"
+   ]
+  },
+  {
+   "address": "0x2A6D",
+   "name": "sub_2A6D",
+   "callers": [
+    "0x0833",
+    "0x0F1D",
+    "0x0F36",
+    "0x0F48",
+    "0x1058",
+    "0x1982",
+    "0x1C71",
+    "0x1E52",
+    "0x235A",
+    "0x255B"
+   ]
+  },
+  {
+   "address": "0x2AA9",
+   "name": "sub_2AA9",
+   "callers": [
+    "0x1D9E",
+    "0x1DEB",
+    "0x2783",
+    "0x2A99"
+   ]
+  },
+  {
+   "address": "0x2C08",
+   "name": "sub_2C08",
+   "callers": [
+    "0x116A",
+    "0x150B"
+   ]
+  },
+  {
+   "address": "0x2C10",
+   "name": "sub_2C10",
+   "callers": [
+    "0x091B"
+   ]
+  },
+  {
+   "address": "0x2C31",
+   "name": "sub_2C31",
+   "callers": [
+    "0x2C16",
+    "0x2C21"
+   ]
+  },
+  {
+   "address": "0x2E1C",
+   "name": "sub_2E1C",
+   "callers": [
+    "0x0C07",
+    "0x14FC",
+    "0x15CB"
+   ]
+  },
+  {
+   "address": "0x2E37",
+   "name": "sub_2E37",
+   "callers": [
+    "0x2E27"
+   ]
+  },
+  {
+   "address": "0x2E79",
+   "name": "sub_2E79",
+   "callers": [
+    "0x2E2A"
+   ]
+  },
+  {
+   "address": "0x2F8A",
+   "name": "sub_2F8A",
+   "callers": [
+    "0x2EF3"
+   ]
+  },
+  {
+   "address": "0x3026",
+   "name": "sub_3026",
+   "callers": [
+    "0x2E9F",
+    "0x2ECA"
+   ]
+  },
+  {
+   "address": "0x30D9",
+   "name": "sub_30D9",
+   "callers": [
+    "0x30B9",
+    "0x30C2"
+   ]
+  },
+  {
+   "address": "0x311E",
+   "name": "sub_311E",
+   "callers": [
+    "0x2EB7"
+   ]
+  },
+  {
+   "address": "0x31F6",
+   "name": "sub_31F6",
+   "callers": []
+  },
+  {
+   "address": "0x3488",
+   "name": "sub_3488",
+   "callers": [
+    "0x3263",
+    "0x32C5",
+    "0x3482"
+   ]
+  },
+  {
+   "address": "0x34EF",
+   "name": "sub_34EF",
+   "callers": []
+  },
+  {
+   "address": "0x3534",
+   "name": "sub_3534",
+   "callers": []
+  },
+  {
+   "address": "0x359E",
+   "name": "sub_359E",
+   "callers": [
+    "0x14E2"
+   ]
+  },
+  {
+   "address": "0x3639",
+   "name": "sub_3639",
+   "callers": []
+  },
+  {
+   "address": "0x3682",
+   "name": "sub_3682",
+   "callers": []
+  },
+  {
+   "address": "0x368A",
+   "name": "sub_368A",
+   "callers": [
+    "0x42C9"
+   ]
+  },
+  {
+   "address": "0x36B3",
+   "name": "sub_36B3",
+   "callers": []
+  },
+  {
+   "address": "0x374F",
+   "name": "sub_374F",
+   "callers": []
+  },
+  {
+   "address": "0x3757",
+   "name": "sub_3757",
+   "callers": [
+    "0x471A"
+   ]
+  },
+  {
+   "address": "0x379A",
+   "name": "sub_379A",
+   "callers": []
+  },
+  {
+   "address": "0x38CE",
+   "name": "sub_38CE",
+   "callers": []
+  },
+  {
+   "address": "0x3940",
+   "name": "sub_3940",
+   "callers": []
+  },
+  {
+   "address": "0x396A",
+   "name": "sub_396A",
+   "callers": [
+    "0x4863",
+    "0x496B"
+   ]
+  },
+  {
+   "address": "0x3A08",
+   "name": "sub_3A08",
+   "callers": []
+  },
+  {
+   "address": "0x3A60",
+   "name": "sub_3A60",
+   "callers": []
+  },
+  {
+   "address": "0x3A7F",
+   "name": "sub_3A7F",
+   "callers": [
+    "0x4C4D"
+   ]
+  },
+  {
+   "address": "0x3AEB",
+   "name": "sub_3AEB",
+   "callers": []
+  },
+  {
+   "address": "0x3D6E",
+   "name": "sub_3D6E",
+   "callers": []
+  },
+  {
+   "address": "0x3DDE",
+   "name": "sub_3DDE",
+   "callers": []
+  },
+  {
+   "address": "0x3E87",
+   "name": "sub_3E87",
+   "callers": [
+    "0x5728"
+   ]
+  },
+  {
+   "address": "0x3F14",
+   "name": "sub_3F14",
+   "callers": [
+    "0x0FD4",
+    "0x35A3",
+    "0x3690",
+    "0x375C",
+    "0x3973",
+    "0x3A98",
+    "0x3E95"
+   ]
+  },
+  {
+   "address": "0x3F4F",
+   "name": "sub_3F4F",
+   "callers": [
+    "0x2E2D"
+   ]
+  },
+  {
+   "address": "0x3FD5",
+   "name": "sub_3FD5",
+   "callers": []
+  },
+  {
+   "address": "0x4075",
+   "name": "sub_4075",
+   "callers": []
+  },
+  {
+   "address": "0x41D8",
+   "name": "sub_41D8",
+   "callers": []
+  },
+  {
+   "address": "0x42AD",
+   "name": "sub_42AD",
+   "callers": []
+  },
+  {
+   "address": "0x44E7",
+   "name": "sub_44E7",
+   "callers": []
+  },
+  {
+   "address": "0x45E0",
+   "name": "sub_45E0",
+   "callers": []
+  },
+  {
+   "address": "0x4647",
+   "name": "sub_4647",
+   "callers": []
+  },
+  {
+   "address": "0x475E",
+   "name": "sub_475E",
+   "callers": []
+  },
+  {
+   "address": "0x47A7",
+   "name": "sub_47A7",
+   "callers": []
+  },
+  {
+   "address": "0x4990",
+   "name": "sub_4990",
+   "callers": []
+  },
+  {
+   "address": "0x4A68",
+   "name": "sub_4A68",
+   "callers": []
+  },
+  {
+   "address": "0x4B1A",
+   "name": "sub_4B1A",
+   "callers": []
+  },
+  {
+   "address": "0x4D70",
+   "name": "sub_4D70",
+   "callers": []
+  },
+  {
+   "address": "0x4DE9",
+   "name": "sub_4DE9",
+   "callers": [
+    "0x4BCE",
+    "0x4BDB",
+    "0x4BF1"
+   ]
+  },
+  {
+   "address": "0x4E32",
+   "name": "sub_4E32",
+   "callers": []
+  },
+  {
+   "address": "0x4EA8",
+   "name": "sub_4EA8",
+   "callers": []
+  },
+  {
+   "address": "0x505C",
+   "name": "sub_505C",
+   "callers": [
+    "0x4E8D",
+    "0x4F11",
+    "0x4FFC"
+   ]
+  },
+  {
+   "address": "0x50D2",
+   "name": "sub_50D2",
+   "callers": []
+  },
+  {
+   "address": "0x5171",
+   "name": "sub_5171",
+   "callers": [
+    "0x50FB",
+    "0x5147"
+   ]
+  },
+  {
+   "address": "0x526F",
+   "name": "sub_526F",
+   "callers": [
+    "0x32E7",
+    "0x37D2",
+    "0x3B8E"
+   ]
+  },
+  {
+   "address": "0x538B",
+   "name": "sub_538B",
+   "callers": []
+  },
+  {
+   "address": "0x548B",
+   "name": "sub_548B",
+   "callers": []
+  },
+  {
+   "address": "0x5611",
+   "name": "sub_5611",
+   "callers": []
+  },
+  {
+   "address": "0x5750",
+   "name": "sub_5750",
+   "callers": [
+    "0x440A",
+    "0x46C7",
+    "0x4897",
+    "0x4A21",
+    "0x4AC1",
+    "0x4CD4",
+    "0x4D1A",
+    "0x4FC7",
+    "0x51A5",
+    "0x522E",
+    "0x5539",
+    "0x557F",
+    "0x56D4"
+   ]
+  },
+  {
+   "address": "0x5783",
+   "name": "sub_5783",
+   "callers": [
+    "0x406F",
+    "0x4461",
+    "0x44B3",
+    "0x45C6",
+    "0x470B",
+    "0x47A1",
+    "0x48C5",
+    "0x4A44",
+    "0x4AFC",
+    "0x4C24",
+    "0x4D35",
+    "0x4FF2",
+    "0x5123",
+    "0x51F8",
+    "0x524F",
+    "0x5485",
+    "0x557C",
+    "0x55F1",
+    "0x56FD"
+   ]
+  },
+  {
+   "address": "0x57DF",
+   "name": "sub_57DF",
+   "callers": [
+    "0x3F9B",
+    "0x5130"
+   ]
+  },
+  {
+   "address": "0x580D",
+   "name": "sub_580D",
+   "callers": [
+    "0x1084",
+    "0x126C",
+    "0x12A7",
+    "0x12D4",
+    "0x12FC",
+    "0x132D",
+    "0x13D0",
+    "0x1630",
+    "0x186E",
+    "0x1890",
+    "0x19AC",
+    "0x1B86",
+    "0x1E1D",
+    "0x2BB9",
+    "0x4044",
+    "0x4312",
+    "0x43BE",
+    "0x4434",
+    "0x4493",
+    "0x4623",
+    "0x469F",
+    "0x46E7",
+    "0x4735",
+    "0x4831",
+    "0x485B",
+    "0x48EA",
+    "0x4934",
+    "0x495E",
+    "0x4CB9",
+    "0x4E10",
+    "0x4E29",
+    "0x4E7B",
+    "0x4F81",
+    "0x4FAA",
+    "0x4FC4",
+    "0x5031",
+    "0x50A4",
+    "0x50BB",
+    "0x50C7",
+    "0x5103",
+    "0x514F",
+    "0x51E1",
+    "0x5364",
+    "0x5413",
+    "0x5568",
+    "0x55D5",
+    "0x568F",
+    "0x5725",
+    "0x57AB",
+    "0x57FF"
+   ]
+  },
+  {
+   "address": "0x5D26",
+   "name": "sub_5D26",
+   "callers": [
+    "0x102F",
+    "0x1A7C",
+    "0x3488",
+    "0x367C",
+    "0x3749",
+    "0x37C3",
+    "0x38C8",
+    "0x3AE2",
+    "0x3D4C",
+    "0x3EEE"
+   ]
+  },
+  {
+   "address": "0x5E8E",
+   "name": "sub_5E8E",
+   "callers": [
+    "0x4A86"
+   ]
+  },
+  {
+   "address": "0x5ED5",
+   "name": "sub_5ED5",
+   "callers": [
+    "0x19C9",
+    "0x3658",
+    "0x3663",
+    "0x4E39"
+   ]
+  },
+  {
+   "address": "0x5EFC",
+   "name": "sub_5EFC",
+   "callers": [
+    "0x0C1A",
+    "0x115B",
+    "0x11A7",
+    "0x11B1",
+    "0x151F",
+    "0x153C",
+    "0x1550",
+    "0x2270",
+    "0x2389",
+    "0x3391"
+   ]
+  },
+  {
+   "address": "0x5F6B",
+   "name": "sub_5F6B",
+   "callers": [
+    "0x32F2",
+    "0x36E8",
+    "0x3726",
+    "0x3862",
+    "0x3B99"
+   ]
+  },
+  {
+   "address": "0x5FA3",
+   "name": "sub_5FA3",
+   "callers": [
+    "0x1825",
+    "0x521B",
+    "0x52F9",
+    "0x5339",
+    "0x56A6"
+   ]
+  },
+  {
+   "address": "0x5FD9",
+   "name": "sub_5FD9",
+   "callers": [
+    "0x0BBC",
+    "0x0FB9",
+    "0x142F",
+    "0x4008",
+    "0x40EB"
+   ]
+  },
+  {
+   "address": "0x6009",
+   "name": "sub_6009",
+   "callers": [
+    "0x0FC8",
+    "0x1340",
+    "0x400C"
+   ]
+  },
+  {
+   "address": "0x7572",
+   "name": "sub_7572",
+   "callers": [
+    "0x091E"
+   ]
+  }
+ ],
+ "indirect_jumps": []
+}

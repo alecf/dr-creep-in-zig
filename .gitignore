@@ -1,0 +1,18 @@
+# Original game data — copyrighted, not distributed. See README "Getting the game".
+roms/
+extracted/
+
+# Prior-art clones for reference study (see docs/plans/*-design.md)
+reference/
+
+# Zig build outputs
+zig-cache/
+.zig-cache/
+zig-out/
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
