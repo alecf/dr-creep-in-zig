@@ -1,0 +1,1033 @@
+{
+ "routines": [
+  {
+   "address": "0x0800",
+   "name": "engine_start_trampoline",
+   "purpose": "First entry in the 18-slot public JMP vector table at $0803-$0838 (per project notes) \u2014 actually the very first, 19th-from-end style: plain `jmp loc_08C2`, redirecting external callers into the engine's cold-boot/init routine.",
+   "segrax_equivalent": "cCreep::start (entry)",
+   "confidence": "high"
+  },
+  {
+   "address": "0x0803",
+   "name": "trampoline_to_730c",
+   "purpose": "One-instruction `jmp $730C` trampoline, part of the public entry-point vector table. Target address ($730C) is outside the analyzed band; could not be matched to a segrax function with confidence (nearest known landmark is optionsMenuPrepare at $7572, which is later).",
+   "segrax_equivalent": "",
+   "confidence": "low"
+  },
+  {
+   "address": "0x0806",
+   "name": "trampoline_to_246a",
+   "purpose": "One-instruction `jmp $246A` trampoline in the public entry vector table. Target outside the analyzed band; no confident segrax match found (falls between musicBufferFeed $1F29/musicPtrsSet $20A9 and gamePositionLoad $24A7 in the address-ordered function list, so plausibly a game-over/position-related or music entry, but unverified).",
+   "segrax_equivalent": "",
+   "confidence": "low"
+  },
+  {
+   "address": "0x0809",
+   "name": "trampoline_to_2047",
+   "purpose": "One-instruction `jmp $2047` trampoline in the public entry vector table. Target sits just before musicBufferFeed ($1F29) is much lower, and before optionsMenu ($2233)/musicPtrsSet($20A9); could plausibly be a music-subsystem entry point, but not confirmed.",
+   "segrax_equivalent": "",
+   "confidence": "low"
+  },
+  {
+   "address": "0x080C",
+   "name": "trampoline_to_17ee_object_prepare",
+   "purpose": "One-instruction `jmp $17EE` trampoline in the public entry vector table. $17EE is just past the end of the analyzed band; it is one of the room-object-type '*_Prepare' handlers (same family as the confirmed Forcefield/Mummy/Key/RayGun/Teleport/TrapDoor/Conveyor/Frankie Prepare trampolines below), reached via roomPrepare's self-modifying dispatch as well as this fixed vector. Candidates from creep.cpp with no confirmed address are obj_Door_Prepare, obj_SlidingPole_Prepare, obj_Ladder_Prepare, and obj_Door_Button_Prepare \u2014 could not disambiguate which.",
+   "segrax_equivalent": "one of obj_Door_Prepare / obj_SlidingPole_Prepare / obj_Ladder_Prepare / obj_Door_Button_Prepare",
+   "confidence": "low"
+  },
+  {
+   "address": "0x080F",
+   "name": "trampoline_to_752a",
+   "purpose": "One-instruction `jmp $752A` trampoline in the public entry vector table. Sits just before optionsMenuPrepare ($7572); no confident segrax match found.",
+   "segrax_equivalent": "",
+   "confidence": "low"
+  },
+  {
+   "address": "0x0812",
+   "name": "trampoline_obj_lightning_prepare",
+   "purpose": "One-instruction `jmp $43E4` trampoline. Positioned immediately before the confirmed obj_Forcefield_Prepare trampoline in both the vector table and roomPrepare's switch-case order (Lightning precedes Forcefield), and obj_Lightning_Execute lives nearby at $3639 \u2014 best guess is this is obj_Lightning_Prepare's entry.",
+   "segrax_equivalent": "obj_Lightning_Prepare (probable)",
+   "confidence": "low"
+  },
+  {
+   "address": "0x0815",
+   "name": "trampoline_obj_forcefield_prepare",
+   "purpose": "One-instruction `jmp $46AE` trampoline, part of the public vector table used by the room loader to reach per-object 'Prepare' handlers. $46AE is confirmed via a `//46AE` address comment directly preceding cCreep::obj_Forcefield_Prepare in creep.cpp.",
+   "segrax_equivalent": "obj_Forcefield_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x0818",
+   "name": "trampoline_obj_mummy_prepare",
+   "purpose": "One-instruction `jmp $4872` trampoline. $4872 is confirmed via a `//4872` address comment directly preceding cCreep::obj_Mummy_Prepare in creep.cpp.",
+   "segrax_equivalent": "obj_Mummy_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x081B",
+   "name": "trampoline_obj_key_prepare",
+   "purpose": "One-instruction `jmp $49F8` trampoline. $49F8 is confirmed via a `//49F8` address comment directly preceding cCreep::obj_Key_Prepare in creep.cpp.",
+   "segrax_equivalent": "obj_Key_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x081E",
+   "name": "trampoline_obj_door_lock_prepare",
+   "purpose": "One-instruction `jmp $4AB6` trampoline. Falls between obj_Door_Lock_InFront ($4A68) and obj_RayGun_Execute ($4B1A), and matches roomPrepare's switch order (Key, then Lock, then RayGun) \u2014 best guess is obj_Door_Lock_Prepare.",
+   "segrax_equivalent": "obj_Door_Lock_Prepare (probable)",
+   "confidence": "medium"
+  },
+  {
+   "address": "0x0821",
+   "name": "trampoline_obj_multidraw",
+   "purpose": "One-instruction `jmp loc_160A` trampoline, confirmed to reach obj_MultiDraw (see 0x160A below) \u2014 draws N copies of a room graphic at a repeating X/Y offset (used for eObjectMultiDraw/eObjectIntroMultiDraw room-data records).",
+   "segrax_equivalent": "obj_MultiDraw",
+   "confidence": "high"
+  },
+  {
+   "address": "0x0824",
+   "name": "trampoline_obj_raygun_prepare",
+   "purpose": "One-instruction `jmp $4C58` trampoline. $4C58 confirmed via a `//4C58`-style address comment directly preceding cCreep::obj_RayGun_Prepare in creep.cpp.",
+   "segrax_equivalent": "obj_RayGun_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x0827",
+   "name": "trampoline_obj_teleport_prepare",
+   "purpose": "One-instruction `jmp $4F5C` trampoline. Confirmed via address comment directly preceding cCreep::obj_Teleport_Prepare.",
+   "segrax_equivalent": "obj_Teleport_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x082A",
+   "name": "trampoline_obj_trapdoor_prepare",
+   "purpose": "One-instruction `jmp $517F` trampoline. Confirmed via address comment directly preceding cCreep::obj_TrapDoor_Prepare.",
+   "segrax_equivalent": "obj_TrapDoor_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x082D",
+   "name": "trampoline_obj_conveyor_prepare",
+   "purpose": "One-instruction `jmp $5501` trampoline. Confirmed via address comment directly preceding cCreep::obj_Conveyor_Prepare.",
+   "segrax_equivalent": "obj_Conveyor_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x0830",
+   "name": "trampoline_obj_frankie_prepare",
+   "purpose": "One-instruction `jmp $564E` trampoline. Confirmed via address comment directly preceding cCreep::obj_Frankie_Prepare.",
+   "segrax_equivalent": "obj_Frankie_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x0833",
+   "name": "trampoline_obj_string_print",
+   "purpose": "One-instruction `jmp sub_2A6D` trampoline reaching the room-data driven text-object printer (walks a list of {X,Y,color,font,text} records and calls StringPrint on each). $2A6D is confirmed as cCreep::obj_stringPrint.",
+   "segrax_equivalent": "obj_stringPrint",
+   "confidence": "high"
+  },
+  {
+   "address": "0x0836",
+   "name": "trampoline_to_1ae6",
+   "purpose": "One-instruction `jmp $1AE6` trampoline, last of the 18 public vector-table entries. $1AE6 falls between hw_IntSleep ($1935) and gameEscapeCastle ($1950)/gameHighScoresHandle ($1B9F) in the address-ordered function list; could not be matched with confidence \u2014 it breaks the pattern of the immediately preceding entries (which are all object '*_Prepare' handlers), so it is likely an unrelated system entry point.",
+   "segrax_equivalent": "",
+   "confidence": "low"
+  },
+  {
+   "address": "0x08C2",
+   "name": "engine_start",
+   "purpose": "Full cold-boot routine: fills the $BC00/$BB00 sprite-shape/attribute tables and the $5CE6/$5D06 menu-position tables, calls optionsMenuPrepare, installs the IRQ vector ($FFFE/$FFFF -> $0A82) and NMI vector ($FFFA/$FFFB -> $0B7B, NOT $0A7B as the project notes state \u2014 see 0x0A7B/0x0B7B below), configures VIC-II (raster IRQ, sprite pointers, screen/border colours, multicolour) and CIA1/CIA2 (timers, keyboard/joystick ports), then branches: if a 'warm start' flag at $839 is set it calls sub_0A42 (castle-data backup), otherwise it relocates $77F7-$77FF into $7572-$7800 and calls ChangeLevel() to load the requested castle, finally falling into mainLoop.",
+   "segrax_equivalent": "cCreep::start",
+   "confidence": "high"
+  },
+  {
+   "address": "0x095F",
+   "name": "disable_sprites_and_stop_sound",
+   "purpose": "Sets the 8 software sprite-pointer bytes ($26-$2D) to a blank pointer, clears sprite-enable ($21), disables VIC sprites, waits ~2 frames via the interrupt-wait helper, and marks no sound as playing (-1). Called from many places (room/menu/game transitions) to reset video+audio state.",
+   "segrax_equivalent": "cCreep::DisableSpritesAndStopSound",
+   "confidence": "high"
+  },
+  {
+   "address": "0x0A42",
+   "name": "castle_data_backup_to_9800",
+   "purpose": "Copies the currently loaded castle/room data block from $7800 (src, via zp $30/$31) to a $9800 backup buffer (dst, via zp $32/$33), guarded by the block's own length word at $7800/$7801. This is the mirror image of the copy Game() performs in the opposite direction ($9800 -> $7800) at the start of every life/level \u2014 i.e. this snapshots the pristine castle state so it can be restored after a death or restart. Called once from engine_start's 'warm start' branch (flag at $839).",
+   "segrax_equivalent": "(inline in cCreep::Game, opposite direction: memcpy(&mMemory[0x7800], &mMemory[0x9800], ...))",
+   "confidence": "medium"
+  },
+  {
+   "address": "0x0A7B",
+   "name": "backup_copy_loop_continue_stub",
+   "purpose": "The tracing disassembler assigned this a 'sub_' label, but it is NOT an independently-called routine: it is a plain `jmp loc_0A72` that forms the loop-back edge of sub_0A42's byte-copy loop (nothing else in the file references $0A7B via JSR/JMP; object.json lists zero callers). The project notes' claim that the NMI vector is $0A7B appears to be incorrect \u2014 the actual NMI vector, installed by engine_start, is $0B7B (see below). Flagging this as a likely mislabel rather than a real routine.",
+   "segrax_equivalent": "",
+   "confidence": "high"
+  },
+  {
+   "address": "0x0B7B",
+   "name": "nmi_handler_restore_key",
+   "purpose": "Not labeled sub_/loc_ by the disassembler (embedded inside a .byte data run at $0B71-$0B83 that the tracer never reached, because it's only referenced indirectly via the NMI vector write in engine_start). Decoded manually from raw bytes at $0B7B: PHA; LDA #$01; STA $0B83; PLA; RTI \u2014 i.e. the true NMI handler simply sets a one-byte flag at $0B83 and returns. This matches segrax's mRestorePressed flag, which is polled by roomMain, StringPrint_StringInput, etc. Recommend adding a manual label/annotation at $0B7B in object.s.",
+   "segrax_equivalent": "sets mRestorePressed (checked throughout, e.g. cCreep::roomMain, cCreep::StringPrint_StringInput)",
+   "confidence": "high"
+  },
+  {
+   "address": "0x0A82",
+   "name": "irq_handler_raster_sprite_and_music_tick",
+   "purpose": "Main IRQ handler, installed at $FFFE/$FFFF by engine_start. On the VIC raster IRQ source it acknowledges the interrupt, writes the border colour via the current raster-line table entry ($0B71/$0B73+x), then copies 16 software sprite X/Y coordinates ($10-$1F) plus MSB/enable/pointer/border/background/multicolour registers ($20-$2D) into the real VIC-II registers ($D000-$D00F, $D010,$D015,$D018,$D020,$D021,$D016,$CFF8-$CFFF) to do sprite multiplexing and update the raster-compare register for the next split; on the CIA1 timer-A source it calls sub_1F29 (musicBufferFeed) to advance the music player. Matches the project notes' 'IRQ handler $0A82'.",
+   "segrax_equivalent": "(hardware ISR - no direct 1:1 segrax function; drives what segrax models as continuous VIC/sprite state plus calls into musicBufferFeed)",
+   "confidence": "high"
+  },
+  {
+   "address": "0x0B8D",
+   "name": "intro",
+   "purpose": "Runs the game's intro/attract-mode and main-menu logic each pass of mainLoop (returns true to keep looping in the intro/menu, false once actual gameplay should start). Confirmed both by object.json's caller ($0B84, the first JSR inside mainLoop) and by a `//B8D` address comment directly preceding cCreep::Intro in creep.cpp.",
+   "segrax_equivalent": "cCreep::Intro",
+   "confidence": "high"
+  },
+  {
+   "address": "0x0D71",
+   "name": "game_main",
+   "purpose": "Top-level in-castle gameplay routine, called from mainLoop right after Intro() returns false. Restores/relocates the room-state backup ($9800->$7800) unless a save game was just loaded, then drives room-to-room play until the level ends or is aborted. Confirmed by a `//0D71:` address comment directly preceding cCreep::Game, and by matching the first instructions (checks the mSaveGameLoaded-equivalent byte at $24FD). (Earlier pass mistakenly attributed this address to ChangeLevel; corrected after cross-checking mainLoop's two JSRs against Intro/Game.)",
+   "segrax_equivalent": "cCreep::Game",
+   "confidence": "high"
+  },
+  {
+   "address": "0x0F94",
+   "name": "map_display",
+   "purpose": "Displays the between-levels map/'time taken' screen: clears the screen, draws the room icons (via mapRoomDraw), shows elapsed time, and waits for player input to continue. Confirmed by a `//F94: Display the map/time taken screen` comment directly preceding cCreep::mapDisplay, and by object.json's caller address $0E7D sitting inside Game().",
+   "segrax_equivalent": "cCreep::mapDisplay",
+   "confidence": "high"
+  },
+  {
+   "address": "0x1203",
+   "name": "map_room_draw",
+   "purpose": "Iterates the map-room table at $7900, drawing each visible room's rectangle/colour on the map screen (skips rooms not yet visited/flagged visible, stops at a terminator flag). Confirmed by a `//1203:` address comment directly preceding cCreep::mapRoomDraw, matching content (mRoomPtr = 0x7900 at the very start).",
+   "segrax_equivalent": "cCreep::mapRoomDraw",
+   "confidence": "high"
+  },
+  {
+   "address": "0x13F0",
+   "name": "room_load",
+   "purpose": "Clears the screen/sprite/object state (via sub_18E4), zeroes the $C000-$C7FF scratch area, selects the room number for the current player (or intro screen), sets room pointer + floor colours across many hardcoded VIC/colour-RAM addresses ($6481, $648E, $649B, $65CC/CE, $6EAE-$6F0A, $6FB2/6FF5/7038/707B, $6584, $659B/65CD), then reads the room's object-list pointer and calls roomPrepare. Confirmed via object.json callers ($0BCD inside Intro, $14D3 inside the roomMain block) and an exact address-comment/content match with cCreep::roomLoad (including the //1438 and //14AC sub-comments landing on the matching instructions).",
+   "segrax_equivalent": "cCreep::roomLoad",
+   "confidence": "high"
+  },
+  {
+   "address": "0x14CE",
+   "name": "room_main_entry",
+   "purpose": "Full entry point of the per-room play loop: calls room_load, then for each active player slot ($11C9,x==1) calls obj_Player_Add (sub_359E) to spawn their sprite, sets the 'in room' flag at $15D7=1, enables the VIC display bit, and calls sub_2E1C before falling straight through (no RTS) into sub_1502's event loop. Matches the first half of segrax's roomMain().",
+   "segrax_equivalent": "cCreep::roomMain (entry portion, through the 0x14EA setup)",
+   "confidence": "high"
+  },
+  {
+   "address": "0x1502",
+   "name": "room_main_event_loop",
+   "purpose": "Continuation of room_main_entry's code (no RTS separates them) that also serves as a distinct re-entry point (JSR'd directly from $7544, bypassing room_load/player-add). Implements the per-room event loop: checks a saved A-register condition, handles RUN/STOP pause (busy-waits via interruptWait/KeyboardJoystickMonitor until un-paused), handles the RESTORE-key flag (sets a 'flash' status on stalled players), and loops calling events_Execute-equivalent code until both players are done, then tears the room down. Matches the back half of segrax's roomMain() (the //150E RUN/STOP handling through //15C4 room-exit code).",
+   "segrax_equivalent": "cCreep::roomMain (event-loop / pause-handling portion)",
+   "confidence": "medium"
+  },
+  {
+   "address": "0x15E0",
+   "name": "room_prepare",
+   "purpose": "The room-data object dispatcher: reads a 2-byte value from the current object-list pointer, and unless it's the zero terminator, patches that value directly into the operand of a JSR instruction at $1601/$1602 (self-modifying code) and executes it, then loops. Each object-type's room-data record therefore embeds the literal C64 address of its own 'Prepare' handler (obj_Door_Prepare, obj_Walkway_Prepare, obj_Forcefield_Prepare, obj_Mummy_Prepare, obj_MultiDraw, etc.) \u2014 segrax reverse-engineered this as a switch() on those literal addresses/enum values. Confirmed via a `//15E0` address comment directly preceding cCreep::roomPrepare, and by the exact self-modifying-JSR pattern in the disassembly. Called from Intro, roomLoad's tail, and other room-setup sites (object.json callers $0BDE, $14C5, $196E, $25C4, $25DF).",
+   "segrax_equivalent": "cCreep::roomPrepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x1601",
+   "name": "room_prepare_dispatch_slot",
+   "purpose": "Not a fixed routine \u2014 this is the 2-byte operand of the JSR instruction at $1600 inside room_prepare, overwritten every loop iteration (via `sta $1601`/`sta $1602`) with whichever object-type Prepare handler address was just read from the room data. The disassembler's tracer therefore could never statically resolve what code actually runs here; it only shows the label because the JSR opcode's operand bytes happen to get a symbol from being a data-write target.",
+   "segrax_equivalent": "",
+   "confidence": "high"
+  },
+  {
+   "address": "0x160A",
+   "name": "obj_multi_draw",
+   "purpose": "Draws N repeated copies of a graphic starting at a given X/Y and advancing by a per-record X/Y step each repetition (used for eObjectMultiDraw / eObjectIntroMultiDraw room-data records, e.g. repeating wall/floor tiles). Reached both via the fixed vector table (sub_0821) and via room_prepare's self-modified dispatch. Confirmed by a `//160A: Draw multiples of an object` comment directly preceding cCreep::obj_MultiDraw, matching content exactly (loop reading repeat-count/id/x/y/step from the object pointer).",
+   "segrax_equivalent": "cCreep::obj_MultiDraw",
+   "confidence": "high"
+  },
+  {
+   "address": "0x1669",
+   "name": "obj_walkway_prepare",
+   "purpose": "Not labeled by the disassembler at all \u2014 the bytes from $1669 through at least $16FF (continuing past the analyzed band to ~$17ED) were left as an undisassembled `.byte` data dump because the tracer never found a statically-provable path into them (they're reached only through room_prepare's self-modifying dispatch, using an address value stored in room data rather than a fixed JSR/JMP). Manually decoded: it starts right after obj_multi_draw's RTS ($1668) and its instruction stream matches segrax's cCreep::obj_Walkway_Prepare almost byte-for-byte at every address segrax happened to comment (//16A9, //16C1, //16D1, //16E2, //16EE, //16F8 all fall inside this block and match walkway timer/switch-collision logic touching $2106/$2107/$DC0D/$DC0E and mSound->playback). Recommend re-running the tracer with a manual code hint at $1669, or adding a manual label, since roomPrepare's data-driven calls will never be found automatically.",
+   "segrax_equivalent": "cCreep::obj_Walkway_Prepare",
+   "confidence": "medium"
+  },
+  {
+   "address": "0x17EE",
+   "name": "obj_ladder_prepare",
+   "purpose": "Room-setup handler for ladder objects (case eObjectLadder in the room-prepare dispatcher). For each ladder rung it computes the background/collision cell via word_3C_Calculate (sub_5FA3), decides top/middle/bottom graphic tile ($28/$2B for a clear rung, $29/$2A or $2C/$2D pairs drawn via sub_580D when a wall/floor bit ($44) is set), and marks collision bits. Reached both as a case inside the giant room-prepare object dispatcher (sub_15E0, itself just below this address range) and directly as public jmp-vector entry #4 ($080C: jmp loc_17EE).",
+   "segrax_equivalent": "cCreep::obj_Ladder_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x18E4",
+   "name": "screen_clear",
+   "purpose": "General-purpose screen/state reset: clears VIC bitmap/color RAM ($E000-$FFFF and $C000-$C800), disables all sprites, resets the room-sprite state table and object count. Called from a very large number of sites throughout the engine (menus, room loads, save/load, escape sequence), matching the huge caller list recorded for this address.",
+   "segrax_equivalent": "cCreep::screenClear",
+   "confidence": "high"
+  },
+  {
+   "address": "0x1935",
+   "name": "hw_int_sleep",
+   "purpose": "Small delay helper: calls the interrupt-wait routine 6 times with the caller-supplied wait value in A, i.e. 'sleep for X frames, six times over'.",
+   "segrax_equivalent": "cCreep::hw_IntSleep",
+   "confidence": "high"
+  },
+  {
+   "address": "0x1950",
+   "name": "game_escape_castle",
+   "purpose": "Plays the 'Player Escapes' sequence when a player exits the castle: clears the screen, prints the escape banner/timer text from a data table at $1AB3-$1AE5, sets up scrolling road background colors, then runs a frame loop animating a walking sprite (updating its X/Y and image ID from a small state table at $1AD1+) until the animation table is exhausted, before restoring state and returning. Its body runs into $1AE6 (the animation loop's continuation lives right up against the obj_Image_Draw public entry that follows it in memory).",
+   "segrax_equivalent": "cCreep::gameEscapeCastle",
+   "confidence": "high"
+  },
+  {
+   "address": "0x1AE6",
+   "name": "obj_image_draw",
+   "purpose": "Room-setup handler for full-screen/tiled image objects (case eObjectImage). Saves the current object-data pointer to $6067/$6068, computes a row stride from a width byte ((height-1)>>3)+1, walks forward through the object data by width*height to find where the per-tile draw list begins, then repeatedly calls screenDraw with gfxCurrentID=$16 for each (X,Y) pair until a terminating zero byte. Reached both from the room-prepare object dispatcher and directly via public jmp-vector entry #18 ($0836: jmp loc_1AE6).",
+   "segrax_equivalent": "cCreep::obj_Image_Draw",
+   "confidence": "high"
+  },
+  {
+   "address": "0x1B9F",
+   "name": "game_high_scores_handle",
+   "purpose": "Inserts a just-finished player's time into that player's high-score table: finds the correct rank by comparing against the existing 11 entries, shifts lower entries down, stores the new time, redraws the high-score screen, prompts the player to type their name via the string-input routine, copies the typed name into the score table, re-highlights the currently selected castle's menu entry, and finally persists the updated table to disk via the castle-scores save routine.",
+   "segrax_equivalent": "cCreep::gameHighScoresHandle",
+   "confidence": "high"
+  },
+  {
+   "address": "0x1D42",
+   "name": "game_high_scores_display",
+   "purpose": "Draws the high-score screen for the currently loaded castle: clears the screen, marks the castle's menu-selection state, formats the castle's name into the on-screen title buffer, prepares the room/text layout, then lists each stored player-time/name entry with its formatted timer text, finishing with a 'BEST TIMES' banner string.",
+   "segrax_equivalent": "cCreep::gameHighScores",
+   "confidence": "high"
+  },
+  {
+   "address": "0x1E8F",
+   "name": "verify_master_disk",
+   "purpose": "Disk-authenticity/media-swap check, not a game-logic routine. Uses raw KERNAL calls (SETLFS/SETNAM/OPEN/CLOSE, then SETLFS/SETNAM/OPEN again on channel 2, CHKIN, and repeated CHRIN reads) to open a directory-search filename embedded at $1F1A ('$DUNGEONMASTE...', a DOS wildcard pattern) on device 8, reads back 8+ bytes and XOR-compares them against the same embedded string, and returns a status code in A (0=disk verified/ok, 1=mismatch, 2=I/O error) after closing the channel. This is exactly the kind of drive-based copy-protection/'insert correct disk' check common in C64-era Commodore titles; it has no equivalent in the Steam remake since that build loads assets natively from the filesystem instead of a physical/emulated disk swap. Called from many sites (0x0C65,0x1CE6,0x2406,0x24D4,0x2529), consistent with a generic 'is the right disk in the drive' gate used before disk-dependent operations.",
+   "segrax_equivalent": "",
+   "confidence": "medium"
+  },
+  {
+   "address": "0x1F29",
+   "name": "music_buffer_feed",
+   "purpose": "Pulls the next command(s) out of the streaming music-command buffer (mMusicBuffer) and executes them: copies the command's parameter bytes into $20CB.., decodes a command opcode 0-8 (via a chain of cmp #$06/#$07/#$08.. after the earlier cases), and for each case writes SID registers directly (frequency/pulse via musicPtrsSet-selected voice pointers, volume/filter at $2100-$2103, per-voice base offsets at $2104+X, or sets the interrupt timer via mTimerSet). Cases 2/3 set frame-delay counters and return 'still playing'; unrecognized opcodes end the command-parse loop, after which the buffer either stops (non-intro) or rewinds to the start with the filter reset (intro/menu music looping).",
+   "segrax_equivalent": "cCreep::musicBufferFeed",
+   "confidence": "high"
+  },
+  {
+   "address": "0x2047",
+   "name": "unresolved_vector_stub_2047",
+   "purpose": "Public jmp-vector entry #3 ($0809: jmp $2047) targets an address that does NOT fall on an instruction boundary in the statically-traced disassembly -- $2047 is the immediate operand byte of the 'cmp #$07' instruction that begins at $2046 (part of the music-command opcode-7 case check inside sub_1F29/musicBufferFeed's dispatch chain). No loc_ label exists there. This is either a stale/unused vector-table slot left over from earlier code layout, or a self-modifying-code entry point whose target byte is patched at runtime to a valid opcode before being invoked from outside this module; it cannot be resolved from static disassembly alone. Best guess given its neighborhood is that it relates to the music-command dispatcher in musicBufferFeed, but the exact behavior at this literal address is unknown.",
+   "segrax_equivalent": "",
+   "confidence": "low"
+  },
+  {
+   "address": "0x20A9",
+   "name": "music_voice_ptrs_set",
+   "purpose": "Selects the current SID voice (0-3, from the low 2 bits of the command byte at $20CB), storing the voice index in mVoiceNum, and loads two little-endian pointers (mVoice from $20DF+2*voice, mVoiceTmp from $20E5+2*voice) used by the music-command handlers to address per-voice state. Small helper called from three sites inside musicBufferFeed's case 0/1/4 handling.",
+   "segrax_equivalent": "cCreep::musicPtrsSet",
+   "confidence": "high"
+  },
+  {
+   "address": "0x21C8",
+   "name": "sound_play_effect",
+   "purpose": "Triggers a one-shot sound effect: bails out if in the intro, sound effects are disabled, or a sound is already playing; otherwise silences all SID voices, points mMusicBuffer at the effect's command stream (looked up via a table at $7572 indexed by effect-id*2), primes SID/CIA registers for playback and starts playback via the sound driver. Called extensively across the object-execute code for hit/collision/switch sounds, matching its very large caller list.",
+   "segrax_equivalent": "cCreep::sound_PlayEffect",
+   "confidence": "high"
+  },
+  {
+   "address": "0x2233",
+   "name": "options_menu",
+   "purpose": "The pause/options menu (opened with RUN-STOP): redraws the background as text in white, then loops reading joystick/keyboard input to move the highlighted item up/down (redrawing the '>' cursor glyph via a per-item screen-address table at $BA00/$BA01), and on button press dispatches on the selected item's action code (from a table at $BA02): toggle unlimited lives, exit menu, change castle/level (calls into sub_23BB), resume a saved game (calls sub_24A7/gamePositionLoad), or show best times (calls gameHighScores, sub_1D42).",
+   "segrax_equivalent": "cCreep::optionsMenu",
+   "confidence": "high"
+  },
+  {
+   "address": "0x237C",
+   "name": "wait_for_keypress_release",
+   "purpose": "Small debounce/wait loop: sets a short frame-delay counter ($2E35=2) and spins on it, then polls the keyboard/joystick monitor (sub_5EFC) once with A=0, and loops back unless either the restore-key flag ($5F56 high bit) or a second flag ($5F57) is set, at which point it returns. Called twice from within the options menu (sub_2233), matching the commented-out 'inputWait()' call left in the exit-menu case of optionsMenu() in the C++ port -- the C++ author apparently didn't need to reimplement this wait since the emulation layer handles input differently.",
+   "segrax_equivalent": "",
+   "confidence": "medium"
+  },
+  {
+   "address": "0x23BB",
+   "name": "castle_select_and_load",
+   "purpose": "Implements castle selection for the options menu. If the requested castle index (X) equals the currently-selected one ($2399) it jumps straight to the menu-highlight update tail (loc_24A2). Otherwise it builds a per-castle load filename from a name table (via $5CE6/$5D06 pointer tables and $BA00/$BA01 offsets), uppercase/lowercase-folds it into a buffer at $2998, sets up KERNAL SETNAM parameters, calls the disk-presence check (sub_1E8F) and, on success, opens/loads the castle's small preview/name data file via KERNAL (sub_28EC, $FFB7=READST, sub_2973) -- showing an error message path (color $59 vs $5A) if the load fails. On success (or on the 'already selected' shortcut) it falls into the shared tail that repaints the previously-selected and newly-selected castle-name entries' highlight bit and updates $2399 to the new castle index. This corresponds to the combination of ChangeLevel()'s castle load plus the full body of menuUpdate() in the C++ port (which itself replaces the KERNAL disk I/O with mCastleManager->castleLoad).",
+   "segrax_equivalent": "cCreep::menuUpdate (+ the disk-load portion of ChangeLevel)",
+   "confidence": "medium"
+  },
+  {
+   "address": "0x246A",
+   "name": "unresolved_vector_stub_246A",
+   "purpose": "Public jmp-vector entry #2 ($0806: jmp loc_246A) targets an address that does not fall on an instruction boundary in the statically-traced disassembly -- $246A is the operand byte of 'ldy $ba01,x' which begins at $2469, itself inside the castle-select routine's shared highlight-update tail (sub_23BB / menuUpdate equivalent). No real loc_246A instruction exists; like the $2047 stub this is either a stale vector-table entry or a self-modified/alternate entry point that can't be resolved statically. Its neighborhood strongly suggests it relates to the castle-menu highlight update, but the precise behavior at this exact address is unknown.",
+   "segrax_equivalent": "",
+   "confidence": "low"
+  },
+  {
+   "address": "0x24A7",
+   "name": "game_position_load",
+   "purpose": "Handles 'Resume Game': prompts for a save-game filename via gameFilenameGet-equivalent, and if a name was entered, loads the saved position data into $7800 via the castle manager's position-load, sets the save-game-loaded flag, restores both players' elapsed-time counters from the loaded data, and stops sprites/sound.",
+   "segrax_equivalent": "cCreep::gamePositionLoad",
+   "confidence": "high"
+  },
+  {
+   "address": "0x24FF",
+   "name": "game_position_save",
+   "purpose": "Handles saving a game or castle position: prompts for a filename, and if one was entered, reads the save-block size from $7800, prefixes the filename with 'Z' for castle saves, writes the block out via the castle manager's castle-save or position-save routine, and shows an 'IO ERROR' message on failure or stops sprites/sound on success.",
+   "segrax_equivalent": "cCreep::gamePositionSave",
+   "confidence": "high"
+  },
+  {
+   "address": "0x25B8",
+   "name": "game_filename_prompt_setup",
+   "purpose": "Clears the screen, prints the 'TYPE IN FILE NAME' header plus either the SAVE-POSITION or RESUME/LOAD prompt text (chosen via a flag left at $2608 by the caller), configures the text-input field position/length/colour ($2788/$2789/$278A-$278C), then hands off to the interactive filename-entry loop.",
+   "segrax_equivalent": "gameFilenameGet",
+   "confidence": "high"
+  },
+  {
+   "address": "0x268F",
+   "name": "string_input_edit_loop",
+   "purpose": "Interactive text-entry loop: prints a flashing cursor, reads keys via StringInput_GetKey, handles Backspace/Enter/RESTORE, appends accepted characters to the buffer at $278E and echoes each keystroke through the character-print routine, until Enter or RESTORE/timeout terminates input.",
+   "segrax_equivalent": "StringPrint_StringInput",
+   "confidence": "high"
+  },
+  {
+   "address": "0x2772",
+   "name": "string_print_one_char",
+   "purpose": "Sets the high bit on the pending character byte at $27A2 (end-of-record marker for the renderer), points $3e/$3f at that single-character record, and calls the sprite-font text renderer to draw it.",
+   "segrax_equivalent": "StringPrint_Character",
+   "confidence": "high"
+  },
+  {
+   "address": "0x27A8",
+   "name": "string_input_get_key",
+   "purpose": "Reads one raw keyboard scan-code via the input helper; returns $80 (no-key sentinel) if nothing was pressed, otherwise upper-cases the character and returns it.",
+   "segrax_equivalent": "StringInput_GetKey",
+   "confidence": "high"
+  },
+  {
+   "address": "0x288E",
+   "name": "kernal_save_file",
+   "purpose": "Low-level KERNAL disk SAVE primitive: SETLFS(2,8,0), builds the filename from a length/pointer pair at $28D1/$28D2 and a name-pointer table at $28E6, computes the end address of the buffer from its own length-prefix header, and calls KERNAL SAVE ($FFD8). Used to physically write a save-game or castle file to disk.",
+   "segrax_equivalent": "",
+   "confidence": "high"
+  },
+  {
+   "address": "0x28EC",
+   "name": "kernal_load_file",
+   "purpose": "Low-level KERNAL disk LOAD primitive: SETLFS(2,8,0), SETNAM with a fixed name/length at $29A8/$2997, LOADs (no verify) to an address selected from a table at $291D indexed by $29A7, and stores the returned end address at $29A9/$29AA. Used to physically read a save-game or castle file from disk.",
+   "segrax_equivalent": "",
+   "confidence": "high"
+  },
+  {
+   "address": "0x2920",
+   "name": "disk_io_prepare_hardware",
+   "purpose": "Disables the VIC and CIA1 interrupts, re-banks in the KERNAL ROM/I-O (BASIC out) via $00/$01, calls the KERNAL IOINIT vector ($FF84), and \u2014 if the game is currently in bitmap/game mode \u2014 selects the VIC bank and, when a disk-activity flag at $095E is set, flashes the border/background to yellow/white as a disk-busy indicator. Run before any raw KERNAL LOAD/SAVE call.",
+   "segrax_equivalent": "",
+   "confidence": "medium"
+  },
+  {
+   "address": "0x2973",
+   "name": "disk_io_settle_delay",
+   "purpose": "Busy-waits through a nested 3-byte odometer counter (~16K iterations) to let the disk drive settle, then calls DisableSpritesAndStopSound. Used as cleanup after a raw KERNAL disk operation.",
+   "segrax_equivalent": "",
+   "confidence": "medium"
+  },
+  {
+   "address": "0x29AE",
+   "name": "convert_timer_to_digits",
+   "purpose": "Converts a player's elapsed-time value into on-screen digit rows by calling the seconds/minutes/hours digit converter three times with the appropriate screen-row offsets (6, 3, 0).",
+   "segrax_equivalent": "convertTimerToTime",
+   "confidence": "high"
+  },
+  {
+   "address": "0x29D0",
+   "name": "convert_byte_to_digit_glyphs",
+   "purpose": "Splits a byte into tens/units BCD-style nibbles and copies the matching 8-row digit bitmap (from the glyph table at $2A1B) into the score/timer display area at $736C, at the row offset given in Y.",
+   "segrax_equivalent": "convertTimeToNumber",
+   "confidence": "high"
+  },
+  {
+   "address": "0x2A6D",
+   "name": "obj_string_print_list",
+   "purpose": "Iterates a list of {x,y,color,font} text records pointed to by $3e/$3f, printing each string in turn via the sprite-font renderer until a terminating zero X coordinate is found.",
+   "segrax_equivalent": "obj_stringPrint",
+   "confidence": "high"
+  },
+  {
+   "address": "0x2AA9",
+   "name": "string_print_render",
+   "purpose": "Renders a string of text as VIC sprites: builds sprite pointer/colour records at $5CC7-$5CD7 from the current text position/colour/font, copies each character's 8x8 glyph out of Character ROM via the font-select table at $2BE8, expands it to multicolor/hires sprite data at $73xx, and calls the low-level screen-draw routine per character (advancing 8 pixels) until a byte with the high bit set ends the string.",
+   "segrax_equivalent": "StringPrint",
+   "confidence": "high"
+  },
+  {
+   "address": "0x2C08",
+   "name": "forced_break_stub",
+   "purpose": "An 8-byte stub that is just a bare BRK opcode followed by zero padding. Both call sites (JSR then immediately JMP past the return point, never expecting an RTS) suggest this deliberately triggers the game's custom IRQ/NMI vector as a forced software interrupt rather than behaving as a normal subroutine; it sits immediately in front of the copy-protection routine, which may or may not be coincidental.",
+   "segrax_equivalent": "",
+   "confidence": "low"
+  },
+  {
+   "address": "0x2C10",
+   "name": "copy_protection_check",
+   "purpose": "Disk-based copy protection: reads two specific track/sector locations directly off the boot disk via the DOS 'U1:' command (through the helper at $2C31) and compares the results; based on the outcome it falls through into code (just past $33FF) that XORs the raw disk-read bytes into the program's own JMP vector table bytes at $0805/$0808/$080B/$0811, silently corrupting the public entry points if run from an unauthorized copy.",
+   "segrax_equivalent": "copyProtection (explicitly removed/stubbed - see comment 'Removed: This is not necessary...' at the 0x091B call site)",
+   "confidence": "high"
+  },
+  {
+   "address": "0x2C31",
+   "name": "disk_read_block_via_u1",
+   "purpose": "Opens the KERNAL command channel (LFN 15) and a data channel (LFN 5), sends a 'U1:' User-Read-Block DOS command for the track/sector passed in X/Y, reads one response byte into a slot selected by the value passed in A, closes both channels, and returns whether the byte equals ASCII '0' (drive OK response). Used only by the copy-protection check.",
+   "segrax_equivalent": "",
+   "confidence": "medium"
+  },
+  {
+   "address": "0x2E1C",
+   "name": "events_execute",
+   "purpose": "Per-frame engine tick: busy-waits on a flag until the previous tick has finished, marks itself busy, then runs sprite-collision gathering, sprite action execution, and background/object execution in sequence, and increments the engine tick counter.",
+   "segrax_equivalent": "events_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x2E37",
+   "name": "sprite_collision_set",
+   "purpose": "Reads the hardware VIC sprite-sprite and sprite-background collision registers ($D01E/$D01F) and, for the leftmost colliding sprite of each kind, OR's the corresponding collision flag bits into the sprite's own per-sprite state table entry at $BD04,x.",
+   "segrax_equivalent": "Sprite_Collision_Set",
+   "confidence": "high"
+  },
+  {
+   "address": "0x2E79",
+   "name": "sprite_execute",
+   "purpose": "Main per-sprite dispatcher run once per frame for all 32 sprite slots: skips unused sprites, routes destroyed/dying sprites to the flash-on-off handler, routes sprites whose action timer just expired through collision checks and into the per-type action handler, then updates the sprite's screen X/Y and hardware enable state for the frame.",
+   "segrax_equivalent": "Sprite_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x2F8A",
+   "name": "sprite_flash_on_off",
+   "purpose": "Handles the death/flash animation state machine for a sprite: transitions between flashing and dying states, sets a countdown timer, toggles the sprite's colour each tick to create a flash effect, plays the flash sound effect, and updates the animation timer for the next frame.",
+   "segrax_equivalent": "Sprite_FlashOnOff",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3026",
+   "name": "sprite_collision_check",
+   "purpose": "For a given sprite, scans all other active sprites flagged with a pending sprite collision, bounding-box tests each candidate against it (skipping pairs whose per-type hit-data masks exclude each other), and invokes the sprite-vs-sprite collision handler both ways for any that overlap.",
+   "segrax_equivalent": "Sprite_Collision_Check",
+   "confidence": "high"
+  },
+  {
+   "address": "0x30D9",
+   "name": "sprite_collision_resolve",
+   "purpose": "Resolves a single sprite-vs-sprite collision by dispatching on the first sprite's type (player/mummy/frankie/laser/lightning/forcefield) to the matching per-type collision handler, then sets the ACTION_FLASH state bit unless that handler reports no reaction needed.",
+   "segrax_equivalent": "Sprite_Collision",
+   "confidence": "high"
+  },
+  {
+   "address": "0x311E",
+   "name": "sprite_object_collision_check",
+   "purpose": "Bounding-box tests a sprite against every active room object (mRoomAnim), and for each overlapping, non-disabled object calls the sprite-vs-object collision handler (setting ACTION_FLASH on a hit) followed by the 'in front of object' interaction handler.",
+   "segrax_equivalent": "Sprite_Object_Collision_Check",
+   "confidence": "high"
+  },
+  {
+   "address": "0x31F6",
+   "name": "obj_player_execute",
+   "purpose": "Per-frame action handler for player sprites, dispatched from the sprite-type action table (record 0 of the 6-entry actor handler table): handles leaving/entering a room (recording elapsed play time, restoring player colour), advances any queued trap-door/teleport room transition, applies gravity/ladder/floor collision flags computed from the tile under the player, polls the joystick/keyboard for movement input with direction debouncing, and applies the resulting X/Y movement deltas.",
+   "segrax_equivalent": "obj_Player_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3488",
+   "name": "obj_player_color_set",
+   "purpose": "Sets a player sprite's VIC-II hardware sprite color based on the player number / current sprite state; called from multiple points inside the player Execute routine.",
+   "segrax_equivalent": "obj_Player_Color_Set",
+   "confidence": "high"
+  },
+  {
+   "address": "0x34EF",
+   "name": "obj_player_collision",
+   "purpose": "Object-collision handler slot for the Player sprite type (called via the actor handler table's fn3 slot). Checks the player against a static room object such as a trapdoor panel/switch and reacts (e.g. records which switch object the player is standing over).",
+   "segrax_equivalent": "obj_Player_Collision",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3534",
+   "name": "obj_player_sprite_collision",
+   "purpose": "Sprite-vs-sprite collision handler slot for the Player type (\"Hit Player\" per the C++ source comment). Compares the two sprites' screen positions/costume frames to decide which one is 'in front' and sets a flash/hit flag on the losing sprite.",
+   "segrax_equivalent": "obj_Player_Sprite_Collision",
+   "confidence": "high"
+  },
+  {
+   "address": "0x359E",
+   "name": "obj_player_add",
+   "purpose": "Adds/initializes a player sprite entry into the active room's sprite list (spawns the player character sprite).",
+   "segrax_equivalent": "obj_Player_Add",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3639",
+   "name": "obj_lightning_execute",
+   "purpose": "Per-frame Execute handler for a Lightning-bolt sprite: toggles an animation/state bit, rolls a pseudo-random value (via sub_5ED5) to pick the next sprite costume frame and screen column, calls hw_SpritePrepare (sub_5D26) to update the VIC sprite, then returns into the shared Sprite_Execute continuation.",
+   "segrax_equivalent": "obj_Lightning_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3682",
+   "name": "obj_lightning_sprite_collision_stub",
+   "purpose": "Sprite-vs-sprite collision handler slot (actor table fn2) for the Lightning type. It is a tiny stub: clears the 'collision happened' flag ($311d) and jumps into the shared collision tail (loc_3104), so Lightning sprites never register a sprite-vs-sprite hit through this path (mirrors the flash logic being skipped).",
+   "segrax_equivalent": "",
+   "confidence": "medium"
+  },
+  {
+   "address": "0x368A",
+   "name": "obj_lightning_sprite_create",
+   "purpose": "Finds a free sprite slot (via Sprite_CreepFindFree) and initializes it as a Lightning-bolt sprite (type 1), positioned from the generator/pole object's location with a fixed +8 Y offset.",
+   "segrax_equivalent": "obj_Lightning_Sprite_Create",
+   "confidence": "high"
+  },
+  {
+   "address": "0x36B3",
+   "name": "obj_forcefield_execute",
+   "purpose": "Per-frame Execute handler for a Forcefield sprite (\"Forcefield\" per source comment): handles destroy/created state transitions, checks whether the generating machine is on, animates between two sprite costume images while toggling multicolor bits in the sprite attribute block, and calls hw_SpritePrepare to redraw it.",
+   "segrax_equivalent": "obj_Forcefield_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x374F",
+   "name": "obj_forcefield_sprite_collision_stub",
+   "purpose": "Sprite-vs-sprite collision handler slot (actor table fn2) for the Forcefield type. Byte-identical stub to obj_lightning_sprite_collision_stub: clears the collision flag and jumps into the shared collision tail, so Forcefield sprites never register a sprite-vs-sprite hit here.",
+   "segrax_equivalent": "",
+   "confidence": "medium"
+  },
+  {
+   "address": "0x3757",
+   "name": "obj_forcefield_sprite_create",
+   "purpose": "Finds a free sprite slot and initializes it as a Forcefield sprite (type 2) with a fixed initial costume image, called while preparing/spawning forcefield objects for the current room.",
+   "segrax_equivalent": "obj_Forcefield_Create",
+   "confidence": "medium"
+  },
+  {
+   "address": "0x379A",
+   "name": "obj_mummy_execute",
+   "purpose": "Per-frame Execute/movement and AI handler for the Mummy enemy sprite (\"Mummy\" per source comment).",
+   "segrax_equivalent": "obj_Mummy_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x38CE",
+   "name": "obj_mummy_collision",
+   "purpose": "Object-collision handler slot for the Mummy sprite type. Checks the mummy against trapdoor-panel and trapdoor-switch room objects; if the mummy is standing over an open trapdoor it is released back into its tomb (writes state 3 into the room's mummy-state table), and records which switch object it's near.",
+   "segrax_equivalent": "obj_Mummy_Collision",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3940",
+   "name": "obj_mummy_sprite_collision",
+   "purpose": "Sprite-vs-sprite collision handler slot for the Mummy: ignores collisions with the Player and Frankie sprite types (they're resolved elsewhere), otherwise marks the mummy as released/active (writes state 3 into the room's mummy-state table) when it collides with something else (e.g. a laser).",
+   "segrax_equivalent": "obj_Mummy_Sprite_Collision",
+   "confidence": "high"
+  },
+  {
+   "address": "0x396A",
+   "name": "obj_mummy_sprite_create",
+   "purpose": "Finds a free sprite slot and initializes it as a Mummy enemy sprite (type 3), spawned from a tomb/coffin room object.",
+   "segrax_equivalent": "obj_Mummy_Sprite_Create",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3A08",
+   "name": "obj_raygun_laser_execute",
+   "purpose": "Per-frame Execute handler for an in-flight laser-beam sprite fired from a ray gun: on destroy, frees the sprite and clears the raygun's 'don't fire' busy flag; otherwise advances the beam's X position each frame and flags it for destruction once it reaches the edge of the screen.",
+   "segrax_equivalent": "obj_RayGun_Laser_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3A60",
+   "name": "obj_raygun_laser_collision",
+   "purpose": "Object-collision handler slot for a laser-beam sprite versus static room objects/scenery (stops/destroys the beam on a wall or obstacle hit).",
+   "segrax_equivalent": "obj_RayGun_Laser_Collision",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3A7F",
+   "name": "obj_raygun_laser_sprite_create",
+   "purpose": "Finds a free sprite slot, plays the ray-gun firing sound effect (via sound_PlayEffect / sub_21C8), and initializes a new laser-beam sprite (type 4) positioned and aimed from the firing ray-gun object.",
+   "segrax_equivalent": "obj_RayGun_Laser_Sprite_Create",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3AEB",
+   "name": "obj_frankie_execute",
+   "purpose": "Per-frame Execute/movement handler for the Frankenstein monster sprite (\"Frankie Movement\" per source comment).",
+   "segrax_equivalent": "obj_Frankie_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3D6E",
+   "name": "obj_frankie_collision",
+   "purpose": "Object-collision handler slot for Frankie versus static room objects (\"Frankie?\" per source comment).",
+   "segrax_equivalent": "obj_Frankie_Collision",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3DDE",
+   "name": "obj_frankie_sprite_collision",
+   "purpose": "Sprite-vs-sprite collision handler slot for Frankie (\"Franky Hit\" per source comment): resolves a hit between the Frankie sprite and another sprite (typically the player).",
+   "segrax_equivalent": "obj_Frankie_Sprite_Collision",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3E87",
+   "name": "obj_frankie_sprite_create",
+   "purpose": "Finds a free sprite slot and initializes it as the Frankie enemy sprite (type 5); called while preparing a room's Frankenstein monster objects.",
+   "segrax_equivalent": "obj_Frankie_Sprite_Create",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3F14",
+   "name": "sprite_creepfindfree",
+   "purpose": "Scans the fixed-size room sprite table for the first unused (SPR_UNUSED) slot, clears its fields and marks it as newly created, returning that slot index for a caller to populate with a new enemy/effect/projectile sprite. Widely called by every obj_*_Sprite_Create routine.",
+   "segrax_equivalent": "Sprite_CreepFindFree",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3F4F",
+   "name": "object_execute",
+   "purpose": "Iterates every active room-animation object; for any flagged to execute, dispatches through the per-object-type handler address table at $0842 (door, lightning-machine pole, forcefield timer, mummy tomb, ray gun, teleporter, trapdoor switch, conveyor) to run that object's per-frame logic. Afterwards, for any object flagged as 'picked up' it disables the object, decrements the room object count, and compacts the object arrays by moving the last object into the freed slot.",
+   "segrax_equivalent": "object_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x3FD5",
+   "name": "obj_door_execute",
+   "purpose": "Drives a door object's opening/closing animation state machine once triggered (\"Door Opening\" per source comment). Also the per-object-type handler-table entry for OBJECT_TYPE_DOOR referenced from object_Execute.",
+   "segrax_equivalent": "obj_Door_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x4075",
+   "name": "obj_door_infront",
+   "purpose": "Checks whether the player sprite is positioned directly in front of a door object and, if so, triggers the door-open interaction (\"In Front Door\" per source comment).",
+   "segrax_equivalent": "obj_Door_InFront",
+   "confidence": "high"
+  },
+  {
+   "address": "0x41D8",
+   "name": "obj_door_button_infront",
+   "purpose": "Checks whether the player is standing in front of a door-open push-button object and activates it (\"In Front Button?\" per source comment).",
+   "segrax_equivalent": "obj_Door_Button_InFront",
+   "confidence": "high"
+  },
+  {
+   "address": "0x42AD",
+   "name": "obj_lightning_pole_execute",
+   "purpose": "Per-frame update for a lightning-machine generator/pole room object (\"Lightning Machine pole movement\" per source comment); periodically triggers creation of new Lightning-bolt sprites via obj_lightning_sprite_create ($368A). Also the per-object-type handler-table entry for OBJECT_TYPE_LIGHTNING_MACHINE referenced from object_Execute.",
+   "segrax_equivalent": "obj_Lightning_Pole_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x44E7",
+   "name": "lightning_switch_infront",
+   "purpose": "Handler when the player is standing in front of a lightning on/off switch object. Toggles the switch and its linked lightning-machine(s) on/off, re-enables their EXECUTE flag, redraws the switch sprite and plays the lightning-switch sound effect.",
+   "segrax_equivalent": "obj_Lightning_Switch_InFront",
+   "confidence": "high"
+  },
+  {
+   "address": "0x45E0",
+   "name": "forcefield_timer_execute",
+   "purpose": "Per-frame EXECUTE handler for a forcefield's countdown timer object: decrements the timer, updates the on-screen countdown digit/color cells at $6889+Y, plays the forcefield-timer sound, and once the timer reaches zero toggles the EXECUTE flag off and marks the associated forcefield sprite table entry ($4750+objNumber) as expired.",
+   "segrax_equivalent": "obj_Forcefield_Timer_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x4647",
+   "name": "forcefield_timer_infront",
+   "purpose": "InFront handler for the forcefield timer control button: if the player sprite's button/fire state is set, sets up the countdown color value at $75AB to start/restart the timer sequence.",
+   "segrax_equivalent": "obj_Forcefield_Timer_InFront",
+   "confidence": "high"
+  },
+  {
+   "address": "0x46AE",
+   "name": "forcefield_prepare",
+   "purpose": "Room-load handler (public entry point, jmp table #7) that reads the room's forcefield object records, creates OBJECT_TYPE_FORCEFIELD room-anim entries, draws the timer housing and top-of-forcefield graphics, initializes the per-forcefield timer-active byte ($4750+n) and spawns the forcefield's kill-sprite via obj_Forcefield_Create. Reached via fallthrough after forcefield_timer_infront in the same code block (loc_46AE), not via JSR.",
+   "segrax_equivalent": "obj_Forcefield_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x475E",
+   "name": "mummy_tomb_execute",
+   "purpose": "EXECUTE handler for a mummy's tomb/sarcophagus object during its 'releasing' animation: throttled to every 4th engine tick, counts down a timer, alternates two colour values into the flash-color table at $68F0-$68F5, and redraws the tomb graphic; disables EXECUTE once the timer expires.",
+   "segrax_equivalent": "obj_Mummy_Tomb_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x47A7",
+   "name": "mummy_infront",
+   "purpose": "InFront handler triggered when the player stands beside a mummy's tomb: checks proximity and tomb state, and if the tomb is idle (state==1) starts the release sequence \u2014 sets state 2, computes graphic offsets, enables EXECUTE, prints a text label above the tomb and spawns the mummy actor sprite.",
+   "segrax_equivalent": "obj_Mummy_Infront",
+   "confidence": "high"
+  },
+  {
+   "address": "0x4872",
+   "name": "mummy_prepare",
+   "purpose": "Room-load handler (public entry point, jmp table #8) that reads the room's mummy tomb records, creates OBJECT_TYPE_MUMMY room-anim entries, draws the tomb and lid graphics, and for tombs already 'released' at load time spawns the mummy sprite immediately. Reached via fallthrough after mummy_infront (loc_4872), not via JSR.",
+   "segrax_equivalent": "obj_Mummy_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x4990",
+   "name": "key_infront",
+   "purpose": "InFront handler for key pickups: if the player is not busy (climbing/etc.) and its collision flag with the key is set, plays the key-pickup sound, marks the key object ITM_PICKED, and appends the key's ID to that player's collected-keys list ($7813/$7815 area).",
+   "segrax_equivalent": "obj_Key_Infront",
+   "confidence": "high"
+  },
+  {
+   "address": "0x49F8",
+   "name": "key_prepare",
+   "purpose": "Room-load handler (public entry point, jmp table #9) that reads the room's key records and, for each key with a non-zero graphic ID, creates an OBJECT_TYPE_KEY room-anim entry and draws the key sprite. Reached via fallthrough after key_infront (loc_49F8), not via JSR.",
+   "segrax_equivalent": "obj_Key_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x4A68",
+   "name": "door_lock_infront",
+   "purpose": "InFront handler for a door lock: if the player has the matching key (checked via obj_Key_NotFound), finds the linked door object by objNumber and sets its EXECUTE flag to trigger the door-open sequence.",
+   "segrax_equivalent": "obj_Door_Lock_InFront",
+   "confidence": "high"
+  },
+  {
+   "address": "0x4AB6",
+   "name": "door_lock_prepare",
+   "purpose": "Room-load handler (public entry point, jmp table #10) that reads the room's door-lock records and creates OBJECT_TYPE_DOOR_LOCK room-anim entries with their draw position. Reached via fallthrough after door_lock_infront (loc_4AB6); identified by elimination from the public jmp-table ordering and object type since it lacks an address comment in the reference source.",
+   "segrax_equivalent": "obj_Door_Lock_Prepare",
+   "confidence": "medium"
+  },
+  {
+   "address": "0x4B1A",
+   "name": "raygun_execute",
+   "purpose": "Per-4-tick EXECUTE handler for a ray gun turret: when not player-controlled, scans both players to pick the nearest target and sets an auto-track-up/down flag; then, based on the current move flags, steps the turret's laser Y position up or down, redraws the beam/turret graphic, and fires a laser sprite when appropriate.",
+   "segrax_equivalent": "obj_RayGun_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x4C58",
+   "name": "raygun_prepare",
+   "purpose": "Room-load handler (public entry point, jmp table #12) that reads the room's ray-gun records, draws the guide track, creates the OBJECT_TYPE_RAYGUN_LASER object (unless track-only), and creates the OBJECT_TYPE_RAYGUN_CONTROL button object. Reached via fallthrough after raygun_execute (loc_4C58), not via JSR.",
+   "segrax_equivalent": "obj_RayGun_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x4D70",
+   "name": "raygun_control_infront",
+   "purpose": "InFront handler for the ray-gun manual-control button: if the player is beside it and not busy, sets the turret's manual-move-up/down flag based on the player's climb/stand state and updates the fired-by-player flag from the player's fire button.",
+   "segrax_equivalent": "obj_RayGun_Control_InFront",
+   "confidence": "high"
+  },
+  {
+   "address": "0x4DE9",
+   "name": "raygun_control_update",
+   "purpose": "Small helper that redraws the ray-gun control button's two-frame indicator graphic at the button's stored X/Y using a colour value derived from the passed byte (used to flash/highlight the button when its state changes).",
+   "segrax_equivalent": "obj_RayGun_Control_Update",
+   "confidence": "high"
+  },
+  {
+   "address": "0x4E32",
+   "name": "teleport_execute",
+   "purpose": "Per-other-tick EXECUTE handler that animates a teleporter while it's mid-transport: flickers a random colour into the beam-flash table at $75CF+2, plays the teleport sound, pulses the destination-marker colour ($6E95-$6E98) via obj_Teleport_SetColour, and clears EXECUTE once its countdown (color field) reaches zero.",
+   "segrax_equivalent": "obj_Teleport_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x4EA8",
+   "name": "teleport_infront",
+   "purpose": "InFront handler for a teleporter: if idle and the player presses fire, warps the player to the currently-selected destination (setting mX/mY and starting the transport animation via EXECUTE); if not firing, cycles the selected destination every 16 ticks and recolors the destination marker.",
+   "segrax_equivalent": "obj_Teleport_InFront",
+   "confidence": "high"
+  },
+  {
+   "address": "0x4F5C",
+   "name": "teleport_prepare",
+   "purpose": "Room-load handler (public entry point, jmp table #13) that draws the teleporter unit and its base text label, creates the OBJECT_TYPE_TELEPORTER room-anim entry, sets its initial marker colour, and draws each teleport-destination source marker listed in the room data. Reached via fallthrough after teleport_infront (loc_4F5C), not via JSR.",
+   "segrax_equivalent": "obj_Teleport_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x505C",
+   "name": "teleport_set_colour",
+   "purpose": "Helper that writes a shade (colour<<4 | 0x0A / 0x0F pattern) into the destination-marker colour cells $6E70-$6E75, then looks up the object's teleport-destination table entry to compute and redraw the marker sprite.",
+   "segrax_equivalent": "obj_Teleport_SetColour",
+   "confidence": "high"
+  },
+  {
+   "address": "0x50D2",
+   "name": "trapdoor_switch_execute",
+   "purpose": "EXECUTE handler that animates a trapdoor panel opening or closing: plays the click sound each frame via obj_TrapDoor_PlaySound, redraws the current animation frame, and steps the frame counter toward its open (0x78) or closed (0x73) target, clearing EXECUTE once the target is reached.",
+   "segrax_equivalent": "obj_TrapDoor_Switch_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x5171",
+   "name": "trapdoor_play_sound",
+   "purpose": "Tiny helper that stores a sound-pitch/volume byte derived from the current animation frame at $759F and triggers the trapdoor-switched sound effect.",
+   "segrax_equivalent": "obj_TrapDoor_PlaySound",
+   "confidence": "high"
+  },
+  {
+   "address": "0x517F",
+   "name": "trapdoor_prepare",
+   "purpose": "Room-load handler (public entry point, jmp table #14) that reads the room's trapdoor records, creates a TRAPDOOR_PANEL object (drawing it open or closed, updating the floor-collision bitmap at word_3C) and a paired TRAPDOOR_SWITCH button object for each trapdoor. Reached via fallthrough after trapdoor_play_sound (loc_517F), not via JSR.",
+   "segrax_equivalent": "obj_TrapDoor_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x526F",
+   "name": "trapdoor_switch_check",
+   "purpose": "Called when a mummy or Frankie steps on a floor switch: toggles the linked trapdoor's open/closed state, finds and sets EXECUTE on its TRAPDOOR_PANEL object, updates the floor-collision bitmap (word_3C, via word_3C_Calculate) to match the new open/closed state, and redraws the switch graphic.",
+   "segrax_equivalent": "obj_TrapDoor_Switch_Check",
+   "confidence": "high"
+  },
+  {
+   "address": "0x538B",
+   "name": "conveyor_execute",
+   "purpose": "Per-frame EXECUTE handler for a conveyor belt: applies pending player-switch requests to turn the belt on/off or reverse it (updating colour cells $70A6/$70A8/$7624 and playing the switch sound), then, while running, alternates the belt's animation frame every other tick.",
+   "segrax_equivalent": "obj_Conveyor_Execute",
+   "confidence": "high"
+  },
+  {
+   "address": "0x5501",
+   "name": "conveyor_prepare",
+   "purpose": "Room-load handler (public entry point, jmp table #15) that reads the room's conveyor records, creates a CONVEYOR_BELT room-anim object (clearing switch-request flags, drawing the belt) and a paired CONVEYOR_CONTROL button object with its indicator lamp coloured for the belt's initial on/off/direction state. Reached via fallthrough after conveyor_execute (loc_5501), not via JSR.",
+   "segrax_equivalent": "obj_Conveyor_Prepare",
+   "confidence": "high"
+  },
+  {
+   "address": "0x548B",
+   "name": "conveyor_infront",
+   "purpose": "InFront handler applied each frame to any sprite (player, mummy or Frankie) overlapping a running conveyor belt: nudges the sprite's X position in the belt's direction of travel (single-step for the player unless every-8th-tick, double-step otherwise) as long as the sprite is close enough to the belt's front edge.",
+   "segrax_equivalent": "obj_Conveyor_InFront",
+   "confidence": "high"
+  },
+  {
+   "address": "0x564E",
+   "name": "obj_frankie_prepare",
+   "purpose": "Parses the room's Frankenstein-monster records from level data during room load: for each entry, draws the 'in-socket' graphic, patches the bitmap collision mask for the facing direction, creates a room object/anim entry, draws the correct left/right-facing sprite icon, and spawns the hardware sprite.",
+   "confidence": "high",
+   "segrax_equivalent": "cCreep::obj_Frankie_Prepare"
+  },
+  {
+   "address": "0x5611",
+   "name": "obj_conveyor_control_infront",
+   "purpose": "Per-object-type 'player standing in front' handler for a conveyor's control switch: if the player sprite has its fire/action button held, sets that player's 'switched' bit in the conveyor's state byte (mConveyorPtr-indexed).",
+   "confidence": "high",
+   "segrax_equivalent": "cCreep::obj_Conveyor_Control_InFront"
+  },
+  {
+   "address": "0x5750",
+   "name": "anim_object_allocate_and_clear",
+   "purpose": "Allocates a new room object/anim slot: bounds-checks and increments the 32-entry object counter at $083E, zero-clears the corresponding 8-byte-strided mRoomAnim ($BF00,x) and mRoomObjects ($BE00,x) records, and marks the new anim entry's flags as disabled ($083F/ITM_DISABLE).",
+   "confidence": "medium",
+   "segrax_equivalent": "cCreep::object_Create"
+  },
+  {
+   "address": "0x5783",
+   "name": "draw_room_anim_object",
+   "purpose": "Draws (or redraws) a room 'anim' object's current graphic via screenDraw, saving the new gfxID/X/Y back into the anim record and clearing its ITM_DISABLE flag so future updates know it is visible.",
+   "confidence": "high",
+   "segrax_equivalent": "cCreep::Draw_RoomAnimObject"
+  },
+  {
+   "address": "0x57DF",
+   "name": "room_anim_disable",
+   "purpose": "Hides a room anim object: if not already disabled, redraws it in erase/background mode via screenDraw using its stored position and graphic, then sets its ITM_DISABLE flag.",
+   "confidence": "high",
+   "segrax_equivalent": "cCreep::roomAnim_Disable"
+  },
+  {
+   "address": "0x580D",
+   "name": "screen_draw",
+   "purpose": "Central bitmap/text blit routine: decodes a text string and/or a graphic tile (looked up via the 2-byte pointer table at $603B) into on/off-screen clipping rectangles, computes the resulting dirty-row range against the previous draw, and plots pixels into the custom hi-res bitmap at $C000 using the $5CE6/$5D06 row-address tables and $BB00/$BC00 line pointers. Called by almost every object-drawing routine.",
+   "confidence": "high",
+   "segrax_equivalent": "cCreep::screenDraw"
+  },
+  {
+   "address": "0x5D26",
+   "name": "hw_sprite_prepare",
+   "purpose": "Prepares a C64 hardware sprite for display: looks up its sprite image data via the $603B graphic pointer table, stores collision width/height and sprite flags, and computes which sprite-pointer bank slot ($C000 region, XOR-8 double-buffer trick) the image lives in.",
+   "confidence": "high",
+   "segrax_equivalent": "cCreep::hw_SpritePrepare"
+  },
+  {
+   "address": "0x5E8E",
+   "name": "obj_key_not_found",
+   "purpose": "Searches the current player's 'keys collected' array ($7815 for player 1 / $7835 for player 2, sized by the counts at $7813/$7814) for a given key/object id; returns with carry set if not found, clear if found. Used by the door-lock proximity handler to test whether the player holds the matching key.",
+   "confidence": "high",
+   "segrax_equivalent": "cCreep::obj_Key_NotFound"
+  },
+  {
+   "address": "0x5ED5",
+   "name": "seed_get",
+   "purpose": "24-bit LFSR-style pseudo-random number generator: rotates/XORs three persistent seed bytes at $5EF9-$5EFB and returns a new pseudo-random byte in A. Used throughout for enemy/AI and effect randomness.",
+   "confidence": "high",
+   "segrax_equivalent": "cCreep::seedGet"
+  },
+  {
+   "address": "0x5EFC",
+   "name": "poll_joystick_and_runstop",
+   "purpose": "Low-level hardware input poll: detects the RUN/STOP key via the classic CIA#1 keyboard-matrix trick (select row $7F on Port A, test bit 7 of Port B), then reads both joystick ports through CIA#1 (port assignment swapped based on a stored flag), and translates the raw direction/fire bit pattern through a 16-entry lookup table at $5F59 into an internal direction code plus a separate fire-button flag.",
+   "confidence": "medium",
+   "segrax_equivalent": ""
+  },
+  {
+   "address": "0x5F6B",
+   "name": "position_calculate",
+   "purpose": "Given a sprite number, computes clipped screen-cell row/column values (dividing by 8 and 4, keeping the remainders) from the sprite's bottom-right corner (mX+mWidth, mY+mHeight), leaving intermediate results at $5FD5-$5FD8 for word_3C_Calculate.",
+   "confidence": "high",
+   "segrax_equivalent": "cCreep::positionCalculate"
+  },
+  {
+   "address": "0x5FA3",
+   "name": "word_3c_calculate",
+   "purpose": "Converts the row/column cell values prepared by positionCalculate (or set directly by a caller, e.g. obj_Frankie_Prepare) into an absolute bitmap-memory address at zero page $3C/$3D, using the $5CE6/$5D06 per-row base-address tables added to the $C000 bitmap base.",
+   "confidence": "high",
+   "segrax_equivalent": "cCreep::word_3C_Calculate"
+  },
+  {
+   "address": "0x5FD9",
+   "name": "room_ptr_set",
+   "purpose": "Computes the room-header pointer for a given room number: room# * 8 + $7900, adding a further $2000 when the intro/attract-mode flag ($0D0F) is set, since intro rooms live in a different memory bank.",
+   "confidence": "high",
+   "segrax_equivalent": "cCreep::roomPtrSet"
+  },
+  {
+   "address": "0x6009",
+   "name": "room_extra_record_lookup",
+   "purpose": "Reads the room's secondary pointer table (word stored at mRoomPtr+4), returns the leading count byte of the record selected by the given index, and leaves a pointer to that record (base + index*8 + 1) in zero page $40/41. Left unnamed even by the original reverse-engineer, who kept it literally as sub_6009 in the ported source.",
+   "confidence": "high",
+   "segrax_equivalent": "cCreep::sub_6009"
+  },
+  {
+   "address": "0x7572",
+   "name": "options_menu_prepare",
+   "purpose": "Builds the pause/options menu screen: clears text screen memory $0400-$07FF, iterates the menu-item table at $7760 (text pointer, X/Y cell, action id), records clickable hot-spot rectangles into $BA00+ for hit-testing, blits each menu string into bitmap memory at its computed cell position, and draws the '>' selection-cursor glyph at the currently highlighted item.",
+   "confidence": "high",
+   "segrax_equivalent": "cCreep::optionsMenuPrepare"
+  },
+  {
+   "address": "0x730C",
+   "name": "obj_door_prepare",
+   "purpose": "Parses the room's door records from level data during room load: for each door, draws its graphic, creates a room object/anim entry, sets its palette colour nibble from the room it links to, chooses the locked/unlocked icon, and draws the finished door.",
+   "confidence": "high",
+   "segrax_equivalent": "cCreep::obj_Door_Prepare"
+  },
+  {
+   "address": "0x752A",
+   "name": "obj_door_button_prepare",
+   "purpose": "Parses the room's door-button records from level data: creates a room object/anim entry per button, copies the palette colour of the door it is wired to into the button's colour table entry, and draws the button graphic.",
+   "confidence": "high",
+   "segrax_equivalent": "cCreep::obj_Door_Button_Prepare"
+  }
+ ]
+}

@@ -154,12 +154,18 @@ def cmd_extract(image: str, outdir: str) -> None:
     d = D64(image)
     out = pathlib.Path(outdir)
     out.mkdir(parents=True, exist_ok=True)
+    manifest = []
     for e in d.directory():
         data = d.extract_file(e)
         ext = e.type_name.lower()
-        path = out / f"{safe_filename(e.name)}.{ext}"
+        stem = safe_filename(e.name)
+        path = out / f"{stem}.{ext}"
         path.write_bytes(data)
+        manifest.append(stem)
         print(f"wrote {path} ({len(data)} bytes)")
+    # disk directory order matters: the game's menu shows entries in this
+    # order and defaults to the first match
+    (out / "manifest.txt").write_text("\n".join(manifest) + "\n")
 
 
 def cmd_map(image: str) -> None:
