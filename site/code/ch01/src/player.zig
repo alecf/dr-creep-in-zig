@@ -54,7 +54,7 @@ pub fn start(m: *Machine) void {
     m.poke(map.player_x, 160);
     m.poke(map.player_y, max_y);
     m.poke(map.player_color, @intFromEnum(Color.white));
-    m.poke(map.last_stick, 0xFF); // nothing held
+    m.poke(map.player_last_stick, 0xFF); // nothing held
 }
 
 /// Copy the player's position and colour into the VIDEO chip.
@@ -68,7 +68,7 @@ pub fn show(m: *Machine) void {
 /// A fresh press of fire picks the next colour.
 pub fn steer(m: *Machine) void {
     const stick = m.peek(hw.joy1);
-    const before = m.peek(map.last_stick);
+    const before = m.peek(map.player_last_stick);
     var x = m.peek(map.player_x);
     var y = m.peek(map.player_y);
 
@@ -86,7 +86,7 @@ pub fn steer(m: *Machine) void {
 
     m.poke(map.player_x, x);
     m.poke(map.player_y, y);
-    m.poke(map.last_stick, stick);
+    m.poke(map.player_last_stick, stick);
     m.work(40); // the tests, sums and branches above
 }
 

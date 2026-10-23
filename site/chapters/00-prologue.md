@@ -93,7 +93,8 @@ rules of the game we're playing. Here they are:
 Every design decision in this game comes back to that table. Why is the
 castle stored as packed bytes instead of a tidy list of objects? The
 first row. Why do the monsters think in such small steps? The third. Why
-does the game work so hard to never need a ninth sprite? You can guess.
+does the game work so hard never to need a ninth sprite? The fourth
+row, and you'll meet it head-on when the lasers arrive.
 
 Treat them like a level's time limit. Nobody plays a platformer and
 complains that the clock exists. The clock is what makes it a game.
@@ -151,28 +152,35 @@ off so you can see why it's there.
 - **An editor** with Zig support if you can get one (the Zig language
   server, ZLS, gives you errors as you type). Not required.
 
-Then get the tutorial's code folder. It looks like this:
+Then **[download the starter kit](downloads/starter.zip)** and unzip it
+anywhere you like. It unzips into a folder called `code/`:
 
 ```
 code/
   machine/      the Comet 64 and its reference card
   starter/      the starter kit: your game, before Chapter 1
-  ch01/         the checkpoint at the end of Chapter 1
-  ch02/         ...and so on
 ```
+
+Each chapter's Warp Zone has a download of that chapter's checkpoint too
+(`ch01.zip`, `ch02.zip`, and so on). Unzip them in the same place and
+they land beside the others, as `code/ch01/`, `code/ch02/`, ...
 
 ## Power on
 
-Make your own copy of the starter kit, next to `machine/` so it can find
-the computer:
+Make your own copy of the starter kit, as `code/my-creep/`, right next
+to `machine/` so it can find the computer:
 
 ```
 cd code
 cp -r starter my-creep
+rm -rf my-creep/.zig-cache my-creep/zig-out my-creep/web
 cd my-creep
 ```
 
-Everything from here on happens inside `my-creep`. Inside it are three
+The `rm` line clears out anything the copy brought along from a build
+of the original (there shouldn't be any in a fresh download, but it's a
+good habit, and the Pro Tip further down says why). Everything from here on
+happens inside `code/my-creep/`. Inside it are three
 files that matter:
 
 ```
@@ -227,10 +235,29 @@ That runs your game's own tests (there aren't any yet), then boots it and
 plays 100 frames to make sure it gets through them. It prints nothing
 when everything passes.
 
+:::pro-tip Copy without the cache
+When Zig builds a project, it keeps its work in `.zig-cache/` (and the
+results in `zig-out/`), and the cache remembers where that project's
+source files live. Copy a project that has been built, cache and all,
+and `zig build` in the copy can quietly keep using the *original's*
+game, ignoring everything you type. So whenever you copy a project,
+delete the copy's `.zig-cache`, `zig-out` and `web` folders, as in the
+commands above. If you ever change code and nothing changes on screen,
+that's the first thing to check.
+:::
+
 :::warp-zone
-The starter kit is at [`code/starter/`](../code/starter/). If your copy
-ever gets into a state you don't like, copy it again, or copy any
-chapter's checkpoint and carry on from there.
+The starter kit is at [`code/starter/`](../code/starter/), or as a
+download, [`starter.zip`](downloads/starter.zip). If your copy ever gets
+into a state you don't like, start again from the kit (or from any
+chapter's checkpoint, swapping `ch01` or whichever for `starter`):
+
+```
+cd code
+rm -rf my-creep
+cp -r starter my-creep
+rm -rf my-creep/.zig-cache my-creep/zig-out my-creep/web
+```
 :::
 
 :::boss-battle

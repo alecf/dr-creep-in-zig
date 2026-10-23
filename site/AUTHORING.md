@@ -428,11 +428,26 @@ Keep a running list of rooms and their room numbers in the Decision log.
   Detector Power-Up`); `mission-briefing`, `warp-zone` and `bonus-stage`
   usually don't. Screenshots live in `site/chapters/images/NN-name.png`:
   headless PPMs converted to PNG at 2× scale (768×544), referenced as
-  `images/NN-name.png`. Non-Zig pseudo-code goes in a plain ``` fence,
-  never a ```zig one (every ```zig block should be real Zig).
+  `images/NN-name.png`. Non-Zig pseudo-code goes in a plain ``` fence.
+  **Fence markers:** ```zig is code the reader types into the project (a
+  whole file or a labelled insertion); site tooling and checkers may
+  extract these. ```zig snippet is Zig that is *not* typed into the
+  project: quotes of machine source, deliberate compile errors,
+  counterexamples, bare statements. Tooling must skip `zig snippet`.
 - **The reader's project.** The Prologue has the reader copy `starter/`
   to `code/my-creep/` (a sibling of `machine/`, so `../machine` resolves)
-  and work there for the whole series. Chapter 1 renames the runner:
+  and work there for the whole series. **Every copy instruction is
+  exact commands** (`rm -rf my-creep; cp -r chNN my-creep; rm -rf
+  my-creep/.zig-cache my-creep/zig-out my-creep/web`): a copied
+  `.zig-cache` makes `zig build` silently reuse the original's binary
+  (verified by the ch01 reviewer). The Prologue has a Pro Tip about it.
+- **Downloads (site build TODO).** The Prologue links
+  `downloads/starter.zip` ("download the starter kit"), and each Warp
+  Zone links `downloads/chNN.zip` (relative to the chapter page). The site
+  build must produce them from a **clean checkout** (no `.zig-cache`,
+  `zig-out`, `web/`, `frames/`). `starter.zip` unzips to `code/machine/` +
+  `code/starter/`; `chNN.zip` unzips to `code/machine/` + `code/chNN/`, so
+  unzipping several into one place merges them. Chapter 1 renames the runner:
   every checkpoint's `build.zig` uses `.name = "creep"` (supersedes
   "`.name = "chNN"`" above; only `starter/` says `"starter"`). After
   chapter 1, `build.zig` and `build.zig.zon` never change.
@@ -451,21 +466,28 @@ Keep a running list of rooms and their room numbers in the Decision log.
   (reads like the card's `$0200–$0203`). A game region is a `pub const`
   `Region` named for its contents (`player`); its fields are `u16`
   address constants named `region_field`, computed from the region
-  (`pub const player_x = player.first + 0;`). Hardware regions the game
-  touches are private `Region` constants built from `machine.hw` names.
+  (`pub const player_x = player.first + 0;`), always prefixed with the
+  region name (`player_last_stick`, not `last_stick`). Hardware regions
+  the game touches are private `Region` constants built from
+  `machine.hw` names, with the last byte derived from the card's sizes
+  (`hw.bitmap + 8000 - 1`, `hw.spriteColor(7)`), not a literal.
   All go in `pub const regions = [_]Region{...}` **in address order**,
   and a top-level `comptime` block rejects any overlap or inverted range
   with `@compileError("memory map: A overlaps B")`. Chapters add rows;
   they never bypass the map. ch01 rows: stack (reserved), player
   `$0200–$0203`, program image, sprite frames, sprite pointers, VIDEO chip
   `$D000–$D02E`, colour RAM, input ports `$DC00–$DC02`, bitmap.
-- **Game state at ch01.** `player` = `$0200 x`, `$0201 y`, `$0202
-  color`, `$0203 last_stick` (joystick-1 port byte from last frame, for
-  edge detection; boot sets `$FF`). Player is sprite 0 showing sprite
+- **Game state at ch01.** `player` = `$0200 player_x`, `$0201
+  player_y`, `$0202 player_color`, `$0203 player_last_stick` (joystick-1
+  port byte from last frame, for edge detection; boot sets `$FF` because
+  power-on RAM is `$00`, which reads as "every switch held"). Player is sprite 0 showing sprite
   block 0 (`$C000`). X is a plain sprite-X byte clamped to 24–255 (the
   9th bit, `$D010`, is unused; the chapter calls the stop at 255 "the
-  wall made of arithmetic" and promises chapter 4 fixes coordinates;
-  ch4 should pay that off, e.g. with the 1984 fat-pixel+16 X). Y is
+  wall made of arithmetic"). **Promise to keep: chapter 4 introduces the
+  1984 object X coordinate (fat pixel + 16, one byte for the whole
+  width), which removes the wall.** ch1 says ch4 shows "how the 1984 game
+  fits its coordinates into a byte without losing the edge of the
+  screen". Y is
   clamped 50–221 (boots on the floor). ch01 colours: border blue,
   background black, floor grey, player starts white; fire cycles 1→15→1,
   skipping 0.
@@ -474,7 +496,9 @@ Keep a running list of rooms and their room numbers in the Decision log.
   raster 51), then runs game logic (`player.steer`), whose results show
   next frame. Later chapters keep "all register writes at the top of
   `frame`". Chapter 1 teaches the 3,213-cycle rule and shows a tear
-  (Secret Passage, `m.work(6000)` before `show`); the Inside the Disk box
+  (Secret Passage at the end of "Fire!": `m.work(6000)` before `show`,
+  `--frames 152 --press 0:u:134 --press 150:f:5`, torn frame 151); the
+  Inside the Disk box
   told the 30-byte zero-page shadow-register story, so don't retell it.
 - **Joystick idiom.** `fn held(stick: u8, switch_bit: u8) bool { return
   stick & switch_bit == 0; }` (private, in `player.zig`) is the only place
@@ -489,5 +513,16 @@ Keep a running list of rooms and their room numbers in the Decision log.
   "page" (256-byte, the high hex byte of an address); "mask"; "active-low";
   "tear"; "shadow copy". Hex: `$D020` in prose and tables, `0xD020` in
   code. ch01 already told readers: overflow panics are chapter 4,
-  bitmap pixel codes are chapter 2, comptime room DSL is chapter 3,
-  interrupts are "a later chapter".
+  bitmap pixel codes and masks/moving bits are chapter 2, "Chapter 2
+  shows what a pointer really is", comptime room DSL is chapter 3,
+  interrupts / "what happens between frames" are "a later chapter",
+  sprite-pointer animation is "a trick we'll lean on hard from Chapter
+  2". **Meter promise for ch2:** ch1's Byte Budget says "Chapter 2 starts
+  drawing whole rooms, and the meter will finally have something to
+  say". Boot is unmetered, so ch2 must draw (or redraw) the room from
+  `frame` at least once where the meter sees it (e.g. blank, draw, unblank
+  as a loading pause, or redraw on a key), or soften that line in ch1.
+- **Shell internals Secret Passage dropped.** The outline's ch1 "shell
+  internals get a Secret Passage" is superseded: the shells are part of
+  the provided machine (§2), and ch1 doesn't look inside them. Don't flag
+  its absence.

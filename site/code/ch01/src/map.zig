@@ -16,18 +16,18 @@ pub const player = Region{ .name = "player", .first = 0x0200, .last = 0x0203 };
 pub const player_x = player.first + 0; // sprite X, 24 (left edge) to 255
 pub const player_y = player.first + 1; // sprite Y, 50 (top edge) and down
 pub const player_color = player.first + 2; // palette number, 1-15
-pub const last_stick = player.first + 3; // joystick 1 as it read last frame
+pub const player_last_stick = player.first + 3; // joystick 1 as it read last frame
 
 // ---- memory the hardware gives us ---------------------------------------
 
-const stack = Region{ .name = "stack (reserved)", .first = hw.stack, .last = 0x01FF };
+const stack = Region{ .name = "stack (reserved)", .first = hw.stack, .last = hw.stack + 256 - 1 };
 const program = Region{ .name = "program image", .first = hw.program, .last = hw.program_end - 1 };
-const sprite_frames = Region{ .name = "sprite frames", .first = hw.sprite_data, .last = 0xC7FF };
-const sprite_pointers = Region{ .name = "sprite pointers", .first = hw.sprite_pointers, .last = 0xCFFF };
-const video_chip = Region{ .name = "VIDEO chip", .first = hw.video_chip, .last = 0xD02E };
-const color_ram = Region{ .name = "colour RAM", .first = hw.color_ram, .last = 0xDBE7 };
+const sprite_frames = Region{ .name = "sprite frames", .first = hw.sprite_data, .last = hw.sprite_data + 32 * 64 - 1 };
+const sprite_pointers = Region{ .name = "sprite pointers", .first = hw.sprite_pointers, .last = hw.sprite_pointers + 8 - 1 };
+const video_chip = Region{ .name = "VIDEO chip", .first = hw.video_chip, .last = hw.spriteColor(7) };
+const color_ram = Region{ .name = "colour RAM", .first = hw.color_ram, .last = hw.color_ram + 1000 - 1 };
 const input_ports = Region{ .name = "input ports", .first = hw.joy2, .last = hw.key };
-const bitmap = Region{ .name = "bitmap", .first = hw.bitmap, .last = 0xFF3F };
+const bitmap = Region{ .name = "bitmap", .first = hw.bitmap, .last = hw.bitmap + 8000 - 1 };
 
 /// The whole map, in address order.
 pub const regions = [_]Region{
