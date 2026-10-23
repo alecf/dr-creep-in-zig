@@ -36,14 +36,15 @@ That's the big idea of this chapter, and maybe of the whole game: **data
 is the program**. The engine knows how to draw a ladder; the castle says
 where the ladders go. Change the bytes and you have a different game
 without touching a line of code. By the end of this chapter, `room.zig`
-won't know a single room by heart.
+won't have a single room built into its code.
 
 In JavaScript you'd keep the castle as JSON and `JSON.parse` it. It reads
 well. Here's what it costs: the Training Castle with every field named is
 about 21,000 bytes, a third of the Comet's memory, before parsing has
 built a single object. The castle file says the same in 4,323 bytes with
-no names at all, because where a byte sits says what it means. The game
-never parses it. It reads the bytes where they lie.
+no names at all, because a byte's position tells you what it means: the
+third byte is always the castle marker. The game never converts the file
+into objects. It reads each value straight out of memory when it needs it.
 
 ## The header: 256 bytes and a magic number
 
@@ -60,8 +61,8 @@ byte above the program image. Only a few fields are set:
 | `$5F` | 2 | where the final room's objects are, or 0 if there's no final room |
 
 The rest is spare. While you play, the game keeps its notes there (which
-room you're in, the clock, your keys), which is why the file reserves a
-whole page for a header that needs a dozen bytes.
+room you're in, the clock, your keys). That's why the header takes 256
+bytes when its fields need only a dozen.
 
 ### Low byte first
 
@@ -75,11 +76,11 @@ castle of `$0154` bytes stores its size like this:
 ```
 
 This is **little-endian**: the little end goes first. It looks backwards
-to a human, who writes the big digits on the left, but it's the natural
-order for a processor that handles one byte at a time. Just as you add
-on paper from the right-hand column, it works out "this address plus 3" by adding to the
-low byte and carrying into the high one, so with the low byte first it can
-start before the high byte arrives. `m.peek16` puts the halves back
+to a human, who writes the big digits on the left, but it suits a processor
+that reads one byte at a time. To work out "this address plus 3", it adds
+3 to the low byte and then carries into the high byte, just as you add on
+paper starting from the right-hand column. With the low byte stored first,
+it can start adding as soon as it has read that first byte. `m.peek16` puts the halves back
 together: `peek(a) | peek(a + 1) << 8`.
 
 ## The room directory
@@ -97,26 +98,28 @@ One entry, field by field. Nothing reads the two **skip** bytes (see the end of 
 :::
 
 How does the game know where the directory stops? There's no room count
-anywhere. Instead, the byte after the last entry has **bit 6
-set**, which no colour byte ever does: `$40` if the castle has a final
-room, `$FF` if not. It's Chapter 2's bit-7 string trick again: a
+anywhere. An entry's first byte is its colour, and no colour byte has
+**bit 6** set. So the castle puts a byte with bit 6 set after the last
+entry: `$40` if the castle has a final room, `$FF` if not. It's Chapter 2's bit-7 string trick again: a
 **sentinel**, a value that means "stop here", tucked into a bit
 the data never uses.
 
 ### A struct is a row of bytes
 
-Here's where Zig gets to describe those 8 bytes for us. A JavaScript
-object is laid out however the engine likes; you can't lay it over memory
-and read the bytes underneath, because it isn't bytes, it's a pointer to
-a heap allocation. A Zig **`extern struct`** is
-a promise about bytes: its fields sit in the order you wrote them, by
-layout rules every compiler agrees on. Declare the entry as one and `@sizeOf(Entry)` is 8, `@offsetOf(Entry, "objects")`
-is 6, and the struct *is* the format. (A plain `struct`, like the `Walker`
+Here's where Zig gets to describe those 8 bytes for us. In JavaScript the
+engine decides how an object is stored, and your variable only holds a
+reference to it, so you can't point an object at 8 bytes of memory and read
+them as its fields. A Zig **`extern struct`** guarantees its layout: the
+fields sit in memory in the order you wrote them, by layout rules every
+compiler agrees on. Declare the entry as one and `@sizeOf(Entry)` is 8,
+`@offsetOf(Entry, "objects")` is 6, and the struct declaration is an exact
+description of the format. (A plain `struct`, like the `Walker`
 coming up, makes no such promise; Zig may reorder its fields.)
 
-One catch. A `u16` likes to start on an even address (its
-**alignment**), so a two-byte field after a single byte gets padding, and
-every field after it reads one byte late:
+One catch. A `u16` field has to start at an even offset (that rule is its
+**alignment**). Put a `u16` right after a single `u8` and Zig inserts an
+unused **padding** byte before it, so from there on every field sits one
+byte later than the castle format says:
 
 :::diagram ch03-padding
 Top: a JavaScript object is found by name; an `extern struct` is bytes in order. Bottom: one padding byte puts `objects` on the wrong bytes.
@@ -134,7 +137,7 @@ error: m.view(room.Squeezed): field room.Squeezed.objects would start at byte 2,
 ```
 
 When the layout lines up, `m.view(Entry, address)` hands you a typed
-pointer, so `entry.map_y` means "the byte two after that address". For the
+pointer, so `entry.map_y` means "the byte at that address plus 2". For the
 size byte, a **`packed struct(u8)`** cuts a byte into bit fields from bit
 0 up, so `size.width` reads bits 3–5 without hand-written masking.
 
@@ -224,8 +227,9 @@ pub fn roomCount(m: *Machine) u8 {
 ```
 
 `roomCount` walks the directory until it finds the bit-6 sentinel.
-`max_rooms` is our own limit: 31 rooms and the end byte fit in the page
-from `$7900`, so an entry's address is always `$7900` plus a single byte.
+`max_rooms` is our own limit: 31 entries and the end byte fit in the 256
+bytes from `$7900`, so an entry's distance from `$7900` always fits in one
+byte.
 
 :::widget hex-inspector
 The Training Castle's header and directory as hex; hover a byte to see its field and value.
@@ -289,8 +293,8 @@ const hall = [_]u8{
 Count along with the comments. The directory is one entry and the end
 byte, `$7900` to `$7908`, so the hall's objects start at `$7909`, written
 `09 79`. The hall is 75 bytes, so the castle is 256 + 9 + 75 = 340 bytes,
-`$0154`, written `54 01`. Change the hall by a single byte and that size
-is wrong, and nothing tells you. Hold that thought.
+`$0154`, written `54 01`. Add or remove one byte in the hall and that size
+is wrong, and nothing warns you. Hold that thought.
 
 Boot copies the castle into its region:
 
@@ -337,9 +341,9 @@ Every walkway, ladder and pole takes the room's one colour. Before a room
 is drawn, the game **repaints the floor pieces in the shape table
 itself**, writing the colour into the screen-plane bytes for codes 01 and
 10. No colour per walkway, no colour parameter on the drawing code. The
-shape table is memory like everything else, so the room changes the
-pictures instead of the pictures taking orders, exactly as the 1984 game
-does.
+shape table is ordinary memory, so instead of telling every drawing call
+which colour to use, the room rewrites the pictures themselves. The 1984
+game does exactly this.
 
 **`src/shapes.zig`** (add below `address`)
 
@@ -360,8 +364,8 @@ pub fn recolor(m: *Machine, id: Id, colors: u8) void {
 `width × height` pixel bytes) and fills them. Two `m.mul8`s are fine: this
 runs once per piece per room, not per frame.
 
-Now `room.zig` paints with room 0's colour before drawing the hall it
-still knows by heart:
+Now `room.zig` paints with room 0's colour before drawing the hall, which
+is still hand-placed in code:
 
 **`src/room.zig`** (replace the imports)
 
@@ -404,7 +408,8 @@ fn both(color: u8) u8 {
 
 `both` puts a colour in both halves of a byte. Build, press fire, and the
 bricks are red because the castle file said so. Everything else in the
-room is still Chapter 2's hand-placed code. Time to read the rest.
+room is still Chapter 2's hand-placed code. Time to read the rest of the
+room from the castle file too.
 
 ## Streams of tagged objects
 
@@ -416,7 +421,7 @@ plus one group from the final room:
 Every group starts with a tag; how it ends depends on the kind.
 :::
 
-Read low byte first, the tags are three apart: `$0803` for doors, `$0806`
+Read low byte first, the tags go up in threes: `$0803` for doors, `$0806`
 for walkways, and so on up to `$0836`, one for each of the eighteen kinds
 of object. `$0000` ends the room. Why those numbers? Okay, this next bit
 is the cleverest thing in the whole format:
@@ -425,10 +430,11 @@ is the cleverest thing in the whole format:
 Why `$0803`, and why three apart? Because the tags are **addresses in the
 program**. The 1984 engine starts with a table of jumps at `$0803`, three
 bytes each: one for the processor's "jump" instruction and two for where
-to jump. To prepare a room, it jumps straight to the tag, landing in
-the code for that kind of object. No lookup, no comparison: **the data
-carries the address of the code that reads it.** The title screens' tags
-are the routines' own addresses, `$160A` and `$2A6D`.
+to jump. To set up each group, it jumps to the address in its tag, which
+lands on the jump to the code for that kind of object. No lookup, no
+comparison: **the data carries the address of the code that reads it.**
+The title screens' tags skip the table and give the routines' own
+addresses, `$160A` and `$2A6D`.
 :::
 
 :::diagram ch03-tags
@@ -436,9 +442,10 @@ Top: the jump table the tags point into. Bottom: our 54-entry table, every third
 :::
 
 Our tags can't be addresses in our own program: Zig decides where our
-functions go, and it isn't `$0803`. So we turn the tag
-back into a kind with that table (Chapter 2's Lookup Table Power-Up: no
-dividing by three). The enum is in table order.
+functions go, and it isn't `$0803`. So we turn each tag back into a kind
+with the 54-entry table from the figure (Chapter 2's Lookup Table
+Power-Up), which saves dividing by three. The enum lists the kinds in
+table order.
 
 **`src/castle.zig`** (add at the end of the file)
 
@@ -493,8 +500,9 @@ pub fn kindOf(m: *Machine, tag: u16) ?Kind {
 ```
 
 `tag -% first_code` is a subtraction that wraps round instead of stopping
-the game (the stars' `+%`, going the other way), so a tag below `$0803`
-becomes an enormous number that fails the length test. `?Kind` is "a kind
+the game (the stars' `+%`, going the other way). A tag below `$0803`
+becomes an enormous number, bigger than the table, so `kindOf` returns
+`null`. `?Kind` is "a kind
 or `null`".
 
 Each record is an `extern struct` of `u8`s to lay over the stream with
@@ -557,20 +565,20 @@ Look back at the stream figure. The groups don't all end the same way,
 and that's deliberate. The castle uses three framing schemes:
 
 - **Counted.** Doors and doorbells: a count, then that many records.
-- **End marker.** Everything else that comes in lists, up to a record
-  that starts with the marker, which is skipped. Mostly that's a 0 where
-  the next length would be (a walkway of no pieces would be pointless
-  anyway);
-  machines whose state byte can be 0 end on a bit their state never uses:
-  bit 5 for lightning, bit 7 for ray guns, trapdoors, conveyors and
-  Frankensteins.
-- **One tag per thing.** A picture is one shape and its places, up to a 0;
-  a matter transmitter is one booth and its pads, up to a 0.
+- **End marker.** The other kinds that come in lists run until a record
+  starts with a marker byte, and the marker is skipped. Usually the marker
+  is a 0 where the next record's length would be; a walkway of no pieces
+  would be pointless anyway. Machines whose first byte (their state) can
+  be 0 use a bit their state never sets instead: bit 5 for lightning,
+  bit 7 for ray guns, trapdoors, conveyors and Frankensteins.
+- **One tag per thing.** Each picture and each matter transmitter gets a
+  tag of its own. A picture is its shape, then the places to draw it,
+  ended by a 0; a transmitter is its booth, then its pads, ended by a 0.
 
 :::power-up The Sentinel Power-Up
 Mark the end of a list *inside* the data instead of storing its length.
-It costs a byte or nothing at all, and lists grow and shrink without
-anyone updating a count. The price is that you can't jump to the 20th
+It costs one byte, or none when the marker hides in a bit the data never
+uses, and lists grow and shrink without anyone updating a count. The price is that you can't jump to the 20th
 entry; you walk to it. For a room drawn start to finish, that's no price
 at all.
 :::
@@ -627,7 +635,7 @@ pub fn isEnd(byte: u8, end: u8) bool {
 :::pro-tip `switch` must cover everything
 `framing` has no `else`, so a nineteenth kind without a framing stops the
 build: `switch must handle all possibilities`. Leave out `else` when you
-can, and the compiler keeps your lists in step.
+can, and the compiler checks that every `switch` handles every kind.
 :::
 
 ### The walker
@@ -635,7 +643,7 @@ can, and the compiler keeps your lists in step.
 Now the part that reads a stream. `Walker` is an **iterator**: a little
 struct that remembers where it is, with a `next` that hands you one
 record at a time, or `null` at the end.
-`while (walk.next(m)) |r|` is Zig's `for r in walker`.
+`while (walk.next(m)) |r|` is Zig's version of Python's `for r in walker:`.
 
 **`src/castle.zig`** (add at the end of the file)
 
@@ -751,8 +759,8 @@ Here's `next` walking the hall:
 `orelse @panic(...)` unwraps the optional kind, stopping the game on a
 bad tag.
 
-Test it against bytes nobody generated: a hand-typed room with one of
-nearly everything.
+Test it against bytes that no tool produced: a hand-typed room with one
+of nearly everything.
 
 :::type-in The walker's tests
 **`src/castle.zig`** (add at the end of the file)
@@ -811,10 +819,11 @@ Put it back.
 
 ## Drawing from the stream
 
-An object's X is the fat pixel **plus 16**, so X = 16 is the left edge
-and things can start a little off-screen with a positive X. Y is the pixel
-row. To cut such a shape off at the edge instead of losing it,
-`drawShape` learns to skip its first few byte columns:
+An object's X is its fat-pixel column **plus 16**. So X = 16 is the left
+edge, and an object can start a little past the left edge (X below 16)
+without X going negative. Y is the pixel row. So that such a shape is
+clipped at the edge instead of not drawn at all, `drawShape` learns to
+skip its first few byte columns:
 
 **`src/screen.zig`** (replace `drawShape`)
 
@@ -968,9 +977,10 @@ fn column(m: *Machine, id: shapes.Id, at: u16) void {
 
 `place` is the one place an object's X becomes a fat pixel. A walkway is
 `length` pieces 4 fat pixels wide; a ladder or pole is `length` pieces
-stacked 8 rows apart, the 1984 game's reading, so real castles line up.
-`m.view(castle.Run, at)` is a `*align(1) castle.Run`: the record may sit
-at any address, odd or even.
+stacked 8 rows apart. That's how the 1984 game reads `length`, so castles
+from its disk line up. `m.view(castle.Run, at)` returns a
+`*align(1) castle.Run`, a pointer that allows the record to sit at any
+address, odd or even.
 
 Build, press fire, and the hall's floors, ladder and pole are back, read
 from 75 bytes of castle (the torches are gone: the format has none). The
@@ -980,8 +990,8 @@ draw them.
 
 ## Doors, bells and words
 
-Five new pictures go at the end of the shape IDs, so existing IDs stored
-in data don't move: an arched doorway, the way out's doorway, a shut door,
+Five new pictures go at the end of the shape IDs, so the IDs that already
+exist keep their numbers: an arched doorway, the way out's doorway, a shut door,
 an open one, and a doorbell. Plus one ID with no picture: `image`. Hold
 that thought too.
 
@@ -1062,7 +1072,8 @@ packed byte:
 
 The low two bits make the letters 1, 2 or 3 times the usual 8 rows tall
 (0 counts as 1), by drawing each glyph row that many times. So the glyph's
-scratch shape grows from 23 bytes to 63, and the string buffer moves up:
+scratch shape grows from 23 bytes to 63, and the string buffer moves up to
+make room:
 
 **`src/map.zig`** (replace the `text` region's comment and first four lines)
 
@@ -1074,8 +1085,8 @@ pub const text_glyph = text.first + 0x10; // one letter, up to 2x24: 63 bytes
 pub const text_buffer = text.first + 0x50; // a string to print
 ```
 
-Bit 4 cuts the letters out of a solid block; bit 5 (always set) asks for
-letters. So a heading is `$22` and an ordinary line `$21`.
+Bit 4 asks for reversed text: a solid block with the letters cut out of
+it. Bit 5 (always set) asks for letters. So a heading is `$22` and an ordinary line `$21`.
 
 `draw` gets a style, and returns the address after the string so the
 caller knows where it ended.
@@ -1260,9 +1271,9 @@ fn image(m: *Machine, at: u16) void {
 }
 ```
 
-**Doors.** A door's last byte picks the arch (1 for the way out). An open
-door, bit 7 of its third byte, shows **the colour of the room beyond**:
-`recolor` again. `+|` is an add that stops at 255 instead of overflowing.
+**Doors.** A door's last byte picks which arch to draw (1 means the way
+out). Bit 7 of its third byte says the door is open, and an open door
+shows **the colour of the room beyond**, using `recolor` again. `+|` is an add that stops at 255 instead of overflowing.
 
 **Bells.** A doorbell names a door by its place in the room's door group,
 so `draw` remembers where that group starts (`doors`), and the bell takes
@@ -1283,7 +1294,7 @@ back into this red room) and its name.
 
 ## Comptime, properly this time
 
-The hand-typed castle works, and it's a liability. Its size word and its
+The hand-typed castle works, but it's fragile. Its size word and its
 objects pointer are sums you did on paper. Add a walkway to the hall and
 both are wrong, and nothing complains. Twenty rooms of that, all pointing
 at each other, is a castle that breaks every time you touch it.
@@ -1318,18 +1329,20 @@ call that happens to run in the compiler. So `.to = .gallery` is checked:
 misspell it `.galery` and the compiler says `enum 'training.Room' has no
 member named 'galery'`, before a byte is written.
 
-**Loops that change type.** `room.door` is a list of doors and
-`room.text` a list of lines, but an ordinary loop's variable has one
-type. **`inline for`** has the compiler write the body out once per kind,
-eighteen copies, each with its own types. `@field(room, @tagName(kind))` picks the room's list for that
-kind, and a `switch` on a kind the compiler already knows keeps only that
-branch. The loop is gone before the program runs.
+**Loops that change type.** The builder loops over a room's lists, but
+`room.door` is a list of doors and `room.text` a list of lines, and an
+ordinary loop's variable can have only one type. **`inline for`** has the
+compiler write the body out once per kind, eighteen copies, each with its
+own types. `@field(room, @tagName(kind))` picks the room's list for that
+kind, and a `switch` on a kind the compiler already knows compiles only
+the matching branch. The loop is gone before the program runs.
 
 The compiler gives up after 1,000 compile-time branches, in case of an
 infinite loop; `@setEvalBranchQuota` raises that for one job. A castle is
 a big job.
 
-We'll make the kit work, then make it strict. The builder packs pictures
+The declarations and the code that turns them into bytes make up our
+castle kit. We'll make it work first, then make it strict. The builder packs pictures
 with Chapter 2's `pack`, so that goes public:
 
 **`src/shapes.zig`** (make `pack` public)
@@ -1423,8 +1436,8 @@ pub fn Castle(comptime Name: type) type {
 }
 ```
 
-`Map`'s width and height are `u3`s, three-bit numbers, like the size byte:
-`.width = 9` doesn't build. `std.enums.EnumFieldStruct(Name, Room(Name),
+`Map`'s width and height are `u3`s, three-bit numbers (0 to 7) like the
+fields of the size byte, so `.width = 9` doesn't build. `std.enums.EnumFieldStruct(Name, Room(Name),
 null)` makes a struct with one field per room name, so a missing room
 doesn't build, and room numbers come from the enum's order.
 
@@ -1482,8 +1495,8 @@ pub fn build(comptime Name: type, comptime c: Castle(Name)) []const u8 {
 }
 ```
 
-Each room's stream starts where the last ended: `at` is the running total
-you worked out by hand. `std.mem.asBytes(&entry)` is the struct read as
+Each room's stream starts where the last ended: `at` keeps the running
+total of addresses that you added up by hand earlier. `std.mem.asBytes(&entry)` is the struct read as
 bytes, so the loader and the builder share one `castle.Entry` and can't
 disagree about the format.
 
@@ -1607,8 +1620,9 @@ the door is in on the castle map, and how far along it.
 `anytype` means "whatever type the caller passes": Zig compiles a copy per
 type and checks every use (generics, not TypeScript's `any`). `noreturn`
 is the type of `fail`, which ends the build, so it can go where a value is
-expected. `x[0..x.len].*` turns a compile-time slice into an array you
-can freeze with `const` and point at.
+expected. `x[0..x.len].*` copies a compile-time slice into an array.
+Stored in a `const`, that array gets a fixed place in the program, so the
+castle bytes can point at it.
 
 ### The moment of truth
 
@@ -1655,13 +1669,13 @@ This is where all that counting pays off. Run `zig build test`. It
 passes. **The compiler wrote the same 340 bytes
 you typed by hand**, every pointer, count and end marker, from twenty
 readable lines. (If it fails, it prints the first byte that differs; your
-hand-typed one is the suspect.)
+hand-typed castle is the likely culprit.)
 
 ### Make it strict
 
-Remember the size word that could go wrong with nothing to tell you?
-Here's the something. The checks go in a pass of their own, before
-anything is laid out:
+Remember the size word that could go wrong without any warning? Now we
+add the warnings. The checks go in a pass of their own, before anything
+is laid out:
 
 **`src/author.zig`** (in `build`, add after the `@setEvalBranchQuota` line)
 
@@ -1929,8 +1943,9 @@ and at the end, the one line that turns the plan into bytes:
 pub const bytes = author.build(Room, plan);
 ```
 
-Boot loads it instead of the hall. A file nothing uses never gets
-compiled, so `main.zig` asks for the hall's tests by name:
+Boot loads it instead of the hall. Zig only compiles files that something
+uses, so the hall's file and its tests would silently drop out of the
+build. `main.zig` names them to keep them in:
 
 **`src/main.zig`** (add below the `hall` import)
 
@@ -2068,8 +2083,9 @@ no directory entry, so `prepare` finds its objects through the header. Last, `ma
             if (room.flip(m)) setMode(m, .draw_room);
 ```
 
-Each press is a loading pause like Chapter 2's. The explorer still walks
-the bottom floor of every room; Chapter 4 teaches him the castle.
+Each press redraws the room behind a blank screen, like Chapter 2's
+loading pause. The explorer still walks only the bottom floor of every
+room; Chapter 4 teaches him to get around the rest.
 
 ## Tests that read it back
 
@@ -2156,8 +2172,8 @@ fn walkRoom(m: *Machine, at: u16, plan: author.Room(training.Room)) !u16 {
 ```
 :::
 
-If the writer and the reader ever disagreed about one byte of the format,
-`walkRoom` would be the first to say so.
+If the builder and the walker ever disagreed about one byte of the
+format, `walkRoom` would be the first to say so.
 
 :::byte-budget Chapter 3
 **Memory.** The Training Castle is **4,323 bytes** of its 8 KB region,
@@ -2229,8 +2245,8 @@ Open <http://localhost:8000>, press Space, and use N and P to walk the
 castle.
 
 **You've built a castle!** 4,323 bytes, every one written by the compiler
-from declarations you can read, and an engine that doesn't know a single
-room by heart.
+from declarations you can read, and an engine with no room built into its
+code.
 :::
 
 :::warp-zone
