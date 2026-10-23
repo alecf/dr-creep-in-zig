@@ -1281,8 +1281,8 @@ frame slots), and 196 to 228 cycles a step in play.
 
 :::inside-the-disk Eight directions, four used
 The 1984 game keeps its grid at `$C000` with **two bytes per cell**,
-2,560 bytes in all, and never reads the second byte: 1,280 bytes nothing
-uses, on a machine that counts every byte! The direction bits are
+2,000 bytes for the screen's 1,000 cells, and never reads the second
+byte: 1,000 bytes nothing uses, on a machine that counts every byte! The direction bits are
 exactly ours, and the movement code is ready for diagonals that nothing
 ever sets.
 
