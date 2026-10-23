@@ -113,12 +113,12 @@ test "fire on the title screen opens the room, and the explorer walks in" {
     try std.testing.expect(m.ram[hw.sprite_x_msb] & 1 != 0);
     const block = m.ram[map.player_block];
 
-    // A step every other frame: four frames is two fat pixels to the left,
-    // and a new frame of the walk, in the other block.
-    hold(m, machine.joy.left, 4);
-    try std.testing.expectEqual(160, m.ram[map.player_x]);
+    // A step every other frame: eight frames is four fat pixels to the
+    // left, and a new frame of the walk, in the other block.
+    hold(m, machine.joy.left, 8);
+    try std.testing.expectEqual(158, m.ram[map.player_x]);
     try std.testing.expect(m.ram[map.player_block] != block);
-    try std.testing.expectEqual(@intFromEnum(shapes.Id.explorer_left_0), m.ram[map.player_frame]);
+    try std.testing.expectEqual(@intFromEnum(shapes.Id.explorer_left_3), m.ram[map.player_frame]);
 }
 
 // hall.zig is no longer loaded, so nothing compiles it unless a test asks.
@@ -240,14 +240,14 @@ test "a walkway's end is as far as you go" {
     defer std.testing.allocator.destroy(m);
     inRoom(m, 1); // the Long Gallery: 35 pieces, columns 0 to 34
     hold(m, machine.joy.right, 400);
-    try std.testing.expectEqual(4 * (34 + 4) - 3, m.ram[map.player_x]); // feet on column 34's first fat pixel
+    try std.testing.expectEqual(149, m.ram[map.player_x]); // feet at 152, column 34's first fat pixel
     try std.testing.expectEqual(@intFromEnum(shapes.Id.explorer_right_0), m.ram[map.player_frame]); // standing
     hold(m, machine.joy.left, 400);
-    try std.testing.expectEqual(4 * (0 + 4) + 3 - 3, m.ram[map.player_x]); // feet on column 0's last
+    try std.testing.expectEqual(16, m.ram[map.player_x]); // feet at 19, column 0's last
     try std.testing.expectEqual(160 + 11, m.ram[map.player_y]); // and never off the floor
 }
 
-test "he lines up with a ladder, climbs it, and stops at the top" {
+test "he lines up with a ladder, climbs it, and steps off at the top" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
     inRoom(m, 2); // Ladders: the ladder is at x 112, from row 128 to the floor
@@ -257,8 +257,11 @@ test "he lines up with a ladder, climbs it, and stops at the top" {
     try std.testing.expectEqual(171 - 2, m.ram[map.player_y]);
     try std.testing.expect(m.ram[map.player_frame] >= @intFromEnum(shapes.Id.explorer_climb_0));
     hold(m, machine.joy.up | machine.joy.right, 200); // a diagonal keeps him climbing
-    try std.testing.expectEqual(128 - 21, m.ram[map.player_y]); // boots on the upper walkway
+    try std.testing.expectEqual(128 - 21 + 6, m.ram[map.player_y]); // the top rung's cell
     try std.testing.expectEqual(110, m.ram[map.player_x]);
+    hold(m, machine.joy.right, 2); // step off: up onto the walkway, and along
+    try std.testing.expectEqual(128 - 21, m.ram[map.player_y]);
+    try std.testing.expectEqual(111, m.ram[map.player_x]);
     hold(m, machine.joy.down, 200);
     try std.testing.expectEqual(192 - 21, m.ram[map.player_y]); // and back to the floor
 }

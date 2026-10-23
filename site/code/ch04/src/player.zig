@@ -41,6 +41,13 @@ comptime {
 /// numbers. `still` is no direction at all.
 pub const still: u8 = 0x80;
 
+/// The eight directions, laid out the way they are on the stick.
+const compass = [3][3]u8{
+    .{ 7, 0, 1 }, // up and left, up, up and right
+    .{ 6, still, 2 }, // left, nothing, right
+    .{ 5, 4, 3 }, // down and left, down, down and right
+};
+
 /// The direction for each of the 16 ways the stick's four direction
 /// switches (the low four bits of its port) can read. Worked out by the
 /// compiler with `held`; up and down together, or left and right, is still.
@@ -51,10 +58,9 @@ const stick_way: [16]u8 = blk: {
         const d = held(n, joy.down);
         const l = held(n, joy.left);
         const r = held(n, joy.right);
-        way.* = if ((u and d) or (l and r)) still //
-            else if (u) (if (r) 1 else if (l) 7 else 0) //
-            else if (d) (if (r) 3 else if (l) 5 else 4) //
-            else if (r) 2 else if (l) 6 else still;
+        const row: usize = if (u) 0 else if (d) 2 else 1;
+        const col: usize = if (l) 0 else if (r) 2 else 1;
+        way.* = if ((u and d) or (l and r)) still else compass[row][col];
     }
     break :blk table;
 };

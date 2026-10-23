@@ -957,3 +957,145 @@ Castle rooms (ch03)".
   draws the map from map x/y/size and the doors' map bytes, sets the
   visited bit, and keeps a clean `$9800` copy for each new game; ch11's
   disk drive replaces `m.load` and removes the program-image copy.
+- **Chapter 4 file, title, images.** `site/chapters/04-creaky-floorboards.md`,
+  `title: "Creaky Floorboards"`. Screenshots (full frames, 2×, 768×544):
+  `04-ladders.png` (Mission Briefing: mid-climb in the Ladders room, Boss
+  Battle `frame_00330`), `04-grid.png` (the G grid view of the Ladders room),
+  `04-poles.png` (Boss Battle: mid-slide, `frame_00690`). Built from
+  `site/tools/ch04/ch04.tmpl.md` with `listings.py`, `rebuild.py`,
+  `expand.py`, `errs.py`, `wc.py` (scratch output goes to `$WORK`, default
+  the writer's scratchpad; set `WORK=` to rerun). 47 labelled listings
+  (plus the `art.zig` copy and one prose-only deletion) rebuild `ch04` from
+  `ch03` byte for byte; stages A, B0, B, C, D, E, F each pass `zig fmt
+  --check`, build, test and run. Prose ≈ 6,000 words, code ≈ 4,400.
+- **Game source layout (from ch04).** Adds `grid.zig` (the navigation grid:
+  `columns`, `rows`, the four direction masks, `clear`, `column`, `cell`,
+  `at`, private `piece`, `add`, and the slow `search`) and `debug.zig` (the
+  G and S switches: `keys`, `overlay`). `sprites.zig` adds `place` (castle
+  point → sprite registers). `room.zig` adds `objects(m, n)` (stream address,
+  final-room aware; `prepare` now uses it) and `firstDoor`. `player.zig` is
+  rewritten around the grid (below).
+- **Memory map at ch04.** `player` `$0200–$0206` (adds `player_way` `$0206`:
+  direction of the last step, `player.still` = `$80`); **`game` moved to
+  `$0207–$0208` and `room` to `$0209`** (the chapter shows the overlap
+  error, then moves them); `debug` `$020A–$020B` (`debug_grid`,
+  `debug_search`, 0/1); **`grid` `$C800–$CBE7`** (1,000 bytes, in the free
+  KB between sprite frames and the screen plane). 19 regions.
+- **Castle coordinates for the explorer (ch1 promise paid).** `player_x` =
+  castle X of his left edge (fat pixel + 16), `player_y` = pixel row of his
+  top. `sprites.place(m, n, x, y)`: sprite X = `@as(u16, x) * 2 - 8` (valid
+  for x ≥ 4), low byte to `$D000+2n` via `@truncate`, bit 8 into `$D010`
+  bit n (other bits kept), Y = y + 50. The wall at 255 is gone; the Gatehouse
+  spawn is sprite X 316. **Feet point** = (x + 3, y + 21): 1984 reads the
+  grid at (x + 3, y + 17) for its 17-row explorer; ours is 21 rows, boots on
+  row 20. Real-castle positions that the 1984 engine derives from the feet
+  must use our `feet_y` (21), not 17.
+- **Navigation grid format (ch04; ch6/ch8/ch9 build on it).** One byte per
+  screen cell, 40 × 25, cell (col, row) at `$C800 + row*40 + col` (the same
+  numbering as the screen plane and colour RAM; `row*40` as `(row << 5) +
+  (row << 3)`, `cell` charges 16). Bit d = direction d open, d clockwise
+  from up (0 up `$01`, 2 right `$04`, 4 down `$10`, 6 left `$40`; odd bits
+  are diagonals, never set: exactly 1984's bits). Built in `room.draw`:
+  `grid.clear` (8,000 cycles) then `grid.add(m, r)` for every record, which
+  ignores all but walkway/ladder/pole. Rules (1984 `obj_*_Prepare`):
+  walkway piece 1 right, last left, middle both (length 1: right only);
+  ladder up unless top piece, down unless bottom piece (length 1: nothing);
+  pole down on every piece. Column = `x / 4 - 4`, `null` for x outside
+  16..175 (off-screen pieces are skipped, so X < 16 objects can't underflow);
+  rows ≥ 25 skipped. `grid.at(m, x, y)` (castle point) = 20 cycles.
+  `grid.search(m, objects, x, y)` computes the same byte from the stream
+  (850–1,380 cycles); a test proves `at == search` for every cell of every
+  room. **Deviation:** 1984 uses `$C000`, 2 bytes per cell (the second never
+  read) and 32 rows (2,560 bytes); we use 1 byte, 25 rows. **Note for ch6
+  (trapdoors):** 1984 opening a trapdoor clears the right bit of the
+  trapdoor's cell and the left bit of the cell two to its right (`+4` bytes
+  in its 2-byte grid), and sets them again when it shuts (`$36F6`, `$3734`,
+  `$5220`); translate to our 1-byte cells (`+2`).
+- **Movement rules (1984 `obj_Player_Execute`, kept exactly).** One step every
+  other frame (`steer` returns when `game_tick & 1 != 0`; 25 steps/s; 1984:
+  the engine loop waits 2 frames and the player's countdown is 1). Stick →
+  direction by a 16-entry comptime table built from `held` (compass
+  `[3][3]u8`; up+down or left+right held = still; 1984 `$5F59`). `way` =
+  wanted direction if its bit is open; else the last direction if it's open
+  and the wanted one is adjacent (±1 mod 8, so diagonals continue the
+  current move); else still. Moving up/down first sets `x = x - fx%4 + 1`
+  (feet at fat pixel 1 of the cell: "snaps onto the ladder"); moving
+  left/right first sets `y -= fy%8` (steps up onto the row). Step tables
+  `step_x = {0,1,1,1,0,FF,FF,FF}`, `step_y = {FE,FE,0,2,2,2,0,FE}` added with
+  `+%` (1984 `$34D7`/`$34DF`). Consequence taught in prose: a climb stops
+  with his feet 6 rows into the top rung's cell (that cell has no up); push
+  left/right to step off. No falling (1984 has none). Not implemented because
+  nothing can trigger them: 1984's masking when the feet are mid-row in a
+  cell with neither up nor down, and its diagonal reads of the up-left/
+  up-right cell at cell edges. **Note for ch9:** 1984 player–player
+  collision masks the other player's step (`Sprite_field_18` = `$EF` no
+  down / `$FE` no up, `$3534`); our `steer` has no mask input yet.
+- **Pole rule changed (ch04).** A pole's every piece opens down, so a pole
+  must end one row **above** a walkway (else he slides through the floor).
+  The builder now checks ladders end on a walkway and poles just above one
+  (message: `castle: room poles: pole 0 must start on a walkway and end just
+  above one (rows 128 and 192)`). Training Castle `poles` pole length 9 → 8;
+  `hall.zig` pole 16 → 15 (bytes and plan). Castle still 4,323 bytes.
+  Supersedes ch03's "ladders and poles start on a walkway row and end on the
+  walkway row below" for poles.
+- **Spawn until ch5.** `player.enter` puts him in the room's **first door**
+  record (`room.firstDoor`; doors are first in a stream): x = door x + 6
+  (1984 `obj_Player_Add`), y = door y + 11 (1984 +15 for its 17-row
+  explorer; ours puts his boots on the sill at door y + 32). Constants
+  `door_x`, `door_y` in `player.zig`. Faces right if x < 96 (screen middle),
+  else left. No doors (final room): x 96, y `room.floor_top - feet_y` = 171.
+  **Promise to ch5:** the real arrival door replaces the first door ("Chapter
+  5 brings the door he really walked through"); 1984 arriving through an
+  *open* door starts at (door x + 11, door y + 12) and plays a walk-out
+  animation; reuse `door_x`/`door_y` for the shut-door case.
+- **Shape IDs (ch04, appended):** 26 `explorer_climb_0`, 27 `explorer_climb_1`,
+  28 `explorer_climb_2` (= mirror of 0), 29 `explorer_climb_3` (= mirror of
+  1), 30 `explorer_slide`. Shape table 1,951 bytes. Walk frame now
+  `(x >> 1) & 3` on castle X (still every 4 screen pixels); climb frame
+  `climb_0 + ((y >> 2) & 3)`; going up/down shows climbing if the feet cell
+  **or the cell below** has the up bit (a ladder's top rung has no up), else
+  `explorer_slide`; stopped on a ladder/pole keeps the picture; stopped
+  walking stands. A second `comptime` check requires the climb frames to be
+  consecutive.
+- **Debug switches (ch04, keep).** `debug.keys` (called before `room.flip`
+  as `debug.keys(m) or room.flip(m)`): **G** toggles `debug_grid` and redraws
+  the room (the explorer re-enters at the door), **S** toggles
+  `debug_search` (steer's `waysAt` uses `grid.search`). `debug.overlay` runs
+  after `room.draw` in `.draw_room`: each open cell is cleared and redrawn
+  as a code-11 pipe map (centre block + arms), colour RAM yellow. Later
+  chapters may add keys here; N and P stay `room.flip`'s.
+- **Costs at ch04.** Room draw ≈ +9,000 cycles for the grid; 141,776
+  (final room) to 229,244 (still 12 slots). Room frames: 88 between steps;
+  step 196 (standing) / 204 (walking) / 228 (climbing), +628 on a picture
+  change. With S: 1,618–3,700 per step. The chapter's table (Ladders room):
+  one lookup 20 vs ≈ 1,170; walking step 204 vs 1,626; climbing step with
+  picture 856 vs 3,700; "eight searchers climbing ≈ 30,000 a step". Boss
+  Battle: `--frames 1000 --press 20:f:5 --key 60:N --key 100:N --press
+  120:r:176 --press 300:u:80 --press 390:r:130 --key 530:N --press 560:r:96
+  --press 660:d:80 --press 750:r:220 --dump-every 10` → 950 calls, max
+  229,244, 5 loading pauses, 0 overruns.
+- **Tests at ch04 (18 with the machine's).** `sprites.zig`: castle X →
+  sprite X incl. the ninth bit and other sprites' bits kept. `main.zig`:
+  the walk test replaced ("explorer walks in": Gatehouse doorway at 162/171,
+  `$D010` bit set, 8 frames left → x 158, `explorer_left_3`); the Ladders
+  room's grid bits; `at == search` everywhere; the Long Gallery's walkway
+  end (x 149 / 16); ladder line-up, diagonal climb, step-off, descent;
+  pole down only. Helpers `inRoom(m, n)` (pokes `room_number` before the
+  draw frame) and `hold(m, stick, frames)`.
+- **Build modes, as taught in ch04.** Debug (`zig build`, `run`, `test`) and
+  ReleaseSafe (`zig build wasm`, the browser) both panic on `+`/`-`/`*`
+  overflow; ReleaseFast/ReleaseSmall leave the check out and overflow is
+  undefined. (The brief said the browser build was ReleaseSmall; it's
+  ReleaseSafe, per "Game project layout".)
+- **Ladder bookkeeping (ch04).** Taught: fixed-width integers (`u8`, `u16`,
+  `u3`, `i8`), overflow and the build modes, `+%`/`+|` (with `-%`, `*%`,
+  `-|`, `*|` named), `@as`/`@intCast`/`@truncate`, two's complement (`0xFF`
+  = −1, step tables added with `+%`; `@bitCast` named), 2D grids as one
+  flat run (row × 40 + col, ×40 by shifts, JS `grid[y][x]` vs `Uint8Array`
+  bridge, Zig `[3][3]u8` is contiguous), flags in a byte (refers back to
+  ch2's flags byte and ch3's `packed struct`; masks because bits are picked
+  by number). In passing: `or` short-circuits; shift amounts need `u3`
+  (refers to ch2's Pro Tip, with `@intCast`). Prose promises: ch5 doors
+  and the real arrival door; ch6 trapdoors rewrite grid bits ("Chapter 6
+  does the same"); later chapters bring up to eight sprites that read the
+  grid (a second explorer, mummies, Frankenstein's monsters).
