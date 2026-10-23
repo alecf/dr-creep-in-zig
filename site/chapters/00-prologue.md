@@ -21,13 +21,14 @@ castles unlocked, more or less, and you've let yourself in.
 Each castle is a set of rooms seen side on, like a doll's house with the
 front wall taken off: stone floors, ladders, sliding poles you drop down
 with a satisfying *whoosh*, and shut doors that grind open when you ring
-the doorbell beside them. The doctor's inventions crackle and hum in
-between, and a couple of residents would rather you left. You can't
+the doorbell beside them. The doctor's inventions crackle and hum
+along the way, and a couple of residents would rather you left. You can't
 fight them. You *can* lure Frankenstein's monster onto a trapdoor, which
 is one of the great small pleasures in all of gaming.
 
 The best part is that two of you can play at once, each with a joystick.
-One holds the forcefield off while the other runs through. It's a
+One of you holds down the switch that turns a forcefield off while the
+other runs through it. It's a
 cooperative puzzle game from an era that mostly didn't make those, and
 it's still great. Find the exit and you've escaped.
 
@@ -37,48 +38,50 @@ You're going to build all of it.
 
 You're writing for the **Comet 64**, a home computer from 1984. It's a
 capable little machine with hard limits, and those limits are the rules
-of the game we're playing:
+you'll be designing around:
 
 | Limit | What it means |
 |---|---|
 | **64 KB of memory** | Code, castle, screen and monsters all fit in 65,536 bytes. |
-| **1 MHz processor** | About a million small steps a second. We count work in **cycles**. |
+| **1 MHz processor** | About a million tiny steps, called **cycles**, a second. We measure work in cycles. |
 | **50 frames a second** | 19,656 cycles per frame to read the joysticks, move everyone and redraw. |
 | **8 hardware sprites** | Eight free-moving pictures over the background, total. |
-| **4 colours per 8×8 cell** | A 320×200 screen; each cell picks three colours plus a shared background. |
+| **4 colours per 8×8 cell** | The 320×200 screen is 8×8-pixel cells; each picks three colours plus one screen-wide background. |
 | **3 voices** | The SOUND chip plays three notes at once, music and effects together. |
 
 Every design decision in this game comes back to that table. Why is the
-castle stored as packed bytes instead of a tidy list of objects? The
-first row. Why does the game work so hard never to need a ninth sprite?
-The fourth.
+castle stored as tightly packed bytes instead of a tidy list of objects?
+The 64 KB row. Why does the game work so hard never to need a
+ninth sprite? The 8-sprite row.
 
-Treat the limits like a level's time limit. Nobody plays a platformer
-and complains that the clock exists. The clock is what makes it a game.
-Squeezing a whole castle under these numbers is the fun part, and you
-get to watch yourself doing it: a **work meter** on screen shows how
-much of each frame your code used.
+Squeezing a whole castle under these numbers is the fun part. Think of a
+level's time limit: nobody plays a platformer and complains that the
+clock exists, because the clock is what makes it a game. You also get to
+watch your score: a **work meter** on screen shows how many of each
+frame's 19,656 cycles your code used.
 
-You don't build the Comet 64. It comes in the box: the hardware, a
-browser shell and a headless runner that plays it from the command
-line. It also comes with a **programmer's reference card**,
+You don't build the Comet 64; you write the game that runs on it. The
+machine comes in the box, along with a web page that runs it in your
+browser (the **shell**) and a **headless runner** that runs your game
+from the command line. It also comes with a **programmer's reference card**,
 [`machine/REFERENCE.md`](../code/machine/REFERENCE.md), the way every
 computer of the era came with a thick manual of addresses and registers.
-You'll keep it open in a tab from Chapter 1 on. You write the game.
+Keep it open in a tab from Chapter 1 on.
 
 ## How this site works
 
 Each chapter adds one big piece of the game and ends with it running.
-Every listing is shown in full, in the order you type it, so your
-project ends each chapter matching its **checkpoint** under `code/chNN/`.
+Every listing is shown in full, in the order you type it, so at the
+end of each chapter your project matches its finished code, the
+**checkpoint** in `code/chNN/`.
 
 Think of the boxes along the way as your strategy guide: tips, what the
-new code costs, the bugs everyone hits, and secret passages you can skip
-without breaking anything. Each chapter ends with a **Boss Battle** (the
+new code costs, the bugs everyone hits, and secret passages: optional side trips you
+can skip without breaking anything. Each chapter ends with a **Boss Battle** (the
 commands to run and what you should see) and a **Warp Zone** (the
 finished checkpoint, if you're stuck or want to skip ahead). Some
 chapters run the game live on the page, with switches that turn an
-optimisation off so you can watch why it's there.
+optimisation off so you can see what goes wrong without it.
 
 ## What you need
 
@@ -104,7 +107,7 @@ Chapter checkpoints (`ch01.zip`, ...) unzip into the same place.
 ## Power on
 
 Time to flip the switch. Copy the starter kit to `code/my-creep/`, next
-to `machine/` so it can find the computer:
+to `machine/`, because the build looks for the Comet 64 at `../machine`:
 
 ```
 cd code
@@ -122,7 +125,7 @@ build.zig.zon    says where the Comet 64 lives (../machine)
 ```
 
 First, the headless runner. It powers the machine on, runs your game
-with nobody watching, and saves a picture:
+with no window, and saves the last frame as a picture:
 
 ```
 zig build run -- --frames 100
@@ -137,8 +140,8 @@ overruns: 0, loading pauses: 0
 last frame: frames/frame_00099.ppm
 ```
 
-A hundred frames, two seconds of game time, and your game used zero
-cycles of each one. That's accurate: `frame` doesn't do anything yet.
+In two seconds of game time your game used 0 of the 19,656 cycles in
+each frame. Correct: `frame` doesn't do anything yet.
 The picture is a PPM file in `frames/`, which most image viewers open.
 
 Now the real thing, in a browser:
@@ -148,15 +151,15 @@ zig build wasm
 python3 -m http.server -d web
 ```
 
-That builds your game as `game.wasm` into a `web/` folder with the page
-and the shell. Open <http://localhost:8000> and there's the Comet 64: a
+That compiles your game to `game.wasm` and puts it in a `web/` folder,
+along with the shell page that runs it. Open <http://localhost:8000> and there's the Comet 64: a
 purple border around a black screen, and a thin dark bar in the bottom
 border. That's the work meter, sitting empty, because your game isn't
-doing any work yet. Click the screen to give it the keyboard (arrows or
-W A S D plus Space are joystick 1).
+doing any work yet. Click the screen so it gets your key presses (arrows or W A S D plus
+Space are joystick 1).
 
-Finally, `zig build test` runs your tests (none yet) and plays 100
-frames to make sure the game gets through them. It prints nothing when
+Finally, `zig build test` runs your tests (none yet) and runs 100
+frames to check the game gets through them without crashing. It prints nothing when
 everything passes.
 
 The machine is on and it's running your code. Every room, monster and
@@ -164,9 +167,9 @@ doorbell in the castle grows from here.
 
 :::pro-tip Copy without the cache
 Zig keeps build work in `.zig-cache/`, and the cache remembers where the
-source lives. Copy a built project cache and all, and the copy can
-quietly keep building the *original's* code, ignoring everything you
-type. So when you copy a project, delete the copy's `.zig-cache`,
+source lives. Copy a built project and the copy gets that cache too,
+so it can quietly keep building the *original's* code and ignore
+everything you type. So when you copy a project, delete the copy's `.zig-cache`,
 `zig-out` and `web`. If you change code and nothing changes on screen,
 check this first.
 :::
@@ -174,8 +177,8 @@ check this first.
 :::warp-zone
 The starter kit is at [`code/starter/`](../code/starter/), or as
 [`starter.zip`](downloads/starter.zip). If your copy ever gets into a
-state you don't like, start over from the kit (or from any checkpoint,
-swapping in `ch01` or whichever for `starter`):
+state you don't like, start over from the kit (or from any checkpoint:
+use `ch01`, `ch02` and so on in place of `starter`):
 
 ```
 cd code
@@ -195,7 +198,8 @@ Three commands, three results:
   meter.
 - `zig build test` prints nothing and exits cleanly.
 
-That purple border is a byte. In Chapter 1 you'll find out which one,
+The border's colour is set by a single byte in memory. In Chapter 1
+you'll find out which one,
 change it, and then put something on the screen that answers to your
 joystick.
 :::
