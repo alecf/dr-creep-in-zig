@@ -42,6 +42,15 @@ rooms. Every page should feel like a fun project we're doing together.
   we believe in: clearly capable, just new to the low-level world. We
   never doubt they can follow along. We also never assume they've already
   seen what's under the hood.
+- **A shared love of retro games.** Both of us grew up on (or fell for)
+  games like this one, and that common ground is the hook. The reader
+  already knows what's great about these games from the *player's* side:
+  how a ladder feels, why that sprite flickers, the joy of a secret room.
+  Only the senior knows how they work inside. So we go from the
+  experience to the mechanism: "you know that flicker when too many
+  enemies are on screen? Here's the 8-sprite limit causing it, and here's
+  how we dodge it." The reader brings the nostalgia; we bring the
+  internals.
 - **Who the reader is:**
   - Comfortable in JavaScript or Python: functions, loops, objects,
     arrays, classes, maybe a framework or two.
@@ -53,6 +62,8 @@ rooms. Every page should feel like a fun project we're doing together.
   - Hasn't had to think about bytes, bits, hex, integer sizes,
     overflow, or what a CPU actually does with each line.
   - New to Zig.
+  - Loves retro games and knows them well as a player, but has never
+    seen how one is built.
 - **Explain from first principles, bridging from what they know.**
   Low-level ideas (memory as one big byte array, addresses, pointers,
   struct layout, bit masks, hex, fixed-width integers and wrapping,
