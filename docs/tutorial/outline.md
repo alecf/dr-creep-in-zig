@@ -1,6 +1,6 @@
 # Tutorial outline — "The Castles of Dr. Creep, written in Zig"
 
-*Draft 3: adds voice and tone. Decisions from earlier reviews are at the
+*Draft 4: voice and tone, now with a guardrail against talking down. Decisions from earlier reviews are at the
 end. Chapter-level detail comes once the flow is approved.*
 
 This document is for us, the authors. The reader never sees it, and none
@@ -33,8 +33,24 @@ who has played through it already and can't wait to show them the secret
 rooms. Every page should feel like a fun project we're doing together.
 
 - **Talk straight to the reader.** Use "you" and "we", short punchy
-  sentences, exclamation points where they're earned. Celebrate wins ("Your
-  hero just climbed his first ladder!").
+  sentences, exclamation points where they're earned (a few per chapter,
+  not per paragraph). Mark real milestones ("Your hero just climbed his
+  first ladder!") and don't cheer for routine steps.
+- **Treat the reader as a capable peer.** The playfulness is about the
+  project, never at the reader's level. They are a programmer who doesn't
+  know these tricks *yet*, not a kid who needs coaxing. In practice:
+  - No quizzes, "can you guess?" prompts, or gold stars. Exercises are
+    offered as fun things to build, not homework to check.
+  - No "easy!", "simple!", "just", or "obviously". If something is hard,
+    say so and say why it's worth it.
+  - Don't over-explain basic programming. Explain the *retro-specific* and
+    *Zig-specific* ideas properly, and trust the reader with the rest
+    (linking out for basics is fine).
+  - No baby talk, no mascot narrating to the reader, no "great job!" after
+    every listing.
+  - The test: would an experienced developer enjoy reading this, or feel
+    talked down to? The goal is the enthusiasm of a friend showing off a
+    cool hack, not a teacher managing a class.
 - **Never break the fiction or get meta.** In the site's world, Dr. Creep
   is a Zig game for a 64 KB home computer, and you're building it from
   scratch. No mentions of reverse engineering, disassembly, emulators,
@@ -62,8 +78,8 @@ rooms. Every page should feel like a fun project we're doing together.
 | **Secret Passage** | An optional deep dive for readers who want more (e.g. how the colour cells really pack). |
 | **Game Over?** | Common mistakes and the bug each one produces, with the fix. |
 | **Warp Zone** | Jump straight to a chapter's finished checkpoint. |
-| **Boss Battle** | The chapter's final challenge: get the checkpoint running, with a "you did it!" moment. |
-| **Bonus Stage** | Optional exercises, e.g. design a room using what you just built. |
+| **Boss Battle** | The chapter's final stretch: bring the pieces together and get the checkpoint running. Ends on a screenshot of what now works. |
+| **Bonus Stage** | Optional open-ended builds, e.g. design a room using what you just built. No answer keys, no grading. |
 | **Inside the Disk** | In-world lore on how the 1984 game handles a problem, with real table sizes and tricks. Replaces the "what the original did" sidebars. |
 
 Chapter titles should read like level names: punchy and a little
