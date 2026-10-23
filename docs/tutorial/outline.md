@@ -1,9 +1,14 @@
 # Tutorial outline — "The Castles of Dr. Creep, written in Zig"
 
-*Draft 2: decisions from the first review are folded in (see "Decisions"
-at the end). Chapter-level detail comes once the flow is approved.*
+*Draft 3: adds voice and tone. Decisions from earlier reviews are at the
+end. Chapter-level detail comes once the flow is approved.*
 
-## The premise
+This document is for us, the authors. The reader never sees it, and none
+of its behind-the-scenes framing (reverse engineering, "pretend",
+copyright, this repo's emulator) appears anywhere on the site. See
+"Voice and tone".
+
+## The premise (author-facing)
 
 We pretend that in 1984 Ed Hobbs wrote *The Castles of Dr. Creep* in Zig
 rather than 6502 assembly, for a machine with the C64's limits: 64 KB of
@@ -15,8 +20,55 @@ machine's limits shape every design decision along the way.
 Because this repo reverse-engineered the real binary, every design choice
 in the tutorial is one the original actually made (the real addresses,
 table sizes and data formats are documented in `docs/` and `disasm/`). The
-tutorial presents them as decisions a designer would make, and adds
-"what the original did" sidebars that link back to the disassembly.
+tutorial presents them as decisions a designer would make. The
+disassembly is our research source, not reader-facing material. Facts
+taken from it appear on the site as in-world "how the 1984 disk does it"
+lore, with no links to assembly.
+
+## Voice and tone
+
+**The model is a 1980s game magazine strategy guide, but for code.** The
+reader is a player on a quest, and we are the friendly, excitable guide
+who has played through it already and can't wait to show them the secret
+rooms. Every page should feel like a fun project we're doing together.
+
+- **Talk straight to the reader.** Use "you" and "we", short punchy
+  sentences, exclamation points where they're earned. Celebrate wins ("Your
+  hero just climbed his first ladder!").
+- **Never break the fiction or get meta.** In the site's world, Dr. Creep
+  is a Zig game for a 64 KB home computer, and you're building it from
+  scratch. No mentions of reverse engineering, disassembly, emulators,
+  "pretending", AI, or how the tutorial was made. Off-world needs (legal
+  credits, licence) go on one plain colophon page linked from the footer,
+  and nothing else on the site refers to it.
+- **The constraints are the game's rules, not complaints.** 64 KB, 8
+  sprites and the frame budget are the challenge, like a level's time
+  limit. Squeezing under them is the fun part.
+- **Real rigour underneath.** The jokes never stand in for explanation:
+  every listing compiles, every number is right, and every technique gets
+  explained properly.
+- **Invented, generic magazine trappings only.** No real magazine,
+  console, company or character names, and no writing in the voice of the
+  game's real author.
+
+### Recurring features (boxes that appear across chapters)
+
+| Box | What it holds |
+|---|---|
+| **Mission Briefing** | Chapter opener: what you'll build and the screenshot you'll have at the end. |
+| **Power-Up!** | A resource-saving technique, named and explained (e.g. "the Lookup Table Power-Up"). |
+| **Byte Budget** | A running tally of the memory and frame-time each new piece costs, tied to the memory map and budget meter. |
+| **Pro Tip** | Short Zig-specific advice, including 0.16 gotchas. |
+| **Secret Passage** | An optional deep dive for readers who want more (e.g. how the colour cells really pack). |
+| **Game Over?** | Common mistakes and the bug each one produces, with the fix. |
+| **Warp Zone** | Jump straight to a chapter's finished checkpoint. |
+| **Boss Battle** | The chapter's final challenge: get the checkpoint running, with a "you did it!" moment. |
+| **Bonus Stage** | Optional exercises, e.g. design a room using what you just built. |
+| **Inside the Disk** | In-world lore on how the 1984 game handles a problem, with real table sizes and tricks. Replaces the "what the original did" sidebars. |
+
+Chapter titles should read like level names: punchy and a little
+spooky, matching the haunted-castle setting. The current titles are
+working titles and get a pass during chapter detailing.
 
 ## Key structural idea: the engine is a bytecode interpreter
 
@@ -107,8 +159,8 @@ The limits:
 
 We don't compile for a real 6502. The limits are self-imposed, and the
 point is to practise the 1984 discipline, not to reproduce 1984 toolchains.
-This repo's 6502 emulator stays behind the scenes. It is the source of the
-"what the original did" sidebars, not something the reader runs.
+This repo's 6502 emulator stays behind the scenes as an author research
+tool. It never appears on the site.
 
 ## Website shape (the "semi-interactive" part)
 
@@ -126,7 +178,8 @@ This repo's 6502 emulator stays behind the scenes. It is the source of the
   - **Hex inspector**: hover over castle bytes to see them decoded.
   - **Room editor** (final chapter): edit a Training Castle room in the
     browser and play it.
-- "What the original did" sidebars linking into `disasm/object.s`.
+- "Inside the Disk" lore boxes (see "Voice and tone"), with no links to
+  assembly.
 
 ### Deployment: GitHub Pages
 
@@ -140,7 +193,9 @@ This repo's 6502 emulator stays behind the scenes. It is the source of the
   use only the Training Castle and the tutorial's own art and font. Anything
   from the disk can't be served from a public site, which is one more
   reason the tutorial ships its own art.
-- "Load your own disk" in the browser uses a file picker. The D64 is parsed
+- Loading a real castle disk in the browser uses a file picker. On the
+  site, it's an in-world "Bonus Stage: got a castle disk? Slot it in!"
+  feature, and the plain copyright explanation lives on the colophon page. The D64 is parsed
   client-side in the wasm build and never leaves the reader's machine, so
   the real castles are playable on the hosted site without the site
   distributing them.
@@ -152,8 +207,8 @@ This repo's 6502 emulator stays behind the scenes. It is the source of the
 ## Chapters
 
 ### Prologue — The rules of the game
-What we're building and the fiction around it. A tour of the finished
-game. The budget: 64 KB, 50 Hz, 8 sprites, 4 colours per cell, 3 voices.
+Mission briefing for the whole quest: meet Dr. Creep's castles and the
+machine you're building them for. A tour of the finished game. The budget: 64 KB, 50 Hz, 8 sprites, 4 colours per cell, 3 voices.
 How to read the site and use the checkpoints. Zig 0.16 setup.
 
 ### 1. A machine in 64 KB
