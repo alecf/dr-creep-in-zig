@@ -245,6 +245,32 @@ document.addEventListener("click", (e) => {
   document.getElementById(a.dataset.jump)?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
+// Animated diagrams: play / pause / restart. Readers who ask for reduced
+// motion start paused.
+const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+for (const fig of document.querySelectorAll("figure.diagram[data-animated]")) {
+  const bar = document.createElement("div");
+  bar.className = "dg-controls";
+  bar.innerHTML = '<button type="button" data-act="toggle"></button><button type="button" data-act="restart">Restart</button><span class="dg-state"></span>';
+  fig.insertBefore(bar, fig.querySelector("figcaption"));
+  const toggle = bar.querySelector('[data-act="toggle"]');
+  const setPaused = (p) => {
+    fig.classList.toggle("dg-paused", p);
+    for (const svg of fig.querySelectorAll("svg")) { try { p ? svg.pauseAnimations() : svg.unpauseAnimations(); } catch {} }
+    toggle.textContent = p ? "Play" : "Pause";
+  };
+  bar.addEventListener("click", (e) => {
+    const act = e.target.closest("button")?.dataset.act;
+    if (act === "toggle") setPaused(!fig.classList.contains("dg-paused"));
+    if (act === "restart") {
+      const stage = fig.querySelector(".dg-stage");
+      stage.replaceWith(stage.cloneNode(true)); // re-inserting restarts CSS and SVG animations
+      setPaused(false);
+    }
+  });
+  setPaused(calm);
+}
+
 // Power on a checkpoint when asked; only the visible chapter's machine runs.
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest(".power");

@@ -30,3 +30,14 @@
 .dg-pixels { display: inline-grid; gap: 0; image-rendering: pixelated; box-shadow: 0 0 0 1px var(--rule); }
 .dg-pixels > i { display: block; width: var(--px, 10px); height: var(--px, 10px); }
 .dg-arrow { color: var(--ink-soft); font-size: 1.2em; }
+
+/* Animated diagrams. A figure file that contains `data-animate` gets
+   controls. Animate with CSS @keyframes (or SVG <animate>) inside the
+   figure. The page pauses them with the class below, and restarts them by
+   re-inserting the stage. Write animations to loop (`infinite`) or to end
+   on a meaningful final frame. */
+.diagram[data-animated] .dg-controls { display: flex; gap: 8px; align-items: center; }
+.dg-controls button { font: 400 .68rem/1 var(--display); letter-spacing: .08em; color: var(--accent); background: transparent; border: 1.5px solid var(--accent); border-radius: 6px; padding: 7px 10px 6px; cursor: pointer; }
+.dg-controls button:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.dg-controls .dg-state { font: .72rem/1 var(--mono); color: var(--ink-soft); }
+.diagram.dg-paused .dg-stage *, .diagram.dg-paused .dg-stage *::before, .diagram.dg-paused .dg-stage *::after { animation-play-state: paused !important; }

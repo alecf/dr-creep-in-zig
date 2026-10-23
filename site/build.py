@@ -151,7 +151,11 @@ def render(md, view, chapter_files):
             if not src.exists():
                 raise SystemExit(f"missing diagram {src}")
             cap = f'<figcaption>{inline(inner.strip())}</figcaption>' if inner.strip() else ""
-            return stash(f'<figure class="diagram" data-diagram="{name}">{src.read_text()}{cap}</figure>')
+            body = src.read_text()
+            # A figure that marks itself `data-animate` gets play/pause/restart
+            # controls (added by the page script) around a `.dg-stage`.
+            anim = ' data-animated' if "data-animate" in body else ""
+            return stash(f'<figure class="diagram" data-diagram="{name}"{anim}><div class="dg-stage">{body}</div>{cap}</figure>')
         t = f'<span class="box-title">{inline(title)}</span>' if title else ""
         return stash(
             f'<aside class="box box-{kind}"><div class="box-head"><span class="box-label">{label}</span>{t}</div>'

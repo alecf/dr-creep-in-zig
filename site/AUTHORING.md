@@ -322,7 +322,14 @@ pointers into a table, or a contiguous table next to scattered objects.
     `--accent`, `--code-bg`) for labels, frames and arrows;
   - the fixed Comet palette `--c0`…`--c15` for anything that *is* screen
     colour.
-- Diagrams are static: no scripts, and no colours outside those tokens.
+- Diagrams may be **animated** where motion is the point, for example
+  the beam sweeping down the screen, a pointer flip, or a door opening.
+  Put `data-animate` on any element in the figure file. The page then adds
+  Play/Pause/Restart controls, and starts paused for readers who prefer
+  reduced motion. Animate with CSS `@keyframes`, or SVG `<animate>`,
+  scoped to the figure. The figure must not contain any scripts. It must
+  read correctly when paused at any point, and its resting state must
+  make sense on its own. Use no colours outside the tokens.
   They must stay legible at 400 px wide, either by wrapping or by
   scrolling sideways inside the figure. Labels must be real text, not
   text drawn as paths.
