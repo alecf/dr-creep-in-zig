@@ -108,7 +108,7 @@ play with and never sees an address.
 The Comet 64 hands all 64 KB to you, and there's no engine deciding where
 things go, because there's nobody else to decide. So in this game `x`
 doesn't live "somewhere". It lives at **`$0200`**, because we say so.
-It costs exactly one byte, and reading it costs 4 cycles. Picking those
+It costs exactly one byte, and you always know where it is. Picking those
 addresses, and writing them down so two things never pick the same one,
 is a big part of writing a game for this machine.
 :::
@@ -120,13 +120,8 @@ Zig for "a byte". Eight bits, each a 0 or a 1, can be arranged
 2×2×2×2×2×2×2×2 = **256** ways, so a `u8` holds any whole number from 0
 to 255, and nothing else.
 
-```
-  bit:   7     6     5     4     3     2     1     0
-       ┌─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┐
-       │  1  │  1  │  1  │  1  │  1  │  1  │  1  │  1  │  = 255, the biggest u8
-       └─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┘
-  worth: 128    64    32    16     8     4     2     1
-```
+:::diagram ch01-byte
+:::
 
 Each bit is worth twice the one to its right, the way each decimal digit
 is worth ten times the one to its right. Add up the bits that are on:
@@ -255,18 +250,23 @@ A castle room needs a floor, and the floor is our first look at the
 screen itself. Chapter 2 covers the screen properly; for now, three facts
 from the card's section 3:
 
-1. The display is 320 × 200 pixels in 8 × 8 **cells**: 40 across, 25
-   down.
-2. The **bitmap**, 8,000 bytes from `$E000`, holds the pixels: 8 bytes
-   per cell, one per line, cells left to right, then top to bottom. A
-   row of cells is 40 × 8 = 320 bytes.
-3. A bitmap byte of `$FF` paints its piece of line in the cell's colour
-   from **colour RAM**, 1,000 bytes from `$D800`, one per cell.
+1. The display is 320 × 200 pixels, cut into a grid of **cells**, each
+   one a square of 8 × 8 pixels. That makes 40 cells across and 25 rows
+   of cells down.
+2. The **bitmap**, 8,000 bytes from `$E000`, holds the pixels, 8 bytes
+   per cell: one byte for each of the cell's 8 pixel rows, top to bottom.
+   A byte of `$FF` turns every pixel in its row on. The bitmap stores
+   the cells left to right along a row, then moves down to the next row,
+   so one row of cells is 40 × 8 = 320 bytes.
+3. **Colour RAM**, 1,000 bytes from `$D800`, has one byte per cell: the
+   colour of the pixels that are on in that cell.
 
-So a floor is two runs of bytes in cell row 24:
+So the floor is the bottom row of cells, row 24, and painting it takes
+two writes: 320 bytes of `$FF` into the bitmap, and 40 bytes of grey into
+colour RAM.
 
 :::diagram ch01-floor
-Both runs end on the last byte of their plane, a good sign the sums are right: the floor is the bottom row.
+Both writes end on the last byte of their plane, a good sign the sums are right: the floor really is the bottom row.
 :::
 
 **`src/room.zig`** (new file)
@@ -301,8 +301,9 @@ pub fn paint(m: *Machine) void {
 
 Zig does the sums at compile time; the comments hold the answers to
 check against the card. `m.fill(address, count, value)` sets `count`
-bytes in a row to `value`. (The "four pixels" and "code 11" are Chapter
-2's business.) Only `pub` declarations are visible outside a file, so
+bytes in a row to `value`. (The comment's "four pixels" and "code 11"
+are Chapter 2's business: on this screen pixels come in side-by-side
+pairs, the dotted lines in the close-up.) Only `pub` declarations are visible outside a file, so
 `paint` and `floor_top` are public and the rest is the room's own.
 
 **`src/main.zig`** (add the import below `hw`, and call `room.paint` in `boot`)
@@ -335,18 +336,19 @@ Do that fifty times a second and the eye sees him walk. Every game of the
 era was a flip-book.
 
 Here's the catch, and it's the rule this whole tutorial is played by:
-**a frame has a time limit.** The processor runs 19,656 **cycles** per frame, and everything
-`frame` does has to fit. A peek or a poke costs 4 cycles, a `fill` or
-`load` 8 per byte, and your own sums and decisions you charge with
-`m.work(n)` (the card's section 9 has the prices). The **work meter**, the
-thin bar in the bottom border, adds it up: green, then yellow when it's
-tight, then red when a frame goes over.
+**a frame has a time limit.** Everything `frame` does has to fit into
+one fiftieth of a second, on a processor that is slow by today's
+standards, so the budget is real and you can run out of it. The **work
+meter**, the thin bar in the bottom border, shows how much of each frame
+your code used: green, then yellow when it's tight, then red when a frame
+goes over. Chapter 2 teaches you to read it properly.
 
-In a JavaScript game you'd keep each frame under 16 ms, which is millions
-of operations. Here, 19,656 cycles is about 4,900 peeks; redrawing the
-bitmap a byte at a time would take 32,000. So every chapter has a second
-job besides "make it work": make it fit. Think of it as the level's
-clock. (`boot` is on the house: the meter starts with the first frame.)
+A JavaScript game has a frame budget too, about 16 ms, but on a modern
+machine that's a vast, comfy room you rarely think about. Here it's a
+broom cupboard. So every chapter has a
+second job besides "make it work": make it fit. Think of it as the
+level's clock. (`boot` is on the house: the meter starts with the first
+frame.)
 
 :::widget budget-meter
 This checkpoint's work meter, live: one bar per frame against the budget, with the last frame's cycles.
@@ -370,8 +372,23 @@ spending twice. There's no "somewhere else" on this machine: there's the
 all the state in `m.ram`, the widgets can show it live, tests can check
 it, and you never wonder where something is: it's wherever the map says.
 
-The **memory map** is the game's record of which addresses hold what. It
-grows every chapter, and Zig checks it. This chapter's plan:
+So we keep every address the game uses in one file, `map.zig`: the
+game's **memory map**. It grows every chapter, and Zig checks it while it
+compiles, so two things can never end up in the same place. This
+chapter's entry is the player: four bytes at `$0200`, the first free
+address above the processor's stack (the processor's own scratch space).
+
+:::diagram ch01-player-bytes
+The player, four bytes in a row. Every piece of code that wants to know where he is reads it from here.
+:::
+
+The rest of the code imports `map.zig`, so it has to go in now. Open the
+side quest to type it in, and to see how Zig catches two regions
+sharing a byte before the game ever runs.
+
+:::side-quest Type in the memory map
+The map lists every region of memory the game uses: ours, and the
+hardware's, so nothing of ours can land on them. This chapter's plan:
 
 | Address | Bytes | What |
 |---|---|---|
@@ -384,17 +401,6 @@ grows every chapter, and Zig checks it. This chapter's plan:
 | `$D800–$DBE7` | 1,000 | colour RAM |
 | `$DC00–$DC02` | 3 | input ports |
 | `$E000–$FF3F` | 8,000 | the bitmap |
-
-Only one row is ours: four bytes at `$0200`, the first free address
-above the stack (the processor's own scratch space). The hardware's rows
-go in so nothing of ours can land on them.
-
-```
-    $0200      $0201         $0202              $0203
-┌──────────┬──────────┬──────────────┬───────────────────┐
-│ player_x │ player_y │ player_color │ player_last_stick │
-└──────────┴──────────┴──────────────┴───────────────────┘
-```
 
 **`src/map.zig`** (new file)
 
@@ -467,25 +473,22 @@ the player is a one-line change. That's the convention to the end: a
 `map.zig`.
 
 **The `comptime` block runs while Zig compiles your game**, not while it
-runs, so by the time the game boots the check has already passed and
-cost the Comet 64 nothing. It compares every pair of regions (two ranges
-overlap when each starts before the other ends), and if two share a
-byte, `@compileError` stops the build. Give the monsters a table at
-`$01F0` one day without checking the map, and instead of a game that
+runs, so it costs the Comet 64 nothing. It compares every pair of regions
+(two ranges overlap when each starts before the other ends), and if two
+share a byte, `@compileError` stops the build. Give the monsters a table
+at `$01F0` one day without checking the map, and instead of a game that
 crashes only on Tuesdays you get:
 
 ```
 error: memory map: stack (reserved) overlaps monsters
 ```
 
-A collision between two regions becomes a compile error, the cheapest
-kind of bug there is.
-
 New syntax, in passing: `[_]Region{...}` lets the compiler count the
 array's length; `for (regions, 0..) |a, i|` walks it with each index
 alongside; `regions[i + 1 ..]` is a slice, the rest of the array after
 `i`; `++` joins compile-time strings. `//!` comments describe the file,
 `///` comments the declaration below.
+:::
 
 ## A sprite is 63 bytes
 
@@ -631,9 +634,10 @@ painted while you watch.
 
 It's drawn by a beam sweeping down the tube a line at a time,
 and the VIDEO chip draws each line from memory **as it is when the beam
-passes**. Your `frame` starts with the beam at the top. It moves down a
-line every 63 cycles your code spends, and reaches the display after
-**3,213 cycles**.
+passes**. Your `frame` starts with the beam up in the top border, and
+the more work your code does, the further down it gets. It spends a
+little while crossing the border before it reaches the display, and
+that head start is yours.
 
 So: **write hardware registers at the start of `frame`.** Write a
 sprite's registers while the beam is halfway down it, and the top half
@@ -654,7 +658,8 @@ pub fn show(m: *Machine) void {
 ```
 
 `hw.spriteX(n)` and friends give sprite *n*'s register addresses. Three
-peeks and three pokes: 24 cycles, well inside the 3,213.
+peeks and three pokes are done long before the beam gets anywhere near
+him.
 
 **`src/main.zig`** (replace `frame`)
 
@@ -665,6 +670,9 @@ pub fn frame(m: *Machine) void {
     player.show(m);
 }
 ```
+
+The comment in `frame` puts a number on the beam's head start;
+Chapter 2 shows how to read numbers like that.
 
 Build and reload, and there he is: white, standing on the grey floor.
 
@@ -750,10 +758,9 @@ limits, and writes it back. Two directions held is a diagonal, for free.
 returns, and anything worth remembering goes back to `$0200` before we
 leave.
 
-The `m.work(40)` is us being honest with the meter. `peek` and `poke`
-charge for themselves, but the comparisons and additions would cost the
-processor time too, so we estimate it. The meter is only as truthful as
-we make it.
+The `m.work(40)` is us being honest with the meter: `peek` and `poke`
+report their own time, and that line tells it roughly what the tests and
+sums cost on top. Chapter 2 shows how to read those numbers.
 
 :::pro-tip `&` binds tighter than `==` in Zig
 In JavaScript, `stick & LEFT == 0` means `stick & (LEFT == 0)`, a classic
@@ -810,8 +817,8 @@ the port byte at the end, and reads it back next frame as `before`.
 
 :::power-up The Edge Detector Power-Up
 Keep last frame's input byte, and a press is `held(now) and
-!held(before)`; a release is the reverse. One byte of memory and a few
-cycles turn "is the button down?" into "was it pressed *this frame*?",
+!held(before)`; a release is the reverse. One byte of memory turns "is
+the button down?" into "was it pressed *this frame*?",
 for all five switches at once. Doorbells, control panels, anything in the
 castle that wants presses rather than holds: this byte serves them all.
 :::
@@ -863,8 +870,9 @@ tap, however long you hold it. The disco is closed.
 :::secret-passage Make it tear
 Now that he moves and changes colour, you can break him on purpose.
 In `frame`, put `m.work(6000);` before
-`player.show(m);`, so the registers get written with the beam 95 lines
-down. The tear lasts only the frame his colour changes, so let the
+`player.show(m);`. That tells the meter the game did a big pile of work
+first, so the registers get written with the beam well down the
+screen. The tear lasts only the frame his colour changes, so let the
 headless runner catch it:
 
 ```
@@ -1000,9 +1008,8 @@ test "the stick steers the sprite and fire changes its colour" {
 **Memory.** 4 bytes of game state at `$0200–$0203`, plus a 63-byte
 picture copied into one of the 32 sprite blocks.
 
-**Time.** An idle frame costs 92 cycles (`show` 24, `steer` 68), and a
-fire press 100. That's half of one percent of 19,656: a sliver of green
-at the left of the meter. Enjoy the elbow room while it lasts.
+**Time.** A sliver of green at the left of the meter. Enjoy the elbow
+room while it lasts.
 :::
 
 :::game-over Common mistakes
@@ -1012,7 +1019,7 @@ at the left of the meter. Enjoy the elbow room while it lasts.
   Keep the test in `held` and use it everywhere.
 - **Writing registers late.** `player.show(m)` after the game logic works
   today, because the logic is tiny. As the game grows it gets pushed past
-  the 3,213-cycle mark and the tearing starts. Hardware first, always.
+  the moment the beam reaches the display, and the tearing starts. Hardware first, always.
 - **Fire strobes through the colours.** The `!held(before, joy.fire)`
   check, or the poke of `player_last_stick` at the end of `steer`, is
   missing.
@@ -1042,7 +1049,9 @@ overruns: 0, loading pauses: 0
 last frame: frames/frame_00249.ppm
 ```
 
-and saves six pictures in `frames/`. In `frame_00000.ppm` he stands on
+The `cycles:` line is the work meter's report, a sliver of the budget
+(Chapter 2 shows how to read it). The run also saves six pictures in
+`frames/`. In `frame_00000.ppm` he stands on
 the floor, white. By `frame_00100.ppm` he's walked left and is on his
 way up. In `frame_00249.ppm` he's floating near the middle, cyan: two
 presses of fire, and the 40-frame one changed the colour only once.

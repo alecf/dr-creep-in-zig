@@ -74,6 +74,20 @@ Read "Voice and tone" in the outline in full. A summary:
 
   Revised targets: the prologue is about 1,000–1,200 words, and a
   chapter's prose is about 5,000–5,500.
+- **Clear beats clever.** The owner flagged this sentence: "a Zig var
+  hides at an address only the compiler knows, and on a 64 KB machine a
+  byte nobody wrote down is a byte you'll end up spending twice." A reader
+  can't tell what "wrote down" refers to (the memory map) or what
+  "spending twice" means (using one byte for two things). Rules:
+  - Every phrase must have a referent the reader can name. Say "the
+    memory map", not "written down".
+  - A metaphor may decorate a point that has already been stated
+    plainly. It may never carry the point by itself.
+  - Avoid compressed, aphoristic sentences that make the reader decode
+    them. If a sentence needs a second read, rewrite it as two plain
+    ones.
+  - The test: could the reader explain the sentence back in their own
+    words? If not, rewrite it.
 - **Boxes earn their place.** Keep a box only if it adds something the
   main text doesn't. Merge or drop the ones that repeat the prose.
 

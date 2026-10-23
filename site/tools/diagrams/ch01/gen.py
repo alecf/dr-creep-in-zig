@@ -71,35 +71,36 @@ def memmap():
 
 # ---------- B: a byte becomes the border ----------
 def border():
-    s = ['<svg class="ch01-bd" viewBox="0 0 340 300" width="340" role="img" aria-labelledby="ch01-bd-t">',
-         '<title id="ch01-bd-t">The byte at $D020 holds 4 and the byte at $D021 holds 0; the VIDEO chip looks both up in the palette and draws a purple border around a black display</title>',
+    # Each byte box sits straight above its palette entry, and the two paths
+    # down to the screen nest (0's L wraps outside 4's), so nothing crosses.
+    px0, pw, py = 20, 18, 112
+    cx = lambda i: px0 + i * pw + pw / 2
+    c0, c4 = cx(0), cx(4)
+    sx, sy, sw, sh, b = 178, 166, 150, 104, 16
+    ya, yb = sy + 30, sy + 70           # where the 4 and 0 paths turn right
+    H = sy + sh + 8
+    s = [f'<svg class="ch01-bd" viewBox="0 0 340 {H}" width="340" role="img" aria-labelledby="ch01-bd-t">',
+         '<title id="ch01-bd-t">The byte at $D021 holds 0 and the byte at $D020 holds 4; the VIDEO chip looks both up in the palette and draws a black display inside a purple border</title>',
          '<defs><marker id="ch01-bd-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" style="fill:var(--ink-soft)"/></marker></defs>']
-    # byte boxes
-    for x, addr, name, val in ((22, "$D020", "border", 4), (198, "$D021", "background", 0)):
-        s.append(f'<text x="{x}" y="16" font-size="11">{name}</text>')
-        s.append(f'<text class="soft" x="{x}" y="30" font-size="10">ram[{addr}]</text>')
-        s.append(f'<rect class="ch01-bd-byte" x="{x}" y="36" width="56" height="30" rx="4"/>')
-        s.append(f'<text x="{x+28}" y="56" font-size="14" text-anchor="middle" font-weight="700">{val}</text>')
-    # palette
-    px0, pw, py = 18, 19, 112
-    s.append(f'<text class="soft" x="196" y="{py+46}" font-size="10">the palette, 0–15</text>')
+    for c, addr, name, val in ((c0, "$D021", "background", 0), (c4, "$D020", "border", 4)):
+        s.append(f'<text x="{c}" y="16" font-size="11" text-anchor="middle">{name}</text>')
+        s.append(f'<text class="soft" x="{c}" y="30" font-size="10" text-anchor="middle">ram[{addr}]</text>')
+        s.append(f'<rect class="ch01-bd-byte" x="{c-24}" y="36" width="48" height="30" rx="4"/>')
+        s.append(f'<text x="{c}" y="56" font-size="14" text-anchor="middle" font-weight="700">{val}</text>')
+        s.append(f'<path class="line" d="M{c} 66 V{py-3}" marker-end="url(#ch01-bd-arrow)"/>')
+    s.append(f'<text class="soft" x="{px0 + 16 * pw}" y="{py-8}" font-size="10" text-anchor="end">the palette, 0–15</text>')
     for i in range(16):
         x = px0 + i * pw
         sel = ' class="ch01-bd-sw ch01-bd-sel"' if i in (0, 4) else ' class="ch01-bd-sw"'
         s.append(f'<rect{sel} x="{x+1}" y="{py}" width="{pw-2}" height="18" rx="2" style="fill:var(--c{i})"/>')
         s.append(f'<text class="soft" x="{x+pw/2}" y="{py+31}" font-size="9" text-anchor="middle">{i}</text>')
-    c4 = px0 + 4 * pw + pw / 2
-    c0 = px0 + pw / 2
-    s.append(f'<path class="line" d="M50 66 V86 H{c4} V{py-3}" marker-end="url(#ch01-bd-arrow)"/>')
-    s.append(f'<path class="line" d="M226 66 V92 H{c0+6} V{py-3}" marker-end="url(#ch01-bd-arrow)"/>')
-    # mini screen
-    sx, sy, sw, sh, b = 110, 168, 210, 118, 18
+    # the screen: a purple border around a black display
     s.append(f'<rect x="{sx}" y="{sy}" width="{sw}" height="{sh}" rx="3" style="fill:var(--c4)"/>')
     s.append(f'<rect x="{sx+b}" y="{sy+b}" width="{sw-2*b}" height="{sh-2*b}" style="fill:var(--c0)"/>')
-    s.append(f'<path class="line" d="M{c4} {py+36} V{sy+b/2} H{sx-3}" marker-end="url(#ch01-bd-arrow)"/>')
-    s.append(f'<path class="line" d="M{c0} {py+36} V{sy+sh/2} H{sx+b+18}" marker-end="url(#ch01-bd-arrow)"/>')
-    s.append(f'<text x="{c4+6}" y="{sy-6}" font-size="10" class="soft">4 = purple</text>')
-    s.append(f'<text x="{c0+6}" y="{sy+sh/2-6}" font-size="10" class="soft">0 = black</text>')
+    s.append(f'<path class="line" d="M{c4} {py+36} V{ya} H{sx-3}" marker-end="url(#ch01-bd-arrow)"/>')
+    s.append(f'<path class="line" d="M{c0} {py+36} V{yb} H{sx+b+22}" marker-end="url(#ch01-bd-arrow)"/>')
+    s.append(f'<text x="{c4+8}" y="{ya-6}" font-size="10" class="soft">4 = purple</text>')
+    s.append(f'<text x="{c0+8}" y="{yb-6}" font-size="10" class="soft">0 = black</text>')
     s.append("</svg>")
     style = """<style>
 .ch01-bd .ch01-bd-byte { fill: var(--code-bg); stroke: var(--rule); }
@@ -110,71 +111,115 @@ def border():
 
 # ---------- C: the floor ----------
 def floor():
-    c, b = 7, 14           # cell px, border px
-    sx, sy = 16, 8
+    c, b = 7, 14           # one cell drawn 7 px square; border 14 px
+    sx, sy = 16, 22
     W, Hh = 40 * c, 25 * c
     dx, dy = sx + b, sy + b
-    s = ['<svg class="ch01-fl" viewBox="0 0 340 470" width="340" role="img" aria-labelledby="ch01-fl-t">',
-         '<title id="ch01-fl-t">The display as 40 by 25 cells with the bottom row, row 24, grey. Its first cell is eight bitmap bytes of $FF from $FE00 and one colour RAM byte of 12 at $DBC0</title>']
+    fy = dy + 24 * c       # top of the floor row
+    s = ['<svg class="ch01-fl" viewBox="0 0 340 520" width="340" role="img" aria-labelledby="ch01-fl-t">',
+         '<title id="ch01-fl-t">The display is a grid of 40 by 25 cells, each 8 by 8 pixels. The floor is the bottom row of cells, row 24, in grey. Up close, its first cell is a square made of eight bitmap bytes of $FF, one byte per pixel row, from $FE00 to $FE07, and one colour RAM byte of 12, grey, at $DBC0</title>']
+    s.append(f'<text class="soft" x="{dx + W/2}" y="{sy-7}" font-size="10" text-anchor="middle">40 cells across</text>')
     s.append(f'<rect x="{sx}" y="{sy}" width="{W+2*b}" height="{Hh+2*b}" rx="3" style="fill:var(--c6)"/>')
     s.append(f'<rect x="{dx}" y="{dy}" width="{W}" height="{Hh}" style="fill:var(--c0)"/>')
-    s.append(f'<rect x="{dx}" y="{dy+24*c}" width="{W}" height="{c}" style="fill:var(--c12)"/>')
-    g = []
-    for i in range(1, 40):
-        g.append(f"M{dx+i*c} {dy}v{Hh}")
-    for j in range(1, 25):
-        g.append(f"M{dx} {dy+j*c}h{W}")
+    s.append(f'<rect x="{dx}" y="{fy}" width="{W}" height="{c}" style="fill:var(--c12)"/>')
+    g = [f"M{dx+i*c} {dy}v{Hh}" for i in range(1, 40)] + [f"M{dx} {dy+j*c}h{W}" for j in range(1, 25)]
     s.append(f'<path class="ch01-fl-grid" d="{" ".join(g)}"/>')
-    s.append(f'<rect class="ch01-fl-hi" x="{dx}" y="{dy+24*c}" width="{c}" height="{c}"/>')
-    # labels for the grid
-    ty = sy + Hh + 2 * b + 16
-    s.append(f'<text class="soft" x="{dx+14}" y="{ty}" font-size="10">40 × 25 cells, each 8 × 8 pixels</text>')
-    # zoom
-    zy = ty + 26
-    zx = 44
-    ry = zy + 18
-    s.append(f'<path class="line" d="M{dx+c/2} {dy+25*c} V{ry-5} H{zx+108} V{ry-1}"/>')
-    s.append(f'<text x="{zx}" y="{zy+6}" font-size="11">row 24, cell 0</text>')
-    ry = zy + 18
+    s.append(f'<text class="ch01-fl-on" x="{dx + W/2}" y="{dy + 12*c}" font-size="10" text-anchor="middle">25 rows of cells</text>')
+    s.append(f'<text class="ch01-fl-on" x="{dx + W/2}" y="{dy + 12*c + 13}" font-size="10" text-anchor="middle">each cell 8 × 8 pixels</text>')
+    s.append(f'<text class="ch01-fl-on" x="{dx + W/2}" y="{fy - 5}" font-size="10" text-anchor="middle">row 24: the floor ↓</text>')
+    s.append(f'<rect class="ch01-fl-hi" x="{dx}" y="{fy}" width="{c}" height="{c}"/>')
+    # zoom: one cell as an 8 x 8 square, each pixel row one byte
+    z = 15                                   # one pixel, zoomed
+    qx, qy = 118, dy + Hh + b + 34           # the square's top-left
+    Z = 8 * z
+    s.append(f'<path class="ch01-fl-zoom" d="M{dx} {fy+c} L{qx} {qy} M{dx+c} {fy+c} L{qx+Z} {qy}"/>')
+    s.append(f'<rect x="{qx}" y="{qy}" width="{Z}" height="{Z}" style="fill:var(--c12)"/>')
+    gz = [f"M{qx} {qy+k*z}h{Z}" for k in range(1, 8)]
+    s.append(f'<path class="ch01-fl-rows" d="{" ".join(gz)}"/>')
+    gp = [f"M{qx+k*2*z} {qy}v{Z}" for k in range(1, 4)]
+    s.append(f'<path class="ch01-fl-pairs" d="{" ".join(gp)}"/>')
+    s.append(f'<rect class="ch01-fl-cellbox" x="{qx}" y="{qy}" width="{Z}" height="{Z}"/>')
+    s.append(f'<text class="soft" x="{qx + Z/2}" y="{qy+Z+14}" font-size="10" text-anchor="middle">8 × 8 pixels</text>')
     for k in range(8):
-        y0 = ry + k * 17
-        s.append(f'<text class="soft" x="{zx}" y="{y0+11}" font-size="10">${0xFE00+k:04X}</text>')
-        s.append(f'<rect class="ch01-fl-byte" x="{zx+44}" y="{y0}" width="28" height="14" rx="2"/>')
-        s.append(f'<text x="{zx+58}" y="{y0+11}" font-size="10" text-anchor="middle">FF</text>')
-        s.append(f'<rect x="{zx+80}" y="{y0}" width="56" height="14" style="fill:var(--c12)"/>')
-    s.append(f'<rect class="ch01-fl-cellbox" x="{zx+80}" y="{ry}" width="56" height="{8*17-3}"/>')
-    ny = ry + 8 * 17 + 10
-    s.append(f'<text class="soft" x="{zx}" y="{ny}" font-size="10">next cell: $FE08…  last: $FF38–$FF3F</text>')
-    # colour ram
-    cx = 196
-    s.append(f'<text x="{cx}" y="{zy+6}" font-size="11">its colour</text>')
-    s.append(f'<text class="soft" x="{cx}" y="{ry+11}" font-size="10">$DBC0</text>')
-    s.append(f'<rect class="ch01-fl-byte" x="{cx+44}" y="{ry}" width="28" height="14" rx="2"/>')
-    s.append(f'<text x="{cx+58}" y="{ry+11}" font-size="10" text-anchor="middle">12</text>')
-    s.append(f'<rect x="{cx+80}" y="{ry}" width="14" height="14" rx="2" style="fill:var(--c12)"/>')
-    s.append(f'<text class="soft" x="{cx}" y="{ry+32}" font-size="10">12 = grey: the colour</text>')
-    s.append(f'<text class="soft" x="{cx}" y="{ry+45}" font-size="10">for every $FF in</text>')
-    s.append(f'<text class="soft" x="{cx}" y="{ry+58}" font-size="10">this cell</text>')
-    # sums
-    my = ny + 28
-    for k, (lab, expr, note) in enumerate((("bitmap:", "$E000 + 24 × 320 = $FE00", "320 bytes, $FE00–$FF3F"),
-                                          ("colour RAM:", "$D800 + 24 × 40 = $DBC0", "40 bytes, $DBC0–$DBE7"))):
-        yy = my + k * 34
-        s.append(f'<text x="{zx}" y="{yy}" font-size="10.5">{lab}</text>')
-        s.append(f'<text x="{zx+78}" y="{yy}" font-size="10.5">{expr}</text>')
-        s.append(f'<text class="soft" x="{zx+78}" y="{yy+14}" font-size="10">{note}</text>')
-    s.append("</svg>")
-    out = "\n".join(s)
-    hgt = my + 58
-    out = out.replace('viewBox="0 0 340 470"', f'viewBox="0 0 340 {hgt}"')
+        y0 = qy + k * z
+        s.append(f'<text class="soft" x="{qx-46}" y="{y0+11}" font-size="10" text-anchor="end">${0xFE00+k:04X}</text>')
+        s.append(f'<rect class="ch01-fl-byte" x="{qx-40}" y="{y0+1}" width="26" height="{z-2}" rx="2"/>')
+        s.append(f'<text x="{qx-27}" y="{y0+11}" font-size="10" text-anchor="middle">FF</text>')
+        s.append(f'<path class="line" d="M{qx-12} {y0+z/2} H{qx-3}"/>')
+    s.append(f'<text class="soft" x="{qx-12}" y="{qy+Z+14}" font-size="10" text-anchor="end">1 byte = 1 row</text>')
+    # its colour byte
+    kx = qx + Z + 14
+    # title sits right of the square, clear of the dashed zoom lines
+    s.append(f'<text x="{kx}" y="{qy-22}" font-size="10.5">row 24, cell 0,</text>')
+    s.append(f'<text x="{kx}" y="{qy-9}" font-size="10.5">up close</text>')
+    s.append(f'<text x="{kx}" y="{qy+11}" font-size="10.5">colour RAM</text>')
+    s.append(f'<text class="soft" x="{kx}" y="{qy+28}" font-size="10">$DBC0</text>')
+    s.append(f'<rect class="ch01-fl-byte" x="{kx+40}" y="{qy+17}" width="26" height="15" rx="2"/>')
+    s.append(f'<text x="{kx+53}" y="{qy+28}" font-size="10" text-anchor="middle">12</text>')
+    for k, t in enumerate(("1 byte for the", "whole cell:", "12 = grey")):
+        s.append(f'<text class="soft" x="{kx}" y="{qy+50+k*13}" font-size="10">{t}</text>')
+    s.append(f'<path class="line" d="M{kx-3} {qy+24} H{qx+Z-6}"/>')
+    hgt = qy + Z + 24
+    out = "\n".join(s).replace('viewBox="0 0 340 520"', f'viewBox="0 0 340 {hgt}"') + "\n</svg>"
+    writes = ('<div class="ch01-fl-writes">'
+              '<div><span class="dg-label">write 1 · bitmap</span>'
+              '<span>40 cells × 8 bytes = <b>320 bytes of $FF</b></span>'
+              '<span class="ch01-fl-soft">$E000 + 24 × 320 = $FE00, up to $FF3F</span></div>'
+              '<div><span class="dg-label">write 2 · colour RAM</span>'
+              '<span>40 cells × 1 byte = <b>40 bytes of 12</b></span>'
+              '<span class="ch01-fl-soft">$D800 + 24 × 40 = $DBC0, up to $DBE7</span></div>'
+              '</div>')
     style = """<style>
 .ch01-fl .ch01-fl-grid { stroke: var(--c11); stroke-width: .5; fill: none; }
 .ch01-fl .ch01-fl-hi { fill: none; stroke: var(--accent); stroke-width: 2; }
+.ch01-fl .ch01-fl-zoom { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 3; fill: none; }
 .ch01-fl .ch01-fl-byte { fill: var(--code-bg); stroke: var(--rule); }
-.ch01-fl .ch01-fl-cellbox { fill: none; stroke: var(--accent); stroke-width: 1.5; }
-.ch01-fl text { white-space: pre; }
+.ch01-fl .ch01-fl-rows { stroke: var(--c11); stroke-width: 1.5; fill: none; }
+.ch01-fl .ch01-fl-pairs { stroke: var(--c11); stroke-width: .6; stroke-dasharray: 2 3; fill: none; }
+.ch01-fl .ch01-fl-cellbox { fill: none; stroke: var(--accent); stroke-width: 2; }
+.ch01-fl text.ch01-fl-on { fill: var(--c15); }
+.ch01-fl-writes { display: flex; flex-wrap: wrap; gap: 10px 28px; }
+.ch01-fl-writes > div { display: flex; flex-direction: column; gap: 2px; }
+.ch01-fl-writes b { font-weight: 700; }
+.ch01-fl-writes .ch01-fl-soft { color: var(--ink-soft); font-size: .72rem; }
 </style>"""
-    return style + "\n" + out + "\n"
+    return style + "\n" + out + "\n" + writes + "\n"
+
+# ---------- F: a byte's eight bits ----------
+def byte():
+    h = ['<style>',
+         '.ch01-by { align-self: flex-start; display: inline-grid; grid-template-columns: auto repeat(8, minmax(2.2em, 3em)); gap: 4px 3px; align-items: center; }',
+         '.ch01-by .dg-label { text-align: center; }',
+         '.ch01-by .ch01-by-head { text-align: right; padding-right: 8px; }',
+         '.ch01-by .dg-bit { min-width: 0; font-weight: 700; }',
+         '.ch01-by .ch01-by-w { text-align: center; font-variant-numeric: tabular-nums; }',
+         '.ch01-by-sum { color: var(--ink-soft); }',
+         '</style>',
+         '<div class="ch01-by" role="table" aria-label="A byte with all eight bits on, and what each bit is worth">',
+         '<span role="row" style="display:contents"><span class="dg-label ch01-by-head" role="rowheader">bit</span>'
+         + "".join(f'<span class="dg-label" role="columnheader">{n}</span>' for n in range(7, -1, -1)) + '</span>',
+         '<span role="row" style="display:contents"><span class="dg-label ch01-by-head" role="rowheader">value</span>'
+         + '<span class="dg-bit dg-on" role="cell">1</span>' * 8 + '</span>',
+         '<span role="row" style="display:contents"><span class="dg-label ch01-by-head" role="rowheader">worth</span>'
+         + "".join(f'<span class="ch01-by-w" role="cell">{1 << n}</span>' for n in range(7, -1, -1)) + '</span>',
+         '</div>',
+         '<div class="ch01-by-sum">128 + 64 + 32 + 16 + 8 + 4 + 2 + 1 = <b>255</b>, the biggest u8</div>']
+    return "\n".join(h) + "\n"
+
+# ---------- G: the player's four bytes ----------
+def player_bytes():
+    fields = (("$0200", "player_x"), ("$0201", "player_y"), ("$0202", "player_color"), ("$0203", "player_last_stick"))
+    h = ['<style>',
+         '.ch01-pb { display: flex; flex-wrap: wrap; gap: 8px 3px; }',
+         '.ch01-pb > div { display: flex; flex-direction: column; gap: 4px; }',
+         '.ch01-pb .ch01-pb-a { padding-left: 2px; color: var(--ink-soft); font-size: .72rem; }',
+         '.ch01-pb .dg-byte { text-align: left; padding: 6px 10px; }',
+         '</style>',
+         '<div class="ch01-pb" aria-label="The player\'s four bytes, $0200 to $0203">']
+    for a, n in fields:
+        h.append(f'<div><span class="ch01-pb-a">{a}</span><span class="dg-byte">{n}</span></div>')
+    h.append('</div>')
+    return "\n".join(h) + "\n"
 
 # ---------- D: the sprite ----------
 def sprite():
@@ -259,6 +304,7 @@ def joystick():
     h.append('</div>')
     return "\n".join(h) + "\n"
 
-for name, fn in (("memory-map", memmap), ("border-byte", border), ("floor", floor), ("sprite", sprite), ("joystick", joystick)):
+for name, fn in (("memory-map", memmap), ("border-byte", border), ("floor", floor), ("sprite", sprite), ("joystick", joystick),
+                 ("byte", byte), ("player-bytes", player_bytes)):
     open(D + f"ch01-{name}.html", "w").write(fn())
 print("ok")

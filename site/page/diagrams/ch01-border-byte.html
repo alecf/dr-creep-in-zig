@@ -3,56 +3,56 @@
 .ch01-bd .ch01-bd-sw { stroke: var(--rule); }
 .ch01-bd .ch01-bd-sel { stroke: var(--accent); stroke-width: 2.5; }
 </style>
-<svg class="ch01-bd" viewBox="0 0 340 300" width="340" role="img" aria-labelledby="ch01-bd-t">
-<title id="ch01-bd-t">The byte at $D020 holds 4 and the byte at $D021 holds 0; the VIDEO chip looks both up in the palette and draws a purple border around a black display</title>
+<svg class="ch01-bd" viewBox="0 0 340 278" width="340" role="img" aria-labelledby="ch01-bd-t">
+<title id="ch01-bd-t">The byte at $D021 holds 0 and the byte at $D020 holds 4; the VIDEO chip looks both up in the palette and draws a black display inside a purple border</title>
 <defs><marker id="ch01-bd-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" style="fill:var(--ink-soft)"/></marker></defs>
-<text x="22" y="16" font-size="11">border</text>
-<text class="soft" x="22" y="30" font-size="10">ram[$D020]</text>
-<rect class="ch01-bd-byte" x="22" y="36" width="56" height="30" rx="4"/>
-<text x="50" y="56" font-size="14" text-anchor="middle" font-weight="700">4</text>
-<text x="198" y="16" font-size="11">background</text>
-<text class="soft" x="198" y="30" font-size="10">ram[$D021]</text>
-<rect class="ch01-bd-byte" x="198" y="36" width="56" height="30" rx="4"/>
-<text x="226" y="56" font-size="14" text-anchor="middle" font-weight="700">0</text>
-<text class="soft" x="196" y="158" font-size="10">the palette, 0–15</text>
-<rect class="ch01-bd-sw ch01-bd-sel" x="19" y="112" width="17" height="18" rx="2" style="fill:var(--c0)"/>
-<text class="soft" x="27.5" y="143" font-size="9" text-anchor="middle">0</text>
-<rect class="ch01-bd-sw" x="38" y="112" width="17" height="18" rx="2" style="fill:var(--c1)"/>
-<text class="soft" x="46.5" y="143" font-size="9" text-anchor="middle">1</text>
-<rect class="ch01-bd-sw" x="57" y="112" width="17" height="18" rx="2" style="fill:var(--c2)"/>
-<text class="soft" x="65.5" y="143" font-size="9" text-anchor="middle">2</text>
-<rect class="ch01-bd-sw" x="76" y="112" width="17" height="18" rx="2" style="fill:var(--c3)"/>
-<text class="soft" x="84.5" y="143" font-size="9" text-anchor="middle">3</text>
-<rect class="ch01-bd-sw ch01-bd-sel" x="95" y="112" width="17" height="18" rx="2" style="fill:var(--c4)"/>
-<text class="soft" x="103.5" y="143" font-size="9" text-anchor="middle">4</text>
-<rect class="ch01-bd-sw" x="114" y="112" width="17" height="18" rx="2" style="fill:var(--c5)"/>
-<text class="soft" x="122.5" y="143" font-size="9" text-anchor="middle">5</text>
-<rect class="ch01-bd-sw" x="133" y="112" width="17" height="18" rx="2" style="fill:var(--c6)"/>
-<text class="soft" x="141.5" y="143" font-size="9" text-anchor="middle">6</text>
-<rect class="ch01-bd-sw" x="152" y="112" width="17" height="18" rx="2" style="fill:var(--c7)"/>
-<text class="soft" x="160.5" y="143" font-size="9" text-anchor="middle">7</text>
-<rect class="ch01-bd-sw" x="171" y="112" width="17" height="18" rx="2" style="fill:var(--c8)"/>
-<text class="soft" x="179.5" y="143" font-size="9" text-anchor="middle">8</text>
-<rect class="ch01-bd-sw" x="190" y="112" width="17" height="18" rx="2" style="fill:var(--c9)"/>
-<text class="soft" x="198.5" y="143" font-size="9" text-anchor="middle">9</text>
-<rect class="ch01-bd-sw" x="209" y="112" width="17" height="18" rx="2" style="fill:var(--c10)"/>
-<text class="soft" x="217.5" y="143" font-size="9" text-anchor="middle">10</text>
-<rect class="ch01-bd-sw" x="228" y="112" width="17" height="18" rx="2" style="fill:var(--c11)"/>
-<text class="soft" x="236.5" y="143" font-size="9" text-anchor="middle">11</text>
-<rect class="ch01-bd-sw" x="247" y="112" width="17" height="18" rx="2" style="fill:var(--c12)"/>
-<text class="soft" x="255.5" y="143" font-size="9" text-anchor="middle">12</text>
-<rect class="ch01-bd-sw" x="266" y="112" width="17" height="18" rx="2" style="fill:var(--c13)"/>
-<text class="soft" x="274.5" y="143" font-size="9" text-anchor="middle">13</text>
-<rect class="ch01-bd-sw" x="285" y="112" width="17" height="18" rx="2" style="fill:var(--c14)"/>
-<text class="soft" x="293.5" y="143" font-size="9" text-anchor="middle">14</text>
-<rect class="ch01-bd-sw" x="304" y="112" width="17" height="18" rx="2" style="fill:var(--c15)"/>
-<text class="soft" x="312.5" y="143" font-size="9" text-anchor="middle">15</text>
-<path class="line" d="M50 66 V86 H103.5 V109" marker-end="url(#ch01-bd-arrow)"/>
-<path class="line" d="M226 66 V92 H33.5 V109" marker-end="url(#ch01-bd-arrow)"/>
-<rect x="110" y="168" width="210" height="118" rx="3" style="fill:var(--c4)"/>
-<rect x="128" y="186" width="174" height="82" style="fill:var(--c0)"/>
-<path class="line" d="M103.5 148 V177.0 H107" marker-end="url(#ch01-bd-arrow)"/>
-<path class="line" d="M27.5 148 V227.0 H146" marker-end="url(#ch01-bd-arrow)"/>
-<text x="109.5" y="162" font-size="10" class="soft">4 = purple</text>
-<text x="33.5" y="221.0" font-size="10" class="soft">0 = black</text>
+<text x="29.0" y="16" font-size="11" text-anchor="middle">background</text>
+<text class="soft" x="29.0" y="30" font-size="10" text-anchor="middle">ram[$D021]</text>
+<rect class="ch01-bd-byte" x="5.0" y="36" width="48" height="30" rx="4"/>
+<text x="29.0" y="56" font-size="14" text-anchor="middle" font-weight="700">0</text>
+<path class="line" d="M29.0 66 V109" marker-end="url(#ch01-bd-arrow)"/>
+<text x="101.0" y="16" font-size="11" text-anchor="middle">border</text>
+<text class="soft" x="101.0" y="30" font-size="10" text-anchor="middle">ram[$D020]</text>
+<rect class="ch01-bd-byte" x="77.0" y="36" width="48" height="30" rx="4"/>
+<text x="101.0" y="56" font-size="14" text-anchor="middle" font-weight="700">4</text>
+<path class="line" d="M101.0 66 V109" marker-end="url(#ch01-bd-arrow)"/>
+<text class="soft" x="308" y="104" font-size="10" text-anchor="end">the palette, 0–15</text>
+<rect class="ch01-bd-sw ch01-bd-sel" x="21" y="112" width="16" height="18" rx="2" style="fill:var(--c0)"/>
+<text class="soft" x="29.0" y="143" font-size="9" text-anchor="middle">0</text>
+<rect class="ch01-bd-sw" x="39" y="112" width="16" height="18" rx="2" style="fill:var(--c1)"/>
+<text class="soft" x="47.0" y="143" font-size="9" text-anchor="middle">1</text>
+<rect class="ch01-bd-sw" x="57" y="112" width="16" height="18" rx="2" style="fill:var(--c2)"/>
+<text class="soft" x="65.0" y="143" font-size="9" text-anchor="middle">2</text>
+<rect class="ch01-bd-sw" x="75" y="112" width="16" height="18" rx="2" style="fill:var(--c3)"/>
+<text class="soft" x="83.0" y="143" font-size="9" text-anchor="middle">3</text>
+<rect class="ch01-bd-sw ch01-bd-sel" x="93" y="112" width="16" height="18" rx="2" style="fill:var(--c4)"/>
+<text class="soft" x="101.0" y="143" font-size="9" text-anchor="middle">4</text>
+<rect class="ch01-bd-sw" x="111" y="112" width="16" height="18" rx="2" style="fill:var(--c5)"/>
+<text class="soft" x="119.0" y="143" font-size="9" text-anchor="middle">5</text>
+<rect class="ch01-bd-sw" x="129" y="112" width="16" height="18" rx="2" style="fill:var(--c6)"/>
+<text class="soft" x="137.0" y="143" font-size="9" text-anchor="middle">6</text>
+<rect class="ch01-bd-sw" x="147" y="112" width="16" height="18" rx="2" style="fill:var(--c7)"/>
+<text class="soft" x="155.0" y="143" font-size="9" text-anchor="middle">7</text>
+<rect class="ch01-bd-sw" x="165" y="112" width="16" height="18" rx="2" style="fill:var(--c8)"/>
+<text class="soft" x="173.0" y="143" font-size="9" text-anchor="middle">8</text>
+<rect class="ch01-bd-sw" x="183" y="112" width="16" height="18" rx="2" style="fill:var(--c9)"/>
+<text class="soft" x="191.0" y="143" font-size="9" text-anchor="middle">9</text>
+<rect class="ch01-bd-sw" x="201" y="112" width="16" height="18" rx="2" style="fill:var(--c10)"/>
+<text class="soft" x="209.0" y="143" font-size="9" text-anchor="middle">10</text>
+<rect class="ch01-bd-sw" x="219" y="112" width="16" height="18" rx="2" style="fill:var(--c11)"/>
+<text class="soft" x="227.0" y="143" font-size="9" text-anchor="middle">11</text>
+<rect class="ch01-bd-sw" x="237" y="112" width="16" height="18" rx="2" style="fill:var(--c12)"/>
+<text class="soft" x="245.0" y="143" font-size="9" text-anchor="middle">12</text>
+<rect class="ch01-bd-sw" x="255" y="112" width="16" height="18" rx="2" style="fill:var(--c13)"/>
+<text class="soft" x="263.0" y="143" font-size="9" text-anchor="middle">13</text>
+<rect class="ch01-bd-sw" x="273" y="112" width="16" height="18" rx="2" style="fill:var(--c14)"/>
+<text class="soft" x="281.0" y="143" font-size="9" text-anchor="middle">14</text>
+<rect class="ch01-bd-sw" x="291" y="112" width="16" height="18" rx="2" style="fill:var(--c15)"/>
+<text class="soft" x="299.0" y="143" font-size="9" text-anchor="middle">15</text>
+<rect x="178" y="166" width="150" height="104" rx="3" style="fill:var(--c4)"/>
+<rect x="194" y="182" width="118" height="72" style="fill:var(--c0)"/>
+<path class="line" d="M101.0 148 V196 H175" marker-end="url(#ch01-bd-arrow)"/>
+<path class="line" d="M29.0 148 V236 H216" marker-end="url(#ch01-bd-arrow)"/>
+<text x="109.0" y="190" font-size="10" class="soft">4 = purple</text>
+<text x="37.0" y="230" font-size="10" class="soft">0 = black</text>
 </svg>
