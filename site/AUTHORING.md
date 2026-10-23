@@ -267,3 +267,62 @@ Keep a running list of rooms and their room numbers in the Decision log.
   constraints, not to build an emulator.
 - **Shells:** browser and headless only for now. The native window is
   deferred because the build container has no GL.
+- **Machine implementation choices (§3 interpretations).**
+  - *Frame driver:* `m.boot(Game)` / `m.runFrame(Game)` are methods on
+    `Machine`. The shell sets `m.input` (`joy1`, `joy2` as held `joy.*`
+    bits, `key` as uppercase ASCII) before each `runFrame`. Boot is not
+    metered. `m.meter()` during a frame returns the *previous* frame's
+    cycles. Collision bits computed while drawing frame F are ORed into
+    `$D01E/$D01F` after F, so the game sees them in frame F+1.
+  - *Hardware state outside `ram`:* `Machine` also holds the rendered
+    screen (`m.screen`, 384×272 RGBA), the input latch, and meter
+    statistics (`frames`, `overruns`, `max_cycles`, `total_cycles`). These
+    are "the hardware", not game state.
+  - *Picture:* 384×272 with the 320×200 display at (32, 36). Sprites and
+    collisions exist only inside the display window (no sprites over the
+    border).
+  - *Meter bar:* light green (<75%), yellow (75–100%), red when over;
+    over budget also draws a full-width red stripe below the bar. Both on
+    a black outline so they read against any border colour.
+  - *Sprite pointers:* block N is at `$C000 + N*64` for any byte value
+    (no masking); the card tells the reader to use 0–31.
+  - *Sprite priority quirk kept:* priority is resolved per pixel by the
+    frontmost (lowest-numbered) sprite; if that sprite is "behind" and the
+    bitmap pixel is foreground, the bitmap shows (it does not fall
+    through to a lower-priority sprite).
+  - *`charRom` is free* (0 cycles); the ROM is outside the 64 KB map.
+  - *`m.view` types allowed:* whole-byte integers, `extern`/`packed`
+    struct/union, and arrays of those (checked at comptime); a view past
+    `$FFFF` panics. `copy`/`fill` wrap past `$FFFF`; `copy` is
+    overlap-safe (memmove).
+  - *Keyboard port:* `$DC02` is latched only when a key arrives and
+    stays until the game writes 0. Browser: printable keys → uppercase
+    ASCII, plus Esc=27, Backspace=8, Tab=9. Joystick keys (arrows, WASD,
+    Space, IJKL, Enter) never reach `$DC02`. Ctrl/Cmd/Alt combos are left
+    to the browser. Keyboard only reaches the game while the canvas has
+    focus (so embedded pages still scroll).
+  - *Headless extras:* `--key FRAME:C` types a character (needed from
+    chapter 3, "flip between rooms with a key"); `--help`. Defaults:
+    250 frames, dump dir `frames`, only the last frame saved unless
+    `--dump-every`. Picture names `frame_NNNNN.ppm` (0-based frame
+    index).
+  - *Font:* 2-px uprights, 1-px bars, letters in the top 7 rows and left
+    7 columns. Lowercase slots `0x61–0x7A` copy the capitals. Picture
+    glyphs at `0x01–0x0B` (skull, ankh, key, heart, 4 arrows, block,
+    checkerboard, castle tower); everything else blank. Designed to look
+    right when the game expands each bit to a fat pixel (two cells per
+    character, the 1984 game's text style).
+  - *Colour names:* index 10 is called "pink" (not "light red"), and the
+    enum is `machine.Color`.
+- **Game project layout.** Every game's `build.zig` is three lines calling
+  `machine.addGame(b, .{ .name = "chNN", .root = b.path("src/main.zig") })`.
+  Every `build.zig.zon` is identical (`.name = .game`, same fingerprint,
+  path dependency `.machine = .{ .path = "../machine" }`), so copying a
+  checkpoint needs no zon edits. `zig build wasm` *writes* `web/`
+  (game.wasm, shell.js, index.html from the machine package), so `web/`
+  is not checked in (`site/code/.gitignore`). The wasm build is
+  ReleaseSafe so panics show in the browser console. `zig build test`
+  runs the game's own tests plus a machine-provided 100-frame boot test.
+- **SOUND chip:** registers are plain RAM; no audio yet. The reference
+  card has a placeholder section and the code has a TODO; both get filled
+  in by the music chapter.

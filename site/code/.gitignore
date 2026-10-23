@@ -1,0 +1,6 @@
+.zig-cache/
+zig-out/
+frames/
+# `zig build wasm` writes each game's web/ folder
+*/web/
+!machine/web/
