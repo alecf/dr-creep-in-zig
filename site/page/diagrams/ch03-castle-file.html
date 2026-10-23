@@ -1,47 +1,47 @@
 <style>
 .ch03-file { width: 100%; max-width: 560px; }
-.ch03-file .blk { fill: var(--code-bg); stroke: var(--rule); }
+.ch03-file .ch03-blk { fill: var(--code-bg); stroke: var(--rule); }
 .ch03-file text { white-space: pre; }
-.ch03-file .hd { font-weight: 700; }
-.ch03-file .ptr { fill: var(--accent); font-weight: 700; }
-.ch03-file .arrow { stroke: var(--accent); stroke-width: 1.5; fill: none; }
-.ch03-file .head { fill: var(--accent); }
+.ch03-file .ch03-hd { font-weight: 700; }
+.ch03-file .ch03-ptr { fill: var(--accent); font-weight: 700; }
+.ch03-file .ch03-arrow { stroke: var(--accent); stroke-width: 1.5; fill: none; }
+.ch03-file .ch03-head { fill: var(--accent); }
 </style>
-<svg class="ch03-file" viewBox="0 0 364 300" font-size="10" role="img" aria-label="The Training Castle in memory: a 256-byte header at $7800, the room directory at $7900 whose entries point at each room's object stream, and the header's final-room field pointing at the final room's stream at $8807">
-  <defs><marker id="ch03-file-tip" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path class="head" d="M0 0 L8 4 L0 8 z"/></marker></defs>
+<svg class="ch03-file" viewBox="0 0 330 290" font-size="10" role="img" aria-label="The Training Castle in memory: a 256-byte header at $7800, the room directory at $7900 whose entries point at each room's object stream, and the header's final-room field pointing at the final room's stream at $8807">
+  <defs><marker id="ch03-file-tip" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path class="ch03-head" d="M0 0 L8 4 L0 8 z"/></marker></defs>
   <!-- header -->
-  <rect class="blk" x="0" y="0" width="334" height="68" rx="4"/>
-  <text class="hd" x="8" y="15">$7800  header · 256 bytes</text>
+  <rect class="ch03-blk" x="0" y="0" width="306" height="68" rx="4"/>
+  <text class="ch03-hd" x="8" y="15">$7800  header · 256 bytes</text>
   <text x="8" y="31">E3 10  <tspan class="soft">size: $10E3, 4,323 bytes</tspan></text>
   <text x="8" y="45">80     <tspan class="soft">"this is a castle"</tspan></text>
-  <text x="8" y="59">… <tspan class="soft">at $785F:</tspan> <tspan class="ptr">07 88</tspan>  <tspan class="soft">final room</tspan></text>
+  <text x="8" y="59">… <tspan class="soft">at $785F:</tspan> <tspan class="ch03-ptr">07 88</tspan>  <tspan class="soft">final room</tspan></text>
   <!-- directory -->
-  <rect class="blk" x="0" y="82" width="176" height="114" rx="4"/>
-  <text class="hd" x="8" y="97">$7900  directory</text>
+  <rect class="ch03-blk" x="0" y="82" width="176" height="114" rx="4"/>
+  <text class="ch03-hd" x="8" y="97">$7900  directory</text>
   <text class="soft" x="8" y="110">room    8 bytes each</text>
-  <text x="8" y="126"><tspan class="soft">0</tspan>  02 38 30 23 A3 79 <tspan class="ptr">A1 79</tspan></text>
-  <text x="8" y="142"><tspan class="soft">1</tspan>  08 48 30 23 86 7A <tspan class="ptr">84 7A</tspan></text>
-  <text x="8" y="158"><tspan class="soft">2</tspan>  04 58 30 23 67 7B <tspan class="ptr">65 7B</tspan></text>
+  <text x="8" y="126"><tspan class="soft">0</tspan>  02 38 30 23 A3 79 <tspan class="ch03-ptr">A1 79</tspan></text>
+  <text x="8" y="142"><tspan class="soft">1</tspan>  08 48 30 23 86 7A <tspan class="ch03-ptr">84 7A</tspan></text>
+  <text x="8" y="158"><tspan class="soft">2</tspan>  04 58 30 23 67 7B <tspan class="ch03-ptr">65 7B</tspan></text>
   <text class="soft" x="8" y="173">…  rooms 3 to 19</text>
   <text x="8" y="189"><tspan class="soft">$79A0</tspan>  40  <tspan class="soft">the end</tspan></text>
   <!-- streams -->
-  <rect class="blk" x="216" y="82" width="118" height="34" rx="4"/>
-  <text class="hd" x="224" y="96">$79A1</text><text class="soft" x="224" y="109">room 0 · 227 bytes</text>
-  <rect class="blk" x="216" y="122" width="118" height="34" rx="4"/>
-  <text class="hd" x="224" y="136">$7A84</text><text class="soft" x="224" y="149">room 1 · 225 bytes</text>
-  <rect class="blk" x="216" y="162" width="118" height="34" rx="4"/>
-  <text class="hd" x="224" y="176">$7B65</text><text class="soft" x="224" y="189">room 2 · 183 bytes</text>
-  <text class="soft" x="224" y="214">…  rooms 3 to 19</text>
-  <rect class="blk" x="216" y="226" width="118" height="34" rx="4"/>
-  <text class="hd" x="224" y="240">$8807</text><text class="soft" x="224" y="253">final room · 220</text>
+  <rect class="ch03-blk" x="216" y="82" width="92" height="34" rx="4"/>
+  <text class="ch03-hd" x="224" y="96">$79A1 room 0</text><text class="soft" x="224" y="109">227 bytes</text>
+  <rect class="ch03-blk" x="216" y="122" width="92" height="34" rx="4"/>
+  <text class="ch03-hd" x="224" y="136">$7A84 room 1</text><text class="soft" x="224" y="149">225 bytes</text>
+  <rect class="ch03-blk" x="216" y="162" width="92" height="34" rx="4"/>
+  <text class="ch03-hd" x="224" y="176">$7B65 room 2</text><text class="soft" x="224" y="189">183 bytes</text>
+  <text class="soft" x="224" y="214">…  3 to 19</text>
+  <rect class="ch03-blk" x="216" y="226" width="92" height="34" rx="4"/>
+  <text class="ch03-hd" x="224" y="240">$8807 final</text><text class="soft" x="224" y="253">220 bytes</text>
   <text class="soft" x="224" y="277">$88E3  the end</text>
   <text class="soft" x="8" y="222">The streams follow the</text>
   <text class="soft" x="8" y="236">directory, room after room.</text>
   <text class="soft" x="8" y="250">Each pointer is low byte</text>
   <text class="soft" x="8" y="264">first: A1 79 is $79A1.</text>
   <!-- arrows -->
-  <path class="arrow" d="M176 123 C196 123 196 99 214 99" marker-end="url(#ch03-file-tip)"/>
-  <path class="arrow" d="M176 139 C196 139 196 139 214 139" marker-end="url(#ch03-file-tip)"/>
-  <path class="arrow" d="M176 155 C196 155 196 179 214 179" marker-end="url(#ch03-file-tip)"/>
-  <path class="arrow" d="M192 56 L350 56 L350 243 L336 243" marker-end="url(#ch03-file-tip)"/>
+  <path class="ch03-arrow" d="M176 123 C196 123 196 99 214 99" marker-end="url(#ch03-file-tip)"/>
+  <path class="ch03-arrow" d="M176 139 C196 139 196 139 214 139" marker-end="url(#ch03-file-tip)"/>
+  <path class="ch03-arrow" d="M176 155 C196 155 196 179 214 179" marker-end="url(#ch03-file-tip)"/>
+  <path class="ch03-arrow" d="M192 56 L322 56 L322 243 L310 243" marker-end="url(#ch03-file-tip)"/>
 </svg>

@@ -1,0 +1,35 @@
+<style>
+.ch05-x { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.ch05-x .ch05-line { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.ch05-x .ch05-k { box-shadow: inset 0 0 0 2px var(--accent); }
+.ch05-x .ch05-gone { opacity: .45; }
+.ch05-x .ch05-tbl { border-collapse: collapse; font-size: .76rem; }
+.ch05-x .ch05-tbl th { font: 400 .62rem/1.2 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); text-align: left; padding: 3px 8px; }
+.ch05-x .ch05-tbl td { padding: 5px 8px; background: var(--code-bg); border: 2px solid var(--sheet); white-space: nowrap; }
+.ch05-x .ch05-tbl td:first-child { color: var(--ink-soft); }
+.ch05-x .ch05-tbl tr.ch05-hit td { box-shadow: inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+.ch05-x .ch05-tbl td.ch05-call { background: var(--accent); color: var(--sheet); font-weight: 700; }
+.ch05-x .ch05-null { color: var(--ink-soft); }
+.ch05-x .ch05-scroll { max-width: 100%; overflow-x: auto; }
+.ch05-x .ch05-code { padding: 6px 10px; border-radius: 4px; border: 2px dashed var(--accent); }
+.ch05-x small { color: var(--ink-soft); font-size: .72rem; }
+</style>
+<div class="ch05-x">
+  <span class="dg-label">Object 1, at $BE10: the Gatehouse bell</span>
+  <div class="ch05-line">
+    <span class="dg-bytes"><span class="dg-byte ch05-k">1</span><span class="dg-byte ch05-gone">$00</span><span class="dg-byte ch05-gone">140</span><span class="dg-byte ch05-gone">168</span><span class="dg-byte ch05-gone">12</span><span class="dg-byte ch05-gone">19</span><span class="dg-byte ch05-gone">…</span></span>
+    <small>byte 0, kind = 1: bell</small>
+  </div>
+  <span class="dg-arrow">↓ <small>kinds[1]: the row at the kind's number</small></span>
+  <div class="ch05-scroll">
+    <table class="ch05-tbl">
+      <tr><th>#</th><th>kind</th><th>.execute</th><th>.in_front</th></tr>
+      <tr><td>0</td><td>door</td><td>doors.open</td><td>doors.enter</td></tr>
+      <tr class="ch05-hit"><td>1</td><td>bell</td><td class="ch05-null">null</td><td class="ch05-call">doors.ring</td></tr>
+    </table>
+  </div>
+  <small>objects.step calls .execute for an object whose execute flag is up; objects.touching calls .in_front when boxes overlap.</small>
+  <span class="dg-arrow">↓ <small>he's in front of the bell: call the address in .in_front</small></span>
+  <div class="ch05-line"><span class="ch05-code">doors.ring(m, 1, 0)</span><small>the code at that address runs</small></div>
+  <small>A switch would ask "door? bell?" in step, in touching, and in every place to come. The table is one read, however many kinds there are.</small>
+</div>

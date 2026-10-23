@@ -1,42 +1,42 @@
 <style>
-.ch03-ent { display: grid; grid-template-columns: repeat(8, minmax(2.3em, 3.2em)); gap: 2px; justify-content: start; }
-.ch03-ent .off { text-align: center; color: var(--ink-soft); font-size: .7rem; }
+.ch03-ent { display: grid; grid-template-columns: repeat(8, minmax(2.3em, 3.2em)); gap: 2px 4px; justify-content: start; }
+.ch03-ent .ch03-off { text-align: center; color: var(--ink-soft); font-size: .7rem; }
 .ch03-ent .dg-byte { min-width: 0; padding: 5px 0; }
-.ch03-ent .fld { margin-top: 2px; padding-top: 4px; border-top: 2px solid var(--ink-soft); text-align: center; font-size: .7rem; line-height: 1.25; color: var(--ink-soft); }
-.ch03-ent .fld b { display: block; color: var(--ink); font-weight: 700; }
-.ch03-ent .ptr { background: var(--accent); color: var(--sheet); box-shadow: none; }
+.ch03-ent .ch03-fld { margin-top: 2px; padding-top: 4px; border-top: 2px solid var(--ink-soft); text-align: center; font-size: .64rem; line-height: 1.25; color: var(--ink-soft); }
+.ch03-ent .ch03-fld b { display: block; color: var(--ink); font-weight: 700; }
+.ch03-ent .ch03-ptr, .ch03-zoom .ch03-ptr { background: var(--accent); color: var(--sheet); box-shadow: none; }
 .ch03-zoom { display: flex; flex-wrap: wrap; gap: 14px 22px; }
-.ch03-zoom > div { display: flex; flex-direction: column; gap: 5px; }
-.ch03-zoom .bits { display: inline-grid; grid-auto-flow: column; gap: 2px; }
-.ch03-zoom .grp { display: grid; grid-auto-flow: column; gap: 2px; padding-bottom: 3px; border-bottom: 2px solid var(--ink-soft); }
-.ch03-zoom .b6 { box-shadow: inset 0 0 0 2px var(--accent); }
-.ch03-zoom .note { font-size: .72rem; color: var(--ink-soft); }
-.ch03-zoom .note b { color: var(--ink); }
-.ch03-zoom .sw { display: inline-block; width: 1em; height: 1em; vertical-align: -2px; box-shadow: 0 0 0 1px var(--rule); }
+.ch03-zoom > div { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; max-width: 100%; }
+.ch03-zoom .ch03-bits { display: inline-grid; grid-auto-flow: column; gap: 2px; }
+.ch03-zoom .ch03-grp { display: grid; grid-auto-flow: column; gap: 2px; padding-bottom: 3px; border-bottom: 2px solid var(--ink-soft); }
+.ch03-zoom .ch03-b6 { box-shadow: inset 0 0 0 2px var(--accent); }
+.ch03-zoom .ch03-note { font-size: .72rem; color: var(--ink-soft); }
+.ch03-zoom .ch03-note b { color: var(--ink); }
+.ch03-zoom .ch03-sw { display: inline-block; width: 1em; height: 1em; vertical-align: -2px; box-shadow: 0 0 0 1px var(--rule); }
 </style>
 <div class="dg-label">Room 0's directory entry, at $7900</div>
 <div class="ch03-ent">
-  <span class="off">+0</span><span class="off">+1</span><span class="off">+2</span><span class="off">+3</span><span class="off">+4</span><span class="off">+5</span><span class="off">+6</span><span class="off">+7</span>
-  <span class="dg-byte">02</span><span class="dg-byte">38</span><span class="dg-byte">30</span><span class="dg-byte">23</span><span class="dg-byte">A3</span><span class="dg-byte">79</span><span class="dg-byte ptr">A1</span><span class="dg-byte ptr">79</span>
-  <span class="fld"><b>colour</b>red</span><span class="fld"><b>map x</b>56</span><span class="fld"><b>map y</b>48</span><span class="fld"><b>size</b>4×3</span>
-  <span class="fld" style="grid-column: span 2"><b>skip</b>$79A3, unread</span>
-  <span class="fld" style="grid-column: span 2"><b>objects</b>$79A1</span>
+  <span class="ch03-off">+0</span><span class="ch03-off">+1</span><span class="ch03-off">+2</span><span class="ch03-off">+3</span><span class="ch03-off">+4</span><span class="ch03-off">+5</span><span class="ch03-off">+6</span><span class="ch03-off">+7</span>
+  <span class="dg-byte">02</span><span class="dg-byte">38</span><span class="dg-byte">30</span><span class="dg-byte">23</span><span class="dg-byte">A3</span><span class="dg-byte">79</span><span class="dg-byte ch03-ptr">A1</span><span class="dg-byte ch03-ptr">79</span>
+  <span class="ch03-fld"><b>colour</b>red</span><span class="ch03-fld"><b>map x</b>56</span><span class="ch03-fld"><b>map y</b>48</span><span class="ch03-fld"><b>size</b>4×3</span>
+  <span class="ch03-fld" style="grid-column: span 2"><b>skip</b>$79A3</span>
+  <span class="ch03-fld" style="grid-column: span 2"><b>objects</b>$79A1</span>
 </div>
 <div class="ch03-zoom">
   <div>
     <span class="dg-label">colour byte, $02</span>
-    <span class="bits"><span class="dg-bit">0</span><span class="dg-bit b6">0</span><span class="dg-bit">0</span><span class="dg-bit">0</span><span class="grp"><span class="dg-bit">0</span><span class="dg-bit">0</span><span class="dg-bit">1</span><span class="dg-bit">0</span></span></span>
-    <span class="note"><b>bit 6</b> (outlined) clear: a room. <b>Low four</b>: colour 2 <span class="sw" style="background: var(--c2)"></span></span>
-    <span class="note">The end byte, $40, sets bit 6.</span>
+    <span class="ch03-bits"><span class="dg-bit">0</span><span class="dg-bit ch03-b6">0</span><span class="dg-bit">0</span><span class="dg-bit">0</span><span class="ch03-grp"><span class="dg-bit">0</span><span class="dg-bit">0</span><span class="dg-bit">1</span><span class="dg-bit">0</span></span></span>
+    <span class="ch03-note"><b>bit 6</b> (outlined) clear: a room. <b>Low four</b>: colour 2 <span class="ch03-sw" style="background: var(--c2)"></span></span>
+    <span class="ch03-note">The end byte, $40, sets bit 6.</span>
   </div>
   <div>
     <span class="dg-label">size byte, $23</span>
-    <span class="bits"><span class="grp"><span class="dg-bit">0</span><span class="dg-bit">0</span></span><span class="grp"><span class="dg-bit">1</span><span class="dg-bit">0</span><span class="dg-bit">0</span></span><span class="grp"><span class="dg-bit">0</span><span class="dg-bit">1</span><span class="dg-bit">1</span></span></span>
-    <span class="note">unused · <b>width 4</b> (bits 3–5) · <b>height 3</b> (bits 0–2)</span>
+    <span class="ch03-bits"><span class="ch03-grp"><span class="dg-bit">0</span><span class="dg-bit">0</span></span><span class="ch03-grp"><span class="dg-bit">1</span><span class="dg-bit">0</span><span class="dg-bit">0</span></span><span class="ch03-grp"><span class="dg-bit">0</span><span class="dg-bit">1</span><span class="dg-bit">1</span></span></span>
+    <span class="ch03-note">unused · <b>width 4</b> (bits 3–5) · <b>height 3</b> (bits 0–2)</span>
   </div>
   <div>
     <span class="dg-label">objects, low byte first</span>
-    <span class="bits"><span class="dg-byte ptr">A1</span><span class="dg-byte ptr">79</span></span>
-    <span class="note">$79 × 256 + $A1 = <b>$79A1</b></span>
+    <span class="ch03-bits"><span class="dg-byte ch03-ptr">A1</span><span class="dg-byte ch03-ptr">79</span></span>
+    <span class="ch03-note">$79 × 256 + $A1 = <b>$79A1</b></span>
   </div>
 </div>

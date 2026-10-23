@@ -4,38 +4,39 @@
 .ch03-js { display: grid; grid-template-columns: auto auto; gap: 4px 10px; padding: 8px 10px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--rule); }
 .ch03-js span:nth-child(odd) { color: var(--ink-soft); }
 .ch03-strip { display: grid; grid-template-columns: repeat(8, 2.6em); gap: 2px; }
-.ch03-strip .n { font-size: .62rem; text-align: center; color: var(--ink-soft); line-height: 1.2; overflow-wrap: anywhere; }
+.ch03-strip .ch03-n { font-size: .62rem; text-align: center; color: var(--ink-soft); line-height: 1.2; overflow-wrap: anywhere; }
 .ch03-pad { display: grid; grid-template-columns: max-content repeat(4, minmax(3.6em, 5.2em)); gap: 3px; align-items: stretch; }
-.ch03-pad .h { font-size: .7rem; color: var(--ink-soft); text-align: center; align-self: end; }
-.ch03-pad .rl { font-size: .72rem; color: var(--ink-soft); align-self: center; padding-right: 6px; text-align: right; }
-.ch03-pad .c { padding: 4px 2px; text-align: center; border-radius: 4px; background: var(--code-bg); box-shadow: inset 0 0 0 1px var(--rule); font-size: .72rem; line-height: 1.25; }
-.ch03-pad .c b { display: block; font-size: .85rem; }
-.ch03-pad .gap { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-soft); border: 0; background-image: repeating-linear-gradient(45deg, var(--rule) 0 3px, transparent 3px 7px); }
-.ch03-pad .bad { box-shadow: inset 0 0 0 2px var(--accent); }
-.ch03-pad .dim { opacity: .55; }
-.ch03-pad .ok { background: var(--accent); color: var(--sheet); box-shadow: none; }
-.ch03-pad .read { grid-column: 4 / span 2; text-align: center; font-size: .72rem; padding-top: 3px; border-top: 2px solid var(--accent); color: var(--ink); }
-.ch03-pad .read2 { grid-column: 3 / span 2; text-align: center; font-size: .72rem; padding-top: 3px; border-top: 2px solid var(--ink-soft); color: var(--ink); }
+.ch03-pad .ch03-h { font-size: .7rem; color: var(--ink-soft); text-align: center; align-self: end; }
+.ch03-pad .ch03-rl { font-size: .72rem; color: var(--ink-soft); align-self: center; padding-right: 6px; text-align: right; }
+.ch03-pad .ch03-c { padding: 4px 2px; text-align: center; border-radius: 4px; background: var(--code-bg); box-shadow: inset 0 0 0 1px var(--rule); font-size: .72rem; line-height: 1.25; }
+.ch03-pad .ch03-c b { display: block; font-size: .85rem; }
+.ch03-pad .ch03-gap { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-soft); border: 0; background-image: repeating-linear-gradient(45deg, var(--rule) 0 3px, transparent 3px 7px); }
+.ch03-pad .ch03-bad { box-shadow: inset 0 0 0 2px var(--accent); }
+.ch03-pad .ch03-dim { opacity: .55; }
+.ch03-pad .ch03-ok { background: var(--accent); color: var(--sheet); box-shadow: none; }
+.ch03-pad .ch03-read { grid-column: 4 / span 2; text-align: center; font-size: .72rem; padding-top: 3px; border-top: 2px solid var(--accent); color: var(--ink); }
+.ch03-pad .ch03-read2 { grid-column: 3 / span 2; text-align: center; font-size: .72rem; padding-top: 3px; border-top: 2px solid var(--ink-soft); color: var(--ink); }
+.ch03-codelabel { font-size: .74rem; font-weight: 700; color: var(--ink-soft); }
 </style>
 <div class="ch03-pad-top">
   <div>
-    <span class="dg-label">JavaScript: found by name</span>
+    <span class="ch03-codelabel">JavaScript object: found by name</span>
     <div class="ch03-js"><span>color</span><span>2</span><span>mapX</span><span>56</span><span>objects</span><span>31137</span><span>…</span><span></span></div>
   </div>
   <div>
-    <span class="dg-label">extern struct Entry: 8 bytes, in order</span>
+    <span class="ch03-codelabel">extern struct Entry: 8 bytes, in order</span>
     <div class="ch03-strip">
       <span class="dg-byte">02</span><span class="dg-byte">38</span><span class="dg-byte">30</span><span class="dg-byte">23</span><span class="dg-byte">A3</span><span class="dg-byte">79</span><span class="dg-byte">A1</span><span class="dg-byte">79</span>
-      <span class="n">color</span><span class="n">map_x</span><span class="n">map_y</span><span class="n">size</span><span class="n" style="grid-column: span 2">skip</span><span class="n" style="grid-column: span 2">objects, at 6</span>
+      <span class="ch03-n">color</span><span class="ch03-n">map_x</span><span class="ch03-n">map_y</span><span class="ch03-n">size</span><span class="ch03-n" style="grid-column: span 2">skip</span><span class="ch03-n" style="grid-column: span 2">objects +6</span>
     </div>
   </div>
 </div>
-<div class="dg-label">extern struct { color: u8, objects: u16 }, laid over castle bytes</div>
+<div class="ch03-codelabel">extern struct { color: u8, objects: u16 } over castle bytes</div>
 <div class="ch03-pad">
-  <span></span><span class="h">byte 0</span><span class="h">byte 1</span><span class="h">byte 2</span><span class="h">byte 3</span>
-  <span class="rl">castle</span><span class="c"><b>02</b>color</span><span class="c"><b>A1</b>objects low</span><span class="c"><b>79</b>objects high</span><span class="c dim"><b>08</b>next room</span>
-  <span class="rl">Zig</span><span class="c">color</span><span class="c gap">padding</span><span class="c bad">objects low</span><span class="c bad">objects high</span>
-  <span></span><span></span><span></span><span class="read">reads 79 08: $0879, not $79A1</span>
-  <span class="rl">[2]u8</span><span class="c">color</span><span class="c ok">objects</span><span class="c ok">objects</span><span></span>
-  <span></span><span></span><span class="read2" style="grid-column: 3 / span 2">3 bytes, lined up: m.peek16 → $79A1</span>
+  <span></span><span class="ch03-h">byte 0</span><span class="ch03-h">byte 1</span><span class="ch03-h">byte 2</span><span class="ch03-h">byte 3</span>
+  <span class="ch03-rl">castle</span><span class="ch03-c"><b>02</b>color</span><span class="ch03-c"><b>A1</b>objects low</span><span class="ch03-c"><b>79</b>objects high</span><span class="ch03-c ch03-dim"><b>08</b>next room</span>
+  <span class="ch03-rl">Zig</span><span class="ch03-c">color</span><span class="ch03-c ch03-gap">padding</span><span class="ch03-c ch03-bad">objects low</span><span class="ch03-c ch03-bad">objects high</span>
+  <span></span><span></span><span></span><span class="ch03-read">reads 79 08: $0879, not $79A1</span>
+  <span class="ch03-rl">[2]u8</span><span class="ch03-c">color</span><span class="ch03-c ch03-ok">objects</span><span class="ch03-c ch03-ok">objects</span><span></span>
+  <span></span><span></span><span class="ch03-read2" style="grid-column: 3 / span 2">3 bytes, lined up: m.peek16 → $79A1</span>
 </div>

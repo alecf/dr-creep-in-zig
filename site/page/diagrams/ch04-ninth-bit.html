@@ -1,5 +1,5 @@
 <style>
-.ch04-nb { display: grid; gap: 16px; min-width: 330px; }
+.ch04-nb { display: grid; gap: 16px; }
 .ch04-nb .ch04-lane { display: grid; gap: 3px; }
 .ch04-nb .ch04-bar { position: relative; height: 22px; border-radius: 3px; }
 .ch04-nb .ch04-bar > span { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; padding: 0 6px; font-size: .72rem; white-space: nowrap; overflow: hidden; border-radius: 3px; }
@@ -10,8 +10,10 @@
 .ch04-nb .ch04-mark { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
 .ch04-nb .ch04-tags { position: relative; height: 1.3em; font-size: .72rem; }
 .ch04-nb .ch04-tags > span { position: absolute; white-space: nowrap; transform: translateX(-100%); padding-right: 4px; }
-.ch04-nb .ch04-split { display: grid; grid-template-columns: auto auto minmax(8em, 1fr); gap: 4px 10px; align-items: center; }
+.ch04-nb .ch04-split { display: grid; grid-template-columns: 5.5em auto; justify-content: start; gap: 2px 10px; align-items: center; }
+.ch04-nb .ch04-split .ch04-to { grid-column: 2; margin-bottom: 6px; }
 .ch04-nb .ch04-split .dg-bit { min-width: 1.4em; }
+.ch04-nb .ch04-split .dg-bytes { justify-self: start; }
 .ch04-nb .ch04-to { font-size: .72rem; color: var(--ink-soft); }
 </style>
 <div class="ch04-nb">
@@ -35,7 +37,7 @@
   </div>
   <div class="ch04-split">
     <span class="dg-label">330: bit 8</span>
-    <span class="dg-bytes" style="justify-self:end"><span class="dg-bit dg-on">1</span></span>
+    <span class="dg-bytes"><span class="dg-bit dg-on">1</span></span>
     <span class="ch04-to">bit 8 → <b>$D010</b>, sprite 0's bit</span>
     <span class="dg-label">330: low 8</span>
     <span class="dg-bytes"><span class="dg-bit">0</span><span class="dg-bit dg-on">1</span><span class="dg-bit">0</span><span class="dg-bit">0</span><span class="dg-bit dg-on">1</span><span class="dg-bit">0</span><span class="dg-bit dg-on">1</span><span class="dg-bit">0</span></span>

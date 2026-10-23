@@ -1,0 +1,71 @@
+<style>
+.ch05-a { display: flex; flex-wrap: wrap; gap: 10px 4px; align-items: flex-start; }
+.ch05-a .ch05-f { display: flex; flex-direction: column; align-items: stretch; gap: 2px; }
+.ch05-a .ch05-f > span:first-child { text-align: center; color: var(--ink-soft); font-size: .68rem; }
+.ch05-a .ch05-f > .dg-byte { padding: 5px 4px; }
+.ch05-a .ch05-n { text-align: center; font-size: .68rem; color: var(--ink-soft); padding-top: 3px; border-top: 2px solid var(--rule); }
+.ch05-a .ch05-n b { display: block; color: var(--ink); font-weight: 700; }
+.ch05-a .ch05-grp { display: flex; flex-direction: column; gap: 2px; }
+.ch05-a .ch05-grp > div { display: flex; gap: 4px; }
+.ch05-a .ch05-grp > .ch05-n { border-top-color: var(--ink-soft); }
+.ch05-a .ch05-st > .dg-byte { box-shadow: inset 0 0 0 2px var(--accent); }
+.ch05-bits { display: flex; flex-wrap: wrap; gap: 10px 6px; align-items: flex-start; }
+.ch05-bits .ch05-grp { display: flex; flex-direction: column; gap: 2px; }
+.ch05-bits .ch05-grp > div { display: flex; gap: 2px; }
+.ch05-bits .ch05-b { display: flex; flex-direction: column; gap: 2px; width: 4.6em; }
+.ch05-bits .ch05-b > span { text-align: center; font-size: .66rem; color: var(--ink-soft); }
+.ch05-bits .ch05-b > span:last-child { color: var(--ink); overflow-wrap: anywhere; line-height: 1.2; }
+.ch05-bits .ch05-g { font-size: .68rem; color: var(--ink-soft); padding-top: 3px; border-top: 2px solid var(--ink-soft); text-align: center; }
+.ch05-a-note { margin: 0; font-size: .74rem; color: var(--ink-soft); }
+</style>
+<span class="dg-label">Slot 0, $BD00–$BD0F: the explorer in the Gatehouse doorway</span>
+<div class="ch05-a">
+  <div class="ch05-f"><span>0</span><span class="dg-byte">0</span><span class="ch05-n"><b>kind</b>player</span></div>
+  <div class="ch05-f ch05-st"><span>1</span><span class="dg-byte">$04</span><span class="ch05-n"><b>state</b>flags ↓</span></div>
+  <div class="ch05-grp">
+    <div>
+      <div class="ch05-f"><span>2</span><span class="dg-byte">162</span><span class="ch05-n"><b>x</b></span></div>
+      <div class="ch05-f"><span>3</span><span class="dg-byte">171</span><span class="ch05-n"><b>y</b></span></div>
+      <div class="ch05-f"><span>4</span><span class="dg-byte">8</span><span class="ch05-n"><b>width</b></span></div>
+      <div class="ch05-f"><span>5</span><span class="dg-byte">21</span><span class="ch05-n"><b>height</b></span></div>
+    </div>
+    <span class="ch05-n"><b>box</b></span>
+  </div>
+  <div class="ch05-f"><span>6</span><span class="dg-byte">16</span><span class="ch05-n"><b>frame</b>left_0</span></div>
+  <div class="ch05-f"><span>7</span><span class="dg-byte">0</span><span class="ch05-n"><b>block</b></span></div>
+  <div class="ch05-f"><span>8</span><span class="dg-byte">1</span><span class="ch05-n"><b>color</b>white</span></div>
+  <div class="ch05-f"><span>9</span><span class="dg-byte">1</span><span class="ch05-n"><b>count­down</b></span></div>
+  <div class="ch05-f"><span>10</span><span class="dg-byte">1</span><span class="ch05-n"><b>pace</b></span></div>
+  <div class="ch05-f"><span>11</span><span class="dg-byte">0</span><span class="ch05-n"><b>flashes</b></span></div>
+  <div class="ch05-f"><span>12</span><span class="dg-byte">$80</span><span class="ch05-n"><b>way</b>still</span></div>
+  <div class="ch05-f"><span>13</span><span class="dg-byte">$80</span><span class="ch05-n"><b>stick</b>none</span></div>
+  <div class="ch05-f"><span>14</span><span class="dg-byte">0</span><span class="ch05-n"><b>fire</b></span></div>
+  <div class="ch05-f"><span>15</span><span class="dg-byte">0</span><span class="ch05-n"><b>walk</b></span></div>
+</div>
+<span class="dg-label">state = $04, bit by bit</span>
+<div class="ch05-bits">
+  <div class="ch05-grp">
+    <div>
+      <div class="ch05-b"><span>bit 7</span><span class="dg-bit">0</span><span>created</span></div>
+      <div class="ch05-b"><span>6</span><span class="dg-bit">0</span><span>flash</span></div>
+      <div class="ch05-b"><span>5</span><span class="dg-bit">0</span><span>dying</span></div>
+      <div class="ch05-b"><span>4</span><span class="dg-bit">0</span><span>destroy</span></div>
+      <div class="ch05-b"><span>3</span><span class="dg-bit">0</span><span>free</span></div>
+    </div>
+    <span class="ch05-g">its life story</span>
+  </div>
+  <div class="ch05-grp">
+    <div>
+      <div class="ch05-b"><span>2</span><span class="dg-bit dg-on">1</span><span>hit_bitmap</span></div>
+      <div class="ch05-b"><span>1</span><span class="dg-bit">0</span><span>hit_sprite</span></div>
+    </div>
+    <span class="ch05-g">from the VIDEO chip</span>
+  </div>
+  <div class="ch05-grp">
+    <div>
+      <div class="ch05-b"><span>0</span><span class="dg-bit">0</span><span>unused</span></div>
+    </div>
+    <span class="ch05-g">empty slot</span>
+  </div>
+</div>
+<p class="ch05-a-note">Standing in the doorway, his sprite touches the door's pixels, so <b>hit_bitmap</b> is up. Slots 1–7 hold $01: only <b>unused</b>.</p>
