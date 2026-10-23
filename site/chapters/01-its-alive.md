@@ -160,17 +160,11 @@ So **two hex digits are one byte**, `$00` to `$FF`, and **four are one
 address**, `$0000` to `$FFFF`. You can read bits straight off the hex:
 `$A5` is `1010` `0101`. It pays off most with addresses:
 
-| What | Hex | Decimal |
-|---|---|---|
-| Sprite frames | `$C000` | 49,152 |
-| Screen plane | `$CC00` | 52,224 |
-| VIDEO chip | `$D000` | 53,248 |
-| Colour RAM | `$D800` | 55,296 |
-| Joystick ports | `$DC00` | 56,320 |
-| Bitmap | `$E000` | 57,344 |
+:::diagram ch01-memory-map
+All 65,536 bytes, `$0000` at the top. In decimal the addresses are noise; in hex they're round numbers.
+:::
 
-In decimal those are noise. In hex they're round numbers, and the
-structure shows: `$D000`–`$DFFF` is hardware, and the border colour is
+The structure shows: `$D000`–`$DFFF` is hardware, and the border colour is
 register `$20` of the VIDEO chip at `$D000`. The first two digits name a
 256-byte **page** of memory (`$D0`), the last two a spot in it (`$20`).
 
@@ -185,10 +179,12 @@ floor plan.
 ## A colour is a byte at an address
 
 Back to `boot`. The card's section 4 says `$D020` is the **border
-colour** register: the VIDEO chip reads that byte every time it draws the
-border, and the palette in section 10 says colour 4 is purple. There
-isn't a `setBorderColour` function anywhere in the machine. There's a
-byte, and the chip looks at it.
+colour** register. There isn't a `setBorderColour` function anywhere in
+the machine. There's a byte, and the chip looks at it:
+
+:::diagram ch01-border-byte
+Every time it draws the border, the VIDEO chip reads `$D020` and looks the number up in the palette (card section 10).
+:::
 
 Try it. Change the `4` to a `6`, run `zig build wasm`, reload the page
 (with the Prologue's web server still running), and the border turns
@@ -243,16 +239,11 @@ now, three facts from the card's section 3:
 3. A bitmap byte of `$FF` paints its piece of line in the cell's colour
    from **colour RAM**, 1,000 bytes from `$D800`, one per cell.
 
-So a floor is two runs of bytes in cell row 24, which starts 24 × 320 =
-7,680 = `$1E00` bytes into the bitmap:
+So a floor is two runs of bytes in cell row 24:
 
-```
-  bitmap:      $E000 + $1E00 = $FE00    (320 bytes, $FE00–$FF3F)
-  colour RAM:  $D800 + 24 × 40 = $D800 + $3C0 = $DBC0    (40 bytes, $DBC0–$DBE7)
-```
-
-Both runs end on the last byte of their plane, which is a good sign we
-did the sums right: the floor is the bottom row.
+:::diagram ch01-floor
+Both runs end on the last byte of their plane, a good sign the sums are right: the floor is the bottom row.
+:::
 
 **`src/room.zig`** (new file)
 
@@ -538,8 +529,9 @@ pub fn start(m: *Machine) void {
 }
 ```
 
-Squint at `picture` and you can see him: a brimmed hat, two eyes (the
-0s in `01011010`), arms out, two legs, and boots on the very bottom row.
+:::diagram ch01-sprite
+Squint at `picture` and you can see him: a brimmed hat, two eyes (the 0s in row 5), arms out, two legs, and boots on the bottom row.
+:::
 
 `start` sets everything up once, at power-on:
 
@@ -645,20 +637,14 @@ move, and the chip never sees a half-finished position. Our bytes at
 
 From the player's side, a joystick is a stick and a button. From the
 machine's side, it's five switches, each pressed or not: one bit each,
-packed into one byte. Joystick 1 is at **`$DC01`** (`hw.joy1`):
+packed into one byte. Joystick 1 is at **`$DC01`** (`hw.joy1`), and the
+top three bits are always 1. Here's the twist: **a switch reads 0 while
+it's pressed, and 1 when it isn't.** That's **active-low** (pressing
+connects the switch's wire to ground).
 
-```
-  bit:   7   6   5    4     3     2    1    0
-       ┌───┬───┬───┬──────┬─────┬────┬────┬────┐
-       │ 1 │ 1 │ 1 │ fire │right│left│down│ up │
-       └───┴───┴───┴──────┴─────┴────┴────┴────┘
-```
-
-The top three bits are always 1. And here's the twist: **a switch reads 0
-while it's pressed, and 1 when it isn't.** That's **active-low**
-(pressing connects the switch's wire to ground). Nothing touched reads
-`$FF`. Hold left and bit 2 drops: `$FB`. Up and fire together: `1110
-1110`, or `$EE`.
+:::diagram ch01-joystick
+Joystick 1 at `$DC01`, bit by bit. The pressed switches are the 0s.
+:::
 
 So "is left held?" means "is bit 2 a 0?" To look at one bit and ignore
 seven, use **`&`**, bitwise AND: each bit of the result is 1 only where

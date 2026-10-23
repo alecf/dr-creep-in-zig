@@ -1,0 +1,65 @@
+<style>
+.ch01-mm .ch01-mm-free, .ch01-mm-sw.ch01-mm-free { fill: var(--code-bg); background: var(--code-bg); stroke: var(--rule); }
+.ch01-mm .ch01-mm-res, .ch01-mm-sw.ch01-mm-res { fill: var(--rule); background: var(--rule); }
+.ch01-mm .ch01-mm-hw, .ch01-mm-sw.ch01-mm-hw { fill: var(--accent); background: var(--accent); }
+.ch01-mm .ch01-mm-ours, .ch01-mm-sw.ch01-mm-ours { fill: var(--ink); background: var(--ink); }
+.ch01-mm text.ch01-mm-ourl { font-weight: 700; }
+.ch01-mm-key { gap: 6px 16px; color: var(--ink-soft); font-size: .75rem; }
+.ch01-mm-key span { display: inline-flex; align-items: center; gap: 6px; }
+.ch01-mm-sw { display: inline-block; width: 12px; height: 12px; border-radius: 2px; box-shadow: inset 0 0 0 1px var(--rule); }
+</style>
+<svg class="ch01-mm" viewBox="0 0 270 472" width="270" role="img" aria-labelledby="ch01-mm-t">
+<title id="ch01-mm-t">The Comet 64's 65,536 bytes as one strip from $0000 at the top to $FFFF at the bottom, with the regions this chapter uses</title>
+<rect class="ch01-mm-free" x="58" y="14" width="22" height="436.9"/>
+<rect class="ch01-mm-res" x="58" y="15.7" width="22" height="3.0"/>
+<rect class="ch01-mm-ours" x="58" y="17.4" width="22" height="3.0"/>
+<rect class="ch01-mm-res" x="58" y="27.7" width="22" height="191.1"/>
+<rect class="ch01-mm-hw" x="58" y="341.7" width="22" height="13.7"/>
+<rect class="ch01-mm-hw" x="58" y="362.2" width="22" height="6.7"/>
+<rect class="ch01-mm-hw" x="58" y="368.9" width="22" height="3.0"/>
+<rect class="ch01-mm-hw" x="58" y="369.0" width="22" height="3.0"/>
+<rect class="ch01-mm-hw" x="58" y="382.6" width="22" height="6.7"/>
+<rect class="ch01-mm-hw" x="58" y="389.5" width="22" height="3.0"/>
+<rect class="ch01-mm-hw" x="58" y="396.3" width="22" height="53.3"/>
+<line class="line" x1="53" y1="14.0" x2="58" y2="14.0"/>
+<text class="soft" x="50" y="17.5" font-size="10" text-anchor="end">$0000</text>
+<line class="line" x1="53" y1="123.2" x2="58" y2="123.2"/>
+<text class="soft" x="50" y="126.7" font-size="10" text-anchor="end">$4000</text>
+<line class="line" x1="53" y1="232.5" x2="58" y2="232.5"/>
+<text class="soft" x="50" y="236.0" font-size="10" text-anchor="end">$8000</text>
+<line class="line" x1="53" y1="341.7" x2="58" y2="341.7"/>
+<text class="soft" x="50" y="345.2" font-size="10" text-anchor="end">$C000</text>
+<line class="line" x1="53" y1="450.9" x2="58" y2="450.9"/>
+<text class="soft" x="50" y="454.4" font-size="10" text-anchor="end">$FFFF</text>
+<path class="line" d="M80 15.7 H88 L110 20.0 H114"/>
+<text x="116" y="19.0" font-size="11.5">stack</text>
+<text class="soft" x="116" y="31.0" font-size="10">$0100 · 256</text>
+<path class="line" d="M80 17.4 H88 L110 47.0 H114"/>
+<text class="ch01-mm-ourl" x="116" y="46.0" font-size="11.5">the player</text>
+<text class="soft" x="116" y="58.0" font-size="10">$0200 · 512</text>
+<path class="line" d="M80 123.2 H88 L110 123.2 H114"/>
+<text x="116" y="122.2" font-size="11.5">program image</text>
+<text class="soft" x="116" y="134.2" font-size="10">$0800 · 2,048</text>
+<path class="line" d="M80 348.5 H88 L110 292.9 H114"/>
+<text x="116" y="291.9" font-size="11.5">sprite frames</text>
+<text class="soft" x="116" y="303.9" font-size="10">$C000 · 49,152</text>
+<path class="line" d="M80 365.5 H88 L110 319.9 H114"/>
+<text x="116" y="318.9" font-size="11.5">screen plane</text>
+<text class="soft" x="116" y="330.9" font-size="10">$CC00 · 52,224</text>
+<path class="line" d="M80 368.9 H88 L110 346.9 H114"/>
+<text x="116" y="345.9" font-size="11.5">sprite pointers</text>
+<text class="soft" x="116" y="357.9" font-size="10">$CFF8 · 53,240</text>
+<path class="line" d="M80 369.0 H88 L110 373.9 H114"/>
+<text x="116" y="372.9" font-size="11.5">VIDEO chip</text>
+<text class="soft" x="116" y="384.9" font-size="10">$D000 · 53,248</text>
+<path class="line" d="M80 386.0 H88 L110 400.9 H114"/>
+<text x="116" y="399.9" font-size="11.5">colour RAM</text>
+<text class="soft" x="116" y="411.9" font-size="10">$D800 · 55,296</text>
+<path class="line" d="M80 389.5 H88 L110 427.9 H114"/>
+<text x="116" y="426.9" font-size="11.5">joystick ports</text>
+<text class="soft" x="116" y="438.9" font-size="10">$DC00 · 56,320</text>
+<path class="line" d="M80 423.0 H88 L110 454.9 H114"/>
+<text x="116" y="453.9" font-size="11.5">bitmap</text>
+<text class="soft" x="116" y="465.9" font-size="10">$E000 · 57,344</text>
+</svg>
+<div class="dg-row ch01-mm-key"><span><i class="ch01-mm-sw ch01-mm-hw"></i>hardware</span><span><i class="ch01-mm-sw ch01-mm-res"></i>reserved</span><span><i class="ch01-mm-sw ch01-mm-ours"></i>the game's</span><span><i class="ch01-mm-sw ch01-mm-free"></i>free</span></div>
