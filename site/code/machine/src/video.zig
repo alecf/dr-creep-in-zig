@@ -1,13 +1,12 @@
 //! The VIDEO chip.
 //!
-//! Once per frame, after the game's frame interrupt returns, the chip reads
-//! the screen planes and its registers out of RAM and paints a picture:
+//! The chip paints the picture one line at a time, following the beam:
 //! border, the 320x200 multicolour bitmap, up to eight sprites, and the
-//! work meter in the bottom border. While painting it notices sprites
-//! touching each other or the bitmap, and reports that back.
-//!
-//! It draws the whole frame from the RAM it finds at that moment. Changing
-//! a register halfway through a frame has no special effect.
+//! work meter in the bottom border. Each line is drawn from RAM and the
+//! registers as they are at the moment the beam passes it, so a change
+//! made while the beam is halfway down the screen shows up only below that
+//! point. While painting, the chip notices sprites touching each other or
+//! the bitmap and sets the collision registers.
 
 const std = @import("std");
 const Machine = @import("machine.zig").Machine;
@@ -23,6 +22,12 @@ pub const display_x = 32;
 pub const display_y = 36;
 pub const display_width = 320;
 pub const display_height = 200;
+
+/// Raster line of the picture's top line, and of the display's top line.
+/// Lines 0-14 and 287-311 are the vertical blank, off the top and bottom
+/// of the tube.
+pub const picture_first_raster = 15;
+pub const display_first_raster = picture_first_raster + display_y;
 
 /// Sprite coordinates of the display's top-left pixel.
 pub const sprite_origin_x = 24;
@@ -66,25 +71,34 @@ pub const Hits = struct {
     sprite_bitmap: u8 = 0,
 };
 
-/// Paint `m.screen` from RAM and return this frame's collisions.
-pub fn render(m: *Machine) Hits {
+/// Paint picture line `y` (0 = top of the border) from RAM as it is now,
+/// and latch any collisions it shows into $D01E/$D01F.
+pub fn drawLine(m: *Machine, y: usize) void {
     const ram = &m.ram;
-    @memset(&m.screen, color(ram[hw.border]));
+    const row = m.screen[y * width ..][0..width];
+    @memset(row, color(ram[hw.border]));
 
-    const sprites = readSprites(ram);
-    var hits: Hits = .{};
-
-    for (0..display_height) |y| {
+    const in_display = y >= display_y and y < display_y + display_height;
+    if (in_display and ram[hw.control] & machine.display_on != 0) {
+        const dy = y - display_y;
         var line: [display_width]u32 = undefined;
         var foreground: [display_width]bool = undefined;
-        bitmapLine(ram, y, &line, &foreground);
-        spriteLine(ram, &sprites, y, &line, &foreground, &hits);
-        const row = (display_y + y) * width + display_x;
-        @memcpy(m.screen[row..][0..display_width], &line);
+        var hits: Hits = .{};
+        bitmapLine(ram, dy, &line, &foreground);
+        const sprites = readSprites(ram);
+        spriteLine(ram, &sprites, dy, &line, &foreground, &hits);
+        @memcpy(row[display_x..][0..display_width], &line);
+        ram[hw.sprite_sprite_hits] |= hits.sprite_sprite;
+        ram[hw.sprite_bitmap_hits] |= hits.sprite_bitmap;
     }
 
-    drawMeter(m);
-    return hits;
+    drawMeterLine(m, y, row);
+}
+
+/// Paint the whole picture at once from RAM as it is now (the beam does
+/// this line by line during a frame; this is for tests and tools).
+pub fn render(m: *Machine) void {
+    for (0..height) |y| drawLine(m, y);
 }
 
 // ---- the bitmap ------------------------------------------------------------
@@ -227,37 +241,39 @@ fn spriteLine(
 
 /// The meter lives in the bottom border: a bar as wide as the display,
 /// filled by the fraction of the frame budget the last frame used. Green
-/// is comfortable, yellow is getting tight (75% and up), and a frame over
-/// budget turns the bar red and lights a stripe right across the border.
-/// Both sit on a black outline so they read against any border colour.
+/// is comfortable, yellow is getting tight (75% and up). A frame over
+/// budget with the display on turns the bar red and lights a stripe right
+/// across the border; one over budget with the display blanked (a loading
+/// pause) shows a grey bar instead. Everything sits on a black outline so
+/// it reads against any border colour.
 pub const meter_y = display_y + display_height + 14;
 pub const meter_h = 3;
 pub const stripe_y = meter_y + meter_h + 5;
 pub const stripe_h = 2;
 
-fn drawMeter(m: *Machine) void {
-    const used = m.last_cycles;
-    const budget = machine.frame_budget;
+fn drawMeterLine(m: *const Machine, y: usize, row: *[width]u32) void {
     const black = palette[@intFromEnum(machine.Color.black)];
     const red = palette[@intFromEnum(machine.Color.red)];
-    const fill_color = if (used > budget)
-        red
-    else if (@as(u64, used) * 4 >= budget * 3)
-        palette[@intFromEnum(machine.Color.yellow)]
-    else
-        palette[@intFromEnum(machine.Color.light_green)];
-    const filled: usize = @intCast(@min(display_width, (@as(u64, used) * display_width + budget - 1) / budget));
+    const last = m.last;
+    const budget = machine.frame_budget;
 
-    band(m, meter_y - 1, meter_h + 2, display_x - 1, display_width + 2, black);
-    band(m, meter_y, meter_h, display_x, filled, fill_color);
-    if (used > budget) {
-        band(m, stripe_y - 1, stripe_h + 2, 0, width, black);
-        band(m, stripe_y, stripe_h, 0, width, red);
+    if (y + 1 >= meter_y and y <= meter_y + meter_h) {
+        @memset(row[display_x - 1 ..][0 .. display_width + 2], black);
+        if (y < meter_y or y >= meter_y + meter_h) return;
+        const fill_color = switch (last.kind) {
+            .overrun => red,
+            .loading => palette[@intFromEnum(machine.Color.light_grey)],
+            .ok => if (@as(u64, last.cycles) * 4 >= budget * 3)
+                palette[@intFromEnum(machine.Color.yellow)]
+            else
+                palette[@intFromEnum(machine.Color.light_green)],
+        };
+        const filled: usize = @intCast(@min(display_width, (@as(u64, last.cycles) * display_width + budget - 1) / budget));
+        @memset(row[display_x..][0..filled], fill_color);
+    } else if (last.kind == .overrun and y + 1 >= stripe_y and y <= stripe_y + stripe_h) {
+        const inside = y >= stripe_y and y < stripe_y + stripe_h;
+        @memset(row, if (inside) red else black);
     }
-}
-
-fn band(m: *Machine, y: usize, h: usize, x: usize, w: usize, c: u32) void {
-    for (y..y + h) |row| @memset(m.screen[row * width + x ..][0..w], c);
 }
 
 // ---- tests -----------------------------------------------------------------
@@ -271,7 +287,21 @@ fn pixel(m: *const Machine, x: usize, y: usize) u32 {
 fn newMachine() !*Machine {
     const m = try testing.allocator.create(Machine);
     m.* = .{};
+    m.ram[hw.control] = machine.display_on;
     return m;
+}
+
+fn hitsOf(m: *Machine) Hits {
+    return .{ .sprite_sprite = m.ram[hw.sprite_sprite_hits], .sprite_bitmap = m.ram[hw.sprite_bitmap_hits] };
+}
+
+/// Render, then read and clear the collision registers the way a game would.
+fn renderHits(m: *Machine) Hits {
+    render(m);
+    const h = hitsOf(m);
+    m.ram[hw.sprite_sprite_hits] = 0;
+    m.ram[hw.sprite_bitmap_hits] = 0;
+    return h;
 }
 
 test "a bitmap byte becomes four fat pixels in the cell's colours" {
@@ -283,8 +313,8 @@ test "a bitmap byte becomes four fat pixels in the cell's colours" {
     m.ram[hw.screen + 41] = 0x25; // cell (1,1): 01 red, 10 green
     m.ram[hw.color_ram + 41] = 0xF7; // 11 yellow (high nibble ignored)
     m.ram[hw.bitmap + 41 * 8 + 3] = 0b00_01_10_11; // row 3 of that cell
-    const hits = render(m);
-    try testing.expectEqual(Hits{}, hits);
+    render(m);
+    try testing.expectEqual(0, hitsOf(m).sprite_sprite);
 
     const y = 8 + 3;
     const expected = [_]u8{ 0, 0, 2, 2, 5, 5, 7, 7 };
@@ -293,7 +323,7 @@ test "a bitmap byte becomes four fat pixels in the cell's colours" {
     try testing.expectEqual(palette[6], m.screen[0]); // border
 }
 
-test "sprites draw at the classic coordinates and report collisions" {
+test "sprites draw at the standard coordinates and report collisions" {
     const m = try newMachine();
     defer testing.allocator.destroy(m);
 
@@ -313,7 +343,7 @@ test "sprites draw at the classic coordinates and report collisions" {
     m.ram[hw.color_ram + 7 * 40 + 13] = 5;
     m.ram[hw.bitmap + (7 * 40 + 13) * 8] = 0b11_00_00_00; // x 104..105, y 56
 
-    var hits = render(m);
+    var hits = renderHits(m);
     try testing.expectEqual(palette[1], pixel(m, 0, 0));
     try testing.expectEqual(palette[1], pixel(m, 23, 20));
     try testing.expectEqual(palette[0], pixel(m, 24, 0));
@@ -323,18 +353,18 @@ test "sprites draw at the classic coordinates and report collisions" {
 
     // Behind the bitmap: the foreground pixel shows through, still a hit.
     m.ram[hw.sprite_behind] = 0b10;
-    hits = render(m);
+    hits = renderHits(m);
     try testing.expectEqual(palette[5], pixel(m, 104, 56));
     try testing.expectEqual(palette[2], pixel(m, 106, 56));
 
     // Overlap the two sprites by one pixel column.
     m.ram[hw.spriteX(1)] = sprite_origin_x + 23;
     m.ram[hw.spriteY(1)] = sprite_origin_y + 20;
-    hits = render(m);
+    hits = renderHits(m);
     try testing.expectEqual(0b11, hits.sprite_sprite);
     try testing.expectEqual(palette[1], pixel(m, 23, 20)); // sprite 0 in front
     m.ram[hw.spriteX(1)] = sprite_origin_x + 24;
-    hits = render(m);
+    hits = renderHits(m);
     try testing.expectEqual(0, hits.sprite_sprite);
 }
 
@@ -352,7 +382,7 @@ test "multicolour and expanded sprites" {
     m.ram[hw.sprite_double_width] = 1 << 3;
     m.ram[hw.sprite_double_height] = 1 << 3;
     m.ram[hw.sprite_enable] = 1 << 3;
-    _ = render(m);
+    render(m);
 
     const expected = [_]u8{ 3, 3, 3, 3, 2, 2, 2, 2, 4, 4, 4, 4, 0 };
     for (expected, 0..) |c, x| {
@@ -372,7 +402,7 @@ test "sprite X beyond 255 uses the MSB register" {
     m.ram[hw.spriteY(0)] = sprite_origin_y;
     m.ram[hw.spriteColor(0)] = 1;
     m.ram[hw.sprite_enable] = 1;
-    _ = render(m);
+    render(m);
     try testing.expectEqual(palette[1], pixel(m, 300 - sprite_origin_x, 0));
 }
 
@@ -380,14 +410,21 @@ test "the meter shows the last frame's share of the budget" {
     const m = try newMachine();
     defer testing.allocator.destroy(m);
 
-    m.last_cycles = machine.frame_budget / 2;
-    _ = render(m);
+    m.last = .{ .cycles = machine.frame_budget / 2 };
+    render(m);
     const row = meter_y * width + display_x;
     try testing.expectEqual(palette[13], m.screen[row + 159]);
     try testing.expectEqual(palette[0], m.screen[row + 161]);
 
-    m.last_cycles = machine.frame_budget + 1;
-    _ = render(m);
+    m.last = .{ .cycles = machine.frame_budget + 1, .kind = .overrun };
+    render(m);
     try testing.expectEqual(palette[2], m.screen[row + 319]);
     try testing.expectEqual(palette[2], m.screen[stripe_y * width]);
+
+    // A loading pause: grey bar, no stripe.
+    m.ram[hw.border] = 6;
+    m.last = .{ .cycles = machine.frame_budget * 3, .kind = .loading };
+    render(m);
+    try testing.expectEqual(palette[15], m.screen[row + 319]);
+    try testing.expectEqual(palette[6], m.screen[stripe_y * width]);
 }

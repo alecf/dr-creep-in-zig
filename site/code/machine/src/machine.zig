@@ -1,9 +1,9 @@
 //! The Comet 64.
 //!
 //! This file is the whole computer as far as a game is concerned: 64 KB of
-//! RAM, the work meter that keeps a frame honest, and the frame driver that
-//! reads the joysticks, runs the game's frame interrupt and hands the
-//! finished RAM to the VIDEO chip.
+//! RAM, the work meter that keeps a frame honest, the raster beam that the
+//! meter drives, and the frame driver that reads the joysticks and runs the
+//! game's frame interrupt.
 //!
 //! A game never touches anything here except through `Machine`'s methods
 //! and `m.ram`. Everything the game remembers lives in that one array.
@@ -13,6 +13,7 @@ const builtin = @import("builtin");
 
 pub const video = @import("video.zig");
 pub const font = @import("font.zig");
+const layout = @import("layout.zig");
 
 comptime {
     // Two-byte values are stored low byte first, and `view` hands out
@@ -21,8 +22,12 @@ comptime {
         @compileError("the Comet 64 needs a little-endian host");
 }
 
+/// The beam sweeps 312 raster lines a frame, 63 cycles per line.
+pub const raster_lines: u32 = 312;
+pub const cycles_per_line: u32 = 63;
+
 /// Cycles available in one frame: 312 raster lines of 63 cycles each.
-pub const frame_budget: u32 = 19_656;
+pub const frame_budget: u32 = raster_lines * cycles_per_line;
 
 /// Frames per second. The frame interrupt fires this often.
 pub const frame_rate = 50;
@@ -52,6 +57,8 @@ pub const hw = struct {
         return 0xD027 + @as(u16, n);
     }
     pub const sprite_x_msb: u16 = 0xD010;
+    pub const control: u16 = 0xD011; // bit 4 display on; bit 7 raster line bit 8
+    pub const raster: u16 = 0xD012; // raster line, low 8 bits (read only)
     pub const sprite_enable: u16 = 0xD015;
     pub const sprite_double_height: u16 = 0xD017;
     pub const sprite_behind: u16 = 0xD01B;
@@ -64,9 +71,8 @@ pub const hw = struct {
     pub const sprite_mc0: u16 = 0xD025;
     pub const sprite_mc1: u16 = 0xD026;
 
-    // SOUND chip: $D400-$D418 hold whatever the game writes.
-    // TODO: audio output (three voices, envelopes, filter) arrives with
-    // the music chapter; until then nothing reads these registers.
+    // SOUND chip: $D400-$D418. The registers hold what you write; the
+    // speaker board isn't fitted to this model yet.
     pub const sound_chip: u16 = 0xD400;
 
     // Input ports
@@ -74,6 +80,9 @@ pub const hw = struct {
     pub const joy1: u16 = 0xDC01;
     pub const key: u16 = 0xDC02;
 };
+
+/// `$D011` bit 4: the display is on.
+pub const display_on: u8 = 0x10;
 
 /// Joystick bits as the ports report them (a 0 bit means "pressed").
 pub const joy = struct {
@@ -115,50 +124,92 @@ pub const Input = struct {
     key: u8 = 0,
 };
 
+/// How a frame went, as far as the budget is concerned.
+pub const FrameKind = enum {
+    /// Fitted in the budget.
+    ok,
+    /// Over budget with the display on: the player saw it.
+    overrun,
+    /// Over budget with the display blanked: a loading pause.
+    loading,
+};
+
+/// The meter's record of one finished frame.
+pub const Report = struct {
+    cycles: u32 = 0,
+    /// Cycles by bucket (see `Machine.bucket`).
+    buckets: [8]u32 = @splat(0),
+    kind: FrameKind = .ok,
+    /// Frame slots used: 1, or more when the frame ran long.
+    slots: u32 = 1,
+};
+
+/// Running totals since power-on, for the headless summary and the
+/// browser. These are the machine's, not the game's.
+pub const Stats = struct {
+    frames: u32 = 0, // frame slots elapsed
+    calls: u32 = 0, // times `frame` was called
+    overruns: u32 = 0,
+    loading: u32 = 0,
+    max_cycles: u32 = 0,
+    total_cycles: u64 = 0,
+    bucket_max: [8]u32 = @splat(0),
+    bucket_total: [8]u64 = @splat(0),
+};
+
+/// Where the beam is in the current frame.
+const Beam = struct {
+    active: bool = false, // only while `frame` runs
+    drawn: u32 = 0, // raster lines finished since the frame began
+    next_line_at: u32 = std.math.maxInt(u32), // cycle count that finishes the next line
+    display_seen: bool = false, // a display line was drawn with the display on
+};
+
 pub const Machine = struct {
     /// All of memory. The game's code, data, the screen, the hardware
     /// registers: it is all in here.
     ram: [0x10000]u8 = @splat(0),
 
-    /// What the VIDEO chip drew at the end of the last frame (RGBA).
+    /// The picture on the tube (RGBA), drawn line by line by the beam.
     screen: video.Screen = @splat(0),
 
     /// Set by the shell before each frame.
     input: Input = .{},
 
-    // The work meter.
-    cycles: u32 = 0, // spent so far this frame
-    last_cycles: u32 = 0, // what the previous frame spent
+    /// Cycles spent so far this frame.
+    cycles: u32 = 0,
+    bucket_now: u3 = 0,
+    bucket_cycles: [8]u32 = @splat(0),
 
-    // Running totals, for the headless summary and the browser.
-    frames: u32 = 0,
-    overruns: u32 = 0,
-    max_cycles: u32 = 0,
-    total_cycles: u64 = 0,
+    /// The previous frame, as the meter saw it.
+    last: Report = .{},
+    stats: Stats = .{},
+
+    beam: Beam = .{},
 
     // ---- memory ---------------------------------------------------------
 
     /// Read one byte. 4 cycles.
     pub fn peek(m: *Machine, addr: u16) u8 {
-        m.cycles +|= 4;
+        m.charge(4);
         return m.ram[addr];
     }
 
     /// Write one byte. 4 cycles.
     pub fn poke(m: *Machine, addr: u16, value: u8) void {
-        m.cycles +|= 4;
+        m.charge(4);
         m.ram[addr] = value;
     }
 
     /// Read a two-byte value stored low byte first. 8 cycles.
     pub fn peek16(m: *Machine, addr: u16) u16 {
-        m.cycles +|= 8;
+        m.charge(8);
         return @as(u16, m.ram[addr]) | @as(u16, m.ram[addr +% 1]) << 8;
     }
 
     /// Write a two-byte value, low byte first. 8 cycles.
     pub fn poke16(m: *Machine, addr: u16, value: u16) void {
-        m.cycles +|= 8;
+        m.charge(8);
         m.ram[addr] = @truncate(value);
         m.ram[addr +% 1] = @truncate(value >> 8);
     }
@@ -166,63 +217,85 @@ pub const Machine = struct {
     /// Copy `n` bytes from `src` to `dst`. Overlapping ranges are fine.
     /// 8 cycles per byte.
     pub fn copy(m: *Machine, dst: u16, src: u16, n: u16) void {
-        m.cycles +|= @as(u32, n) * 8;
+        // The bytes land first and the time is charged after, so the beam
+        // sees a copy as one quick burst. Close enough for a game.
         if (@as(u32, dst) + n <= m.ram.len and @as(u32, src) + n <= m.ram.len) {
             @memmove(m.ram[dst..][0..n], m.ram[src..][0..n]);
+        } else if (dst -% src < n) {
+            // Runs off the top of memory and wraps; copy backwards so an
+            // overlapping source isn't overwritten before it's read.
+            var i: u16 = n;
+            while (i > 0) {
+                i -= 1;
+                m.ram[dst +% i] = m.ram[src +% i];
+            }
         } else {
-            // Rare: a range runs off the top of memory and wraps to 0.
-            // Copy in the safe direction one byte at a time.
-            if (dst -% src < n) {
-                var i: u16 = n;
-                while (i > 0) {
-                    i -= 1;
-                    m.ram[dst +% i] = m.ram[src +% i];
-                }
-            } else {
-                for (0..n) |i| {
-                    const k: u16 = @intCast(i);
-                    m.ram[dst +% k] = m.ram[src +% k];
-                }
+            for (0..n) |i| {
+                const k: u16 = @intCast(i);
+                m.ram[dst +% k] = m.ram[src +% k];
             }
         }
+        m.charge(@as(u32, n) * 8);
     }
 
     /// Set `n` bytes starting at `dst` to `value`. 8 cycles per byte.
     pub fn fill(m: *Machine, dst: u16, n: u16, value: u8) void {
-        m.cycles +|= @as(u32, n) * 8;
         if (@as(u32, dst) + n <= m.ram.len) {
             @memset(m.ram[dst..][0..n], value);
         } else {
             for (0..n) |i| m.ram[dst +% @as(u16, @intCast(i))] = value;
         }
+        m.charge(@as(u32, n) * 8);
+    }
+
+    /// Copy bytes from the program image (a `const` table in your code)
+    /// into RAM at `dst`. 8 cycles per byte, like `copy`.
+    pub fn load(m: *Machine, dst: u16, bytes: []const u8) void {
+        if (bytes.len > m.ram.len) @panic("load is bigger than memory");
+        for (bytes, 0..) |b, i| m.ram[dst +% @as(u16, @truncate(i))] = b;
+        m.charge(@intCast(@min(bytes.len * 8, std.math.maxInt(u32))));
     }
 
     /// Multiply two bytes. The CPU has no multiply instruction, so this is
     /// a software routine: 120 cycles. Lookup tables are usually cheaper.
     pub fn mul8(m: *Machine, a: u8, b: u8) u16 {
-        m.cycles +|= 120;
+        m.charge(120);
         return @as(u16, a) * b;
     }
 
     /// Charge `n` cycles for work done outside peek/poke (loop overhead,
     /// arithmetic, decisions).
     pub fn work(m: *Machine, n: u32) void {
-        m.cycles +|= n;
+        m.charge(n);
     }
 
     /// Cycles the previous frame used. Compare against `frame_budget`.
     pub fn meter(m: *const Machine) u32 {
-        return m.last_cycles;
+        return m.last.cycles;
+    }
+
+    /// Send the cycles spent from now on to meter bucket `id` (0-7), so
+    /// the meter can say where a frame's time went. Every frame starts in
+    /// bucket 0. Free.
+    pub fn bucket(m: *Machine, id: u3) void {
+        m.bucket_now = id;
+    }
+
+    /// The raster line the beam is on (0-311). Free.
+    pub fn rasterLine(m: *const Machine) u16 {
+        return @intCast((m.cycles / cycles_per_line) % raster_lines);
     }
 
     /// A typed window onto RAM: `m.view(Header, 0x7800)` lets you read and
     /// write the bytes at 0x7800 as a `Header`. Free on its own; charge
     /// `m.work()` for what you do with it.
     ///
-    /// `T` must have a fixed byte layout: an `extern` or `packed` struct or
-    /// union, a whole-byte integer, or an array of those.
+    /// `T` must have exactly the same bytes in Zig as in memory: whole-byte
+    /// integers (not usize), padding-free `extern struct`s, `packed
+    /// struct(u8)`-style flags, non-exhaustive enums, and arrays of those.
+    /// Anything else is a compile error that says why.
     pub fn view(m: *Machine, comptime T: type, addr: u16) *align(1) T {
-        comptime checkViewable(T);
+        comptime layout.check(T);
         if (@as(usize, addr) + @sizeOf(T) > m.ram.len)
             @panic("view runs past the end of memory");
         return @ptrCast(&m.ram[addr]);
@@ -236,38 +309,111 @@ pub const Machine = struct {
         return &font.rom[code];
     }
 
+    // ---- the meter and the beam -----------------------------------------
+
+    inline fn charge(m: *Machine, n: u32) void {
+        m.cycles +|= n;
+        m.bucket_cycles[m.bucket_now] +|= n;
+        if (m.cycles >= m.beam.next_line_at) m.beamCatchUp();
+    }
+
+    /// Draw every picture line the beam has finished since we last looked,
+    /// from RAM as it is now.
+    fn beamCatchUp(m: *Machine) void {
+        if (!m.beam.active) return;
+        const now = m.cycles / cycles_per_line; // the line in progress
+        var line = m.beam.drawn;
+        // Long jobs lap the screen; only the latest lap is still visible.
+        if (now - line > raster_lines) line = now - raster_lines;
+        while (line < now) : (line += 1) m.drawRaster(line % raster_lines, true);
+        m.beam.drawn = now;
+        m.beam.next_line_at = std.math.mul(u32, now + 1, cycles_per_line) catch std.math.maxInt(u32);
+        m.latchRaster(now % raster_lines);
+    }
+
+    fn drawRaster(m: *Machine, raster: u32, during_frame: bool) void {
+        const first = video.picture_first_raster;
+        if (raster < first or raster >= first + video.height) return;
+        const y = raster - first;
+        if (during_frame and m.ram[hw.control] & display_on != 0 and
+            y >= video.display_y and y < video.display_y + video.display_height)
+            m.beam.display_seen = true;
+        video.drawLine(m, y);
+    }
+
+    fn latchRaster(m: *Machine, line: u32) void {
+        m.ram[hw.raster] = @truncate(line);
+        m.ram[hw.control] = (m.ram[hw.control] & 0x7F) | @as(u8, @intCast(line >> 8)) << 7;
+    }
+
     // ---- the frame driver -----------------------------------------------
 
-    /// Power on: clear memory, set the input ports to "nothing pressed",
-    /// then let the game set itself up. Boot time is not metered.
+    /// Power on: clear memory, switch the display on, set the input ports
+    /// to "nothing pressed", then let the game set itself up. Boot time is
+    /// not metered and the beam isn't running.
     pub fn boot(m: *Machine, comptime Game: type) void {
         comptime checkGame(Game);
         m.reset();
+        m.ram[hw.control] = display_on;
         m.writeInput();
         Game.boot(m);
         m.cycles = 0;
+        m.bucket_cycles = @splat(0);
     }
 
-    /// One 50 Hz frame: latch the input ports, run the game's frame
-    /// interrupt against a fresh meter, then let the VIDEO chip draw the
-    /// result and report sprite collisions.
-    pub fn runFrame(m: *Machine, comptime Game: type) void {
+    /// One frame. Latch the input ports, start the beam at the top, and run
+    /// the game's frame interrupt; the beam draws as the game spends
+    /// cycles. When `frame` returns, the beam finishes the picture.
+    ///
+    /// Returns how many frame slots that took: 1 normally, more when the
+    /// frame went over budget. The shell lets that many frames of time
+    /// pass before calling again.
+    pub fn runFrame(m: *Machine, comptime Game: type) u32 {
         comptime checkGame(Game);
         m.writeInput();
         m.cycles = 0;
+        m.bucket_now = 0;
+        m.bucket_cycles = @splat(0);
+        m.beam = .{ .active = true, .next_line_at = cycles_per_line };
+        m.latchRaster(0);
 
         Game.frame(m);
 
-        m.last_cycles = m.cycles;
-        m.frames += 1;
-        m.total_cycles += m.cycles;
-        m.max_cycles = @max(m.max_cycles, m.cycles);
-        if (m.cycles > frame_budget) m.overruns += 1;
+        m.finishPicture();
+        const slots = @max(1, std.math.divCeil(u32, m.cycles, frame_budget) catch unreachable);
+        const kind: FrameKind = if (m.cycles <= frame_budget)
+            .ok
+        else if (m.beam.display_seen)
+            .overrun
+        else
+            .loading;
+        m.last = .{ .cycles = m.cycles, .buckets = m.bucket_cycles, .kind = kind, .slots = slots };
 
-        const hits = video.render(m);
-        // Collision bits latch until the game clears them.
-        m.ram[hw.sprite_sprite_hits] |= hits.sprite_sprite;
-        m.ram[hw.sprite_bitmap_hits] |= hits.sprite_bitmap;
+        const s = &m.stats;
+        s.frames +|= slots;
+        s.calls +|= 1;
+        s.total_cycles += m.cycles;
+        s.max_cycles = @max(s.max_cycles, m.cycles);
+        switch (kind) {
+            .ok => {},
+            .overrun => s.overruns += 1,
+            .loading => s.loading += 1,
+        }
+        for (m.bucket_cycles, 0..) |c, i| {
+            s.bucket_total[i] += c;
+            s.bucket_max[i] = @max(s.bucket_max[i], c);
+        }
+        return slots;
+    }
+
+    /// The rest of this lap of the beam is drawn from RAM as `frame` left it.
+    fn finishPicture(m: *Machine) void {
+        m.beamCatchUp();
+        const lap_end = (m.beam.drawn / raster_lines + 1) * raster_lines;
+        var line = m.beam.drawn;
+        while (line < lap_end) : (line += 1) m.drawRaster(line % raster_lines, false);
+        m.beam.active = false;
+        m.beam.next_line_at = std.math.maxInt(u32);
     }
 
     /// Back to the power-on state. (Field by field rather than `m.* = .{}`
@@ -277,11 +423,11 @@ pub const Machine = struct {
         @memset(&m.screen, 0xFF000000);
         m.input = .{};
         m.cycles = 0;
-        m.last_cycles = 0;
-        m.frames = 0;
-        m.overruns = 0;
-        m.max_cycles = 0;
-        m.total_cycles = 0;
+        m.bucket_now = 0;
+        m.bucket_cycles = @splat(0);
+        m.last = .{};
+        m.stats = .{};
+        m.beam = .{};
     }
 
     fn writeInput(m: *Machine) void {
@@ -307,18 +453,6 @@ fn checkGame(comptime Game: type) void {
         @compileError("a game needs `pub fn frame(m: *Machine) void`");
 }
 
-fn checkViewable(comptime T: type) void {
-    switch (@typeInfo(T)) {
-        .int => |info| if (info.bits % 8 == 0) return,
-        .@"struct" => |info| if (info.layout != .auto) return,
-        .@"union" => |info| if (info.layout != .auto) return,
-        .array => |info| return checkViewable(info.child),
-        else => {},
-    }
-    @compileError("m.view needs a type with a fixed byte layout (extern/packed struct, " ++
-        "whole-byte integer, or an array of those); got " ++ @typeName(T));
-}
-
 // ---- tests ---------------------------------------------------------------
 
 const testing = std.testing;
@@ -332,6 +466,7 @@ fn newMachine() !*Machine {
 test {
     _ = video;
     _ = font;
+    _ = layout;
 }
 
 test "costs" {
@@ -353,9 +488,14 @@ test "costs" {
     try testing.expectEqual(264, m.cycles);
     m.work(6);
     try testing.expectEqual(270, m.cycles);
+    m.load(0x0600, &.{ 1, 2, 3 });
+    try testing.expectEqual(294, m.cycles);
+    try testing.expectEqualSlices(u8, &.{ 1, 2, 3 }, m.ram[0x0600..0x0603]);
     _ = m.view([4]u8, 0x0500);
     _ = m.charRom('A');
-    try testing.expectEqual(270, m.cycles);
+    m.bucket(3);
+    _ = m.rasterLine();
+    try testing.expectEqual(294, m.cycles);
 }
 
 test "peek16 and poke16 are little-endian" {
@@ -387,13 +527,21 @@ test "view gives a typed window onto RAM" {
     const m = try newMachine();
     defer testing.allocator.destroy(m);
 
-    const Rec = extern struct { kind: u8, x: u8, y: u8, flags: u8 };
+    const Flags = packed struct(u8) { open: bool, locked: bool, color: u4, _pad: u2 = 0 };
+    const Rec = extern struct { kind: u8, x: u8, y: u8, flags: Flags };
     const r = m.view(Rec, 0x7900);
     r.x = 40;
+    r.flags = .{ .open = true, .locked = false, .color = 5 };
     try testing.expectEqual(40, m.ram[0x7901]);
-    const w = m.view(u16, 0x7904);
+    try testing.expectEqual(0b0001_0101, m.ram[0x7903]);
+
+    const recs = m.view([3]Rec, 0x7A00);
+    recs[2].y = 7;
+    try testing.expectEqual(7, m.ram[0x7A00 + 2 * 4 + 2]);
+
+    const w = m.view(u16, 0x7905);
     w.* = 0x0102;
-    try testing.expectEqual(0x02, m.ram[0x7904]);
+    try testing.expectEqual(0x02, m.ram[0x7905]);
 }
 
 test "input ports are active-low with the top bits set" {
@@ -410,36 +558,167 @@ test "input ports are active-low with the top bits set" {
     try testing.expectEqual(0x00, m.ram[hw.key]);
 
     m.input = .{ .joy1 = joy.up | joy.fire, .joy2 = joy.right, .key = 'R' };
-    m.runFrame(Game);
+    _ = m.runFrame(Game);
     try testing.expectEqual(0xEE, m.ram[hw.joy1]);
     try testing.expectEqual(0xF7, m.ram[hw.joy2]);
     try testing.expectEqual('R', m.ram[hw.key]);
 
     // The key stays until the game acknowledges it, and is delivered once.
-    m.runFrame(Game);
+    _ = m.runFrame(Game);
     try testing.expectEqual('R', m.ram[hw.key]);
     m.ram[hw.key] = 0;
-    m.runFrame(Game);
+    _ = m.runFrame(Game);
     try testing.expectEqual(0, m.ram[hw.key]);
 }
 
-test "the meter counts one frame at a time and flags overruns" {
-    const Game = struct {
-        pub fn boot(m: *Machine) void {
-            m.work(1_000_000); // boot is not metered
+/// A game whose frame does whatever `$0200` asks, so one machine can run
+/// several experiments.
+const Lab = struct {
+    const mode = 0x0200;
+    pub fn boot(_: *Machine) void {}
+    pub fn frame(m: *Machine) void {
+        switch (m.ram[mode]) {
+            // Spend 1000 cycles.
+            0 => m.work(1000),
+            // Spend one cycle over budget.
+            1 => m.work(frame_budget + 1),
+            // Blank, spend 2.5 frames, display back on: a loading pause.
+            2 => {
+                m.poke(hw.control, 0);
+                m.work(frame_budget * 5 / 2);
+                m.poke(hw.control, display_on);
+            },
+            // Move sprite 0 right by 100 once the beam is past display row 20.
+            3 => {
+                m.work((video.display_first_raster + 21) * cycles_per_line);
+                m.poke(hw.spriteX(0), video.sprite_origin_x + 100);
+            },
+            // Split the frame's work between buckets.
+            4 => {
+                m.work(10);
+                m.bucket(2);
+                m.work(300);
+                m.bucket(5);
+                m.work(7);
+            },
+            else => {},
         }
+    }
+};
+
+test "the meter counts one frame at a time and flags overruns" {
+    const m = try newMachine();
+    defer testing.allocator.destroy(m);
+
+    m.boot(Lab);
+    try testing.expectEqual(1, m.runFrame(Lab));
+    try testing.expectEqual(1000, m.meter());
+    m.ram[Lab.mode] = 1;
+    try testing.expectEqual(2, m.runFrame(Lab)); // ran into a second slot
+    try testing.expectEqual(frame_budget + 1, m.meter());
+    try testing.expectEqual(FrameKind.overrun, m.last.kind);
+    try testing.expectEqual(1, m.stats.overruns);
+    try testing.expectEqual(3, m.stats.frames);
+    try testing.expectEqual(2, m.stats.calls);
+}
+
+test "a blanked display turns a long frame into a loading pause" {
+    const m = try newMachine();
+    defer testing.allocator.destroy(m);
+
+    m.boot(Lab);
+    m.ram[Lab.mode] = 2;
+    try testing.expectEqual(3, m.runFrame(Lab));
+    try testing.expectEqual(FrameKind.loading, m.last.kind);
+    try testing.expectEqual(0, m.stats.overruns);
+    try testing.expectEqual(1, m.stats.loading);
+    try testing.expectEqual(3, m.stats.frames);
+}
+
+test "the display-enable bit blanks the display window to border colour" {
+    const m = try newMachine();
+    defer testing.allocator.destroy(m);
+
+    m.boot(Lab);
+    m.ram[Lab.mode] = 0xFF;
+    try testing.expectEqual(display_on, m.ram[hw.control] & display_on); // on at power-up
+    m.ram[hw.border] = 6;
+    m.ram[hw.background] = 2;
+    m.ram[hw.sprite_enable] = 1;
+    @memset(m.ram[hw.sprite_data..][0..63], 0xFF);
+    m.ram[hw.spriteX(0)] = video.sprite_origin_x;
+    m.ram[hw.spriteY(0)] = video.sprite_origin_y;
+    @memset(m.ram[hw.bitmap..][0..8], 0xFF); // foreground under the sprite
+    const corner = video.display_y * video.width + video.display_x;
+
+    _ = m.runFrame(Lab);
+    try testing.expectEqual(video.palette[0], m.screen[corner]); // sprite colour 0
+    try testing.expectEqual(1, m.ram[hw.sprite_bitmap_hits]);
+
+    m.ram[hw.sprite_bitmap_hits] = 0;
+    m.ram[hw.control] = 0;
+    _ = m.runFrame(Lab);
+    try testing.expectEqual(video.palette[6], m.screen[corner]);
+    try testing.expectEqual(video.palette[6], m.screen[corner + 200 * video.width]);
+    try testing.expectEqual(0, m.ram[hw.sprite_bitmap_hits]);
+}
+
+test "changing a sprite while the beam draws it tears" {
+    const m = try newMachine();
+    defer testing.allocator.destroy(m);
+
+    m.boot(Lab);
+    m.ram[Lab.mode] = 3;
+    @memset(m.ram[hw.sprite_data..][0..63], 0xFF);
+    m.ram[hw.spriteX(0)] = video.sprite_origin_x;
+    m.ram[hw.spriteY(0)] = video.sprite_origin_y;
+    m.ram[hw.spriteColor(0)] = 1;
+    m.ram[hw.sprite_double_height] = 1; // 42 lines tall
+    m.ram[hw.sprite_enable] = 1;
+    _ = m.runFrame(Lab);
+
+    const white = video.palette[1];
+    const at = struct {
+        fn px(mm: *const Machine, x: usize, y: usize) u32 {
+            return mm.screen[(video.display_y + y) * video.width + video.display_x + x];
+        }
+    }.px;
+    // Rows 0-20 were drawn before the move, rows 21-41 after.
+    try testing.expectEqual(white, at(m, 0, 20));
+    try testing.expect(at(m, 100, 20) != white);
+    try testing.expect(at(m, 0, 21) != white);
+    try testing.expectEqual(white, at(m, 100, 21));
+    try testing.expectEqual(white, at(m, 100, 41));
+}
+
+test "the raster register follows the beam" {
+    const Game = struct {
+        pub fn boot(_: *Machine) void {}
         pub fn frame(m: *Machine) void {
-            m.work(if (m.frames == 1) frame_budget + 1 else 1000);
+            m.work(300 * cycles_per_line);
+            m.ram[0x0300] = m.peek(hw.raster);
+            m.ram[0x0301] = m.ram[hw.control] >> 7;
+            m.ram[0x0302] = @intCast(m.rasterLine() - 256);
         }
     };
     const m = try newMachine();
     defer testing.allocator.destroy(m);
-
     m.boot(Game);
-    m.runFrame(Game);
-    try testing.expectEqual(1000, m.meter());
-    m.runFrame(Game);
-    try testing.expectEqual(frame_budget + 1, m.meter());
-    try testing.expectEqual(1, m.overruns);
-    try testing.expectEqual(frame_budget + 1, m.max_cycles);
+    _ = m.runFrame(Game);
+    try testing.expectEqual(300 - 256, m.ram[0x0300]);
+    try testing.expectEqual(1, m.ram[0x0301]);
+    try testing.expectEqual(300 - 256, m.ram[0x0302]);
+}
+
+test "buckets split a frame's cycles" {
+    const m = try newMachine();
+    defer testing.allocator.destroy(m);
+
+    m.boot(Lab);
+    m.ram[Lab.mode] = 4;
+    _ = m.runFrame(Lab);
+    try testing.expectEqual(317, m.meter());
+    try testing.expectEqual([8]u32{ 10, 0, 300, 0, 0, 7, 0, 0 }, m.last.buckets);
+    _ = m.runFrame(Lab); // each frame starts back in bucket 0
+    try testing.expectEqual(10, m.last.buckets[0]);
 }
