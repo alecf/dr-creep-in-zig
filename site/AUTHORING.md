@@ -276,6 +276,31 @@ Length guide: 4,000–9,000 words per chapter. Two or three new
 under-the-hood ideas per chapter (outline's ladder), each taught where it
 is needed.
 
+### Diagrams
+
+Show it instead of telling it wherever a picture is clearer, for example:
+memory turning into colours on screen, a sprite's bytes becoming a
+picture, bits packed in a byte, regions that overlap, collision boxes,
+pointers into a table, or a contiguous table next to scattered objects.
+
+- **ASCII diagrams** in plain fences (or `text`) are fine for small byte
+  layouts, and many existing ones are good. Keep them.
+- **HTML/SVG diagrams**: write `:::diagram NAME` with an optional
+  one-line markdown caption as the body, closed by `:::`. The figure is
+  `site/page/diagrams/NAME.html`, which `site/build.py` inlines. Name
+  files `chNN-what.html`. Use the shared classes and colour rules in
+  `site/page/diagrams.css`:
+  - theme tokens (`--ink`, `--ink-soft`, `--rule`, `--sheet`,
+    `--accent`, `--code-bg`) for labels, frames and arrows;
+  - the fixed Comet palette `--c0`…`--c15` for anything that *is* screen
+    colour.
+- Diagrams are static: no scripts, and no colours outside those tokens.
+  They must stay legible at 400 px wide, either by wrapping or by
+  scrolling sideways inside the figure. Labels must be real text, not
+  text drawn as paths.
+- A diagram replaces the paragraph that was describing the same thing.
+  Don't keep both.
+
 ## 6. Training Castle
 
 Original rooms in the 1984 castle format, authored with the comptime

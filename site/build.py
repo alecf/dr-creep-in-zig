@@ -141,6 +141,15 @@ def render(md, view, chapter_files):
             )
         if kind == "widget":
             return ""  # author placeholder for a future interactive widget
+        if kind == "diagram":
+            # :::diagram NAME  (body = caption, markdown). The picture itself
+            # is site/page/diagrams/NAME.html: hand-made HTML/SVG/CSS.
+            name = title.split()[0]
+            src = SITE / "page" / "diagrams" / f"{name}.html"
+            if not src.exists():
+                raise SystemExit(f"missing diagram {src}")
+            cap = f'<figcaption>{inline(inner.strip())}</figcaption>' if inner.strip() else ""
+            return stash(f'<figure class="diagram" data-diagram="{name}">{src.read_text()}{cap}</figure>')
         t = f'<span class="box-title">{inline(title)}</span>' if title else ""
         return stash(
             f'<aside class="box box-{kind}"><div class="box-head"><span class="box-label">{label}</span>{t}</div>'
@@ -270,6 +279,7 @@ def main():
         template.replace("{{NAV}}", "\n".join(nav))
         .replace("{{VIEWS}}", "\n".join(sections))
         .replace("{{PYGMENTS}}", "")
+        .replace("{{DIAGRAM_CSS}}", (SITE / "page" / "diagrams.css").read_text())
     )
     (OUT / "index.html").write_text(page)
     size = sum(p.stat().st_size for p in OUT.rglob("*") if p.is_file())
