@@ -73,6 +73,12 @@ rooms. Every page should feel like a fun project we're doing together.
   here's what we do instead." Diagrams of bytes in memory are the main
   teaching tool. Don't re-explain general programming they already know
   (loops, functions, what a variable is).
+- **Just in time, never up front.** Each low-level idea arrives in the
+  chapter where the game first *needs* it, and is taught through that
+  need. Nobody learns bit masks in the abstract; they learn them because
+  the joystick hands them a byte with five directions packed into it. No
+  chapter opens with a theory section. See the "Under-the-hood ladder" at
+  the top of "Chapters" for where each idea lands.
 - **Respect without condescension.** In practice:
   - No quizzes, "can you guess?" prompts, or gold stars. Exercises are
     offered as fun things to build, not homework to check.
@@ -257,23 +263,47 @@ tool. It never appears on the site.
 
 ## Chapters
 
+### Under-the-hood ladder
+
+Each low-level idea gets taught where the game first needs it, and later
+chapters build on it. Keep any one chapter to two or three genuinely new
+ideas.
+
+| Ch | New under the hood | What makes it necessary |
+|---|---|---|
+| 1 | Bytes and `u8`; memory as one big array; addresses; hex notation; a single bit as an on/off flag | Putting a colour on screen means writing a byte at an address. The joystick's fire button is one bit. |
+| 2 | Packing several values into a byte (shifts and masks); pointers as addresses you can do arithmetic on; lookup tables vs computing (what a multiply costs) | Four pixels share a byte. Finding a pixel's byte is the hot path. |
+| 3 | Structs and how their fields lay out as bytes (vs a JS object); little-endian 16-bit values; variable-length data with sentinel bytes; comptime | A castle file is raw bytes you have to read as records. |
+| 4 | Fixed-width integers, overflow and wrapping; a 2D grid stored as a 1D array (index math); several flags packed in one byte | Coordinates are bytes. The navigation grid is one flat table. |
+| 5 | Arrays of structs as one contiguous block (vs an array of pointers to objects); fixed-capacity slot tables; dispatch tables of function pointers | 8 actors and a room's objects, every frame, with no allocator. |
+| 6 | Linking things by index instead of by pointer | A switch has to point at "lightning machine #2", and the data must stay valid on disk. |
+| 7 | Reusing free slots; a whole state machine in one flag byte | Lasers come and go under a hard 8-sprite cap. |
+| 8 | XOR and bit rotation; deterministic pseudo-randomness | Monsters need cheap, repeatable randomness. |
+| 9 | Overlaying memory (one region, two jobs, like a Zig `union`); BCD numbers | Runtime state lives inside the castle buffer. The timer prints every frame. |
+| 10 | Interrupts, explained properly: what the frame interrupt has been doing since chapter 1; fixed-rate timing; frequency tables | Music must keep time while the game runs. |
+| 11 | Devices, blocks and slow storage; loading into memory you just freed | Castles load from disk into a tight memory map. |
+
+Frame cost works the same way. Chapter 1 just says "everything costs
+work units, and a frame has a fixed amount". Each later chapter adds one
+concrete cost lesson (a multiply in chapter 2, a per-frame search in
+chapter 4, scanning idle objects in chapter 5) using the budget meter.
+
 ### Prologue — The rules of the game
 Mission briefing for the whole quest: meet Dr. Creep's castles and the
 machine you're building them for. A tour of the finished game. The budget: 64 KB, 50 Hz, 8 sprites, 4 colours per cell, 3 voices.
 How to read the site and use the checkpoints. Zig 0.16 setup.
 
 ### 1. A machine in 64 KB
-Opens with the low-level foundations the rest of the tutorial stands on,
-taught through the machine itself. Memory is one 64 KB array of bytes. An
-address is an index into it, and **a pointer is just an address**. Hex,
-bits, bit masks, and `u8`/`u16` with wrapping arithmetic. How a struct
-and an array of structs lay out as bytes, compared with JS objects and
-arrays. Then build `hw`: the RAM array, the comptime memory map, the
-frame loop and its interrupt, the work meter, joystick input (your first
-bit masks, on a real input port), and the native and wasm shells.
-**Techniques:** no allocator; comptime layout checks; shadow registers
-written once per frame; why a fixed frame budget beats "as fast as
-possible".
+Short and hands-on: get something on screen fast. The reader starts from
+a starter kit with the native and wasm shells already wired up (their
+internals get a Secret Passage, not a lesson). Meet the machine: memory
+is one 64 KB array of bytes, and a colour on screen is a byte at an
+address (hex shows up here, because addresses read better that way).
+Then write the frame loop at 50 Hz, a tiny memory map (just the regions
+this chapter uses; it grows each chapter), and read the joystick's fire
+button as one bit.
+**Techniques:** no allocator, ever; the frame budget as the game's time
+limit; writing hardware registers once per frame.
 **Checkpoint:** a coloured screen with one sprite you can steer.
 
 ### 2. Pixels on a budget
