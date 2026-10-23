@@ -5,11 +5,12 @@ checkpoint: ch04
 ---
 
 :::mission-briefing
-Chapter 3 built a castle the explorer can't use: he shuffles along the
-bottom of every room as if the walkways were painted on. By the end of
-this chapter he walks every floor of the Training Castle, stops where a
-walkway stops, climbs the ladders and slides down the poles, all the way
-to the right-hand edge of the screen.
+Chapter 3 built a castle the explorer can't use. He shuffles along the
+bottom of every room as if the walkways were painted on, and the ladders
+might as well be wallpaper. This chapter teaches him the castle. By the
+end he walks every floor of the Training Castle, stops where a walkway
+stops, climbs the ladders and slides down the poles, all the way to the
+right-hand edge of the screen. The wall he hit in Chapter 1 is gone.
 
 ![The Ladders room: the explorer halfway up a grey ladder, seen from behind, between a purple floor and an upper walkway that leads to a door on the right](images/04-ladders.png)
 
@@ -21,9 +22,11 @@ byte** comes back with a new job.
 ## The wall made of arithmetic
 
 Back in Chapter 1, the explorer walked right and stopped three quarters
-of the way across the screen, at nothing. His X was a byte, and a byte
-stops at 255. Here's what happens when numbers outgrow their bytes, and
-how the 1984 game fits the whole screen into one anyway.
+of the way across the screen, at nothing. No wall, no door, no monster:
+a barrier made of arithmetic. If you've ever watched a score roll over
+from 999,999 to zero, you've met its cousin. His X was a byte, and a
+byte stops at 255. Here's what happens when numbers outgrow their bytes,
+and how the 1984 game fits the whole screen into one anyway.
 
 ### Every number has a size
 
@@ -35,8 +38,9 @@ holds 0 to 7, which is why Chapter 3's castle map sizes were `u3`s. An
 Fixed width means a sum can need more bits than its type has. 255 + 1
 is 256, which needs a ninth bit. That's **overflow**, and the hardware's
 answer is blunt: keep the low 8 bits and drop the rest, the way a car's
-odometer rolls from 99999 to 00000. 255 + 1 comes out as 0, and nothing
-says so.
+odometer rolls from 99999 to 00000. 255 + 1 comes out as 0. The answer
+is wrong, and nothing says so. That's the kind of bug that eats an
+afternoon.
 
 Zig won't let that happen by accident. An ordinary `+`, `-` or `*` that
 overflows is a bug, and in the builds we use (`zig build`, `zig build
@@ -67,10 +71,12 @@ that says "I meant that".
 
 ### A byte for the whole width
 
-The castle already has the trick. Since Chapter 3, every object's X is a
-**fat pixel plus 16**: X = 16 is the left edge of the screen, and X = 175
-the last fat pixel on the right. The whole width fits in a byte with 80
-to spare. Put the explorer on the same scale and the wall is gone.
+So what's the trick? It's been hiding in plain sight since Chapter 3:
+every object's X is a **fat pixel plus 16**. X = 16 is the left edge of
+the screen, and X = 175 the last fat pixel on the right. The whole width
+fits in a byte with 80 to spare. Put the explorer on the same scale and
+the wall is gone. We don't knock it down; we halve the screen, because
+160 fat pixels is a smaller number than 320 screen pixels.
 
 The VIDEO chip still wants screen pixels. A fat pixel is two, and castle
 X 16 lands on sprite X 24, the display's left edge, so sprite X is
@@ -92,7 +98,9 @@ src/sprites.zig:45:29: 0x11ee151 in place (main.zig)
                             ^
 ```
 
-The fix is to do the sum in a type that's big enough, then split it:
+A loud crash on the first frame beats a wrong number that hides for a
+week. The fix is to do the sum in a type that's big enough, then split
+it:
 
 :::diagram ch04-ninth-bit
 Castle X fits a byte; sprite X doesn't. 330, the explorer at the right-hand end of a floor, splits in two.
@@ -144,7 +152,7 @@ pub const player_y = player.first + 1; // castle Y of his top: the pixel row
 
 Now he can start somewhere the castle names: in front of a door. Until
 Chapter 5 brings the door he really walked through, he appears in the
-room's first door, which is easy to find because doors are the first
+room's first door, which is quick to find because doors are the first
 group in every stream. `room.zig` gets a way to find a room's objects
 without painting anything:
 
@@ -315,16 +323,23 @@ fn hold(m: *Machine, stick: u8, frames: usize) void {
 :::
 
 Build, run, press fire. He's in the Gatehouse's doorway at sprite X 316.
-**That's past the wall.** Walk him edge to edge. Then try Sliding Poles
-(press N three times): he strolls straight off the end of the upper
-walkway, in mid-air, because nobody has told him where the floors are.
+**That's past the wall.** Walk him left and right, edge to edge, the
+whole width of the screen. Chapter 1's invisible wall is gone for good.
+
+Now try Sliding Poles (press N three times). He strolls straight off the
+end of the upper walkway and keeps going, in mid-air, like a cartoon
+character who hasn't looked down yet. Nobody has told him where the
+floors are. That's next.
 
 ## The castle's floor plan
 
-Every platformer asks one question each step: **from here, which ways
-can he go?**
+You know how in old platformers you have to line up with a ladder before
+you can climb it, and how a walkway's end is as far as you go, no matter
+how hard you push? Under all of that is one question the game asks every
+step: **from here, which ways can he go?**
 
-The JavaScript way is to ask the castle's records each time:
+The castle knows the answer, spread across its records. The JavaScript
+way is to ask them each time:
 `walkways.some(w => w.y === feetY && feetX >= w.x && ...)`, and the same
 for ladders and poles. On the Comet that means walking the room's whole
 object stream 25 times a second. The 1984 game asks once, when the room
@@ -356,8 +371,10 @@ A cell's ways byte: hover any cell of the Ladders room to see its eight bits.
 A set bit means "you can leave this cell that way". Only the four
 straight directions are ever set; no object sets a diagonal. We number
 them because the joystick gives a direction number too, and then "is
-that way open?" is one test: `ways & (1 << d)`. (Chapter 3's `packed struct(u8)` names bits; here we pick a bit by
-*number*, so plain masks fit better.)
+that way open?" is one test: `ways & (1 << d)`. A cell in the middle of
+a walkway is `$44`, left and right; a rung in the middle of a ladder is
+`$11`, up and down. (Chapter 3's `packed struct(u8)` names bits; here we
+pick a bit by *number*, so plain masks fit better.)
 
 ### A grid is a row of bytes
 
@@ -368,8 +385,9 @@ The memory map with the 1,000-byte navigation grid at `$C800` lit up.
 In JavaScript a grid is usually an array of arrays, `grid[y][x]`: 26
 separate objects, and every read follows a pointer to its row first. The
 flat version, `new Uint8Array(40 * 25)` read as `grid[y * 40 + x]`, is
-1,000 bytes in one block, with no pointers anywhere. That's the one
-we're building. Cell (col, row) is `row × 40 + col` bytes in:
+1,000 bytes in one block, with no pointers anywhere. Same thousand
+numbers, one block instead of twenty-six. That's the one we're building.
+Cell (col, row) is `row × 40 + col` bytes in:
 
 :::diagram ch04-flat-grid
 The Ladders room's ladder top, cell (24, 16), in both views.
@@ -459,7 +477,8 @@ pub fn at(m: *Machine, x: u8, y: u8) u8 {
 ```
 
 `at` is the whole cost of a step's question: a test, two shifts and an
-add, one `peek`. Twenty cycles.
+add, one `peek`. Twenty cycles. Hold on to that number; we'll put it up
+against the slow way at the end of the chapter, and it isn't close.
 
 ### Writing it down
 
@@ -467,7 +486,8 @@ Here are the 1984 game's rules for what each record writes, so real
 castles play right when they load in Chapter 11:
 
 - **A walkway** opens right from its first piece, left from its last,
-  and both ways in between. The end piece has no way out past the end.
+  and both ways in between. Walking off the end is impossible because
+  the end piece has no way out past the end. No edge check anywhere.
 - **A ladder** opens down from its top rung, up from its bottom rung,
   and both ways in between.
 - **A pole** opens down from every piece, and never up.
@@ -550,7 +570,8 @@ Look at the pole rule again: *every* piece opens down, even the last.
 That means a pole must stop one cell *above* the floor. The explorer
 slides off the last piece into the floor's cell, which has no way down,
 and lands. A pole whose last piece sits on the floor would give the
-floor itself a way down, and he'd slide straight through it.
+floor itself a way down, and he'd slide straight through it, into the
+empty row underneath, stranded with no way out at all.
 
 Chapter 3's builder insisted that poles end *on* a walkway, like ladders.
 Fix the rule:
@@ -584,7 +605,9 @@ castle: room poles: pole 0 must start on a walkway and end just above one (top p
 
 Chapter 3 drew the Sliding Poles pole one piece too long, and the
 Entrance Hall's too. On screen you'd never know, because the last piece
-disappears into the floor's bricks. In the grid, it's a hole:
+disappears into the floor's bricks. In the grid, it's a hole. I love
+this kind of bug: invisible on screen, fatal in the data, and caught
+before anyone falls in. Shorten both poles by one piece:
 
 **`src/training.zig`** (in the `poles` room, replace the pole)
 
@@ -606,10 +629,12 @@ disappears into the floor's bricks. In the grid, it's a hole:
 
 ### Seeing the grid
 
-The grid is invisible, which makes it hard to trust. Press **G** and the
-room is redrawn with the grid over it (and the explorer back in the
-doorway). A second switch, **Q**, waits for the end of the chapter.
-Both stay off W A S D and I J K L, the browser's joysticks.
+The grid is invisible, which makes it hard to trust. So let's give the
+game a switch that draws it. Press **G** and the room is redrawn with
+the grid over it (and the explorer back in the doorway, so look first,
+then walk). A second switch, **Q**, waits for the end of the chapter.
+Both stay off W A S D and I J K L, the browser's joysticks: a switch on
+S would flip every time you climbed down.
 
 **`src/map.zig`** (add below the `room` region)
 
@@ -716,7 +741,9 @@ Build, run, press N twice for the Ladders room, then G:
 
 There's the castle as the explorer will feel it: each walkway a line
 that stops at its ends, and the ladder joining them with a T at each.
-Press G again to put the bricks back.
+All the bricks and colours were for you; this is the whole room as far
+as he's concerned. It's my favourite debug view in the game, and the
+whole of `debug.zig` is about fifty lines. Press G again to put the bricks back.
 
 ## Steering by the grid
 
@@ -836,19 +863,25 @@ directions out as they sit on the stick, and the block that fills
 right) for each of the 16 readings. It runs in the compiler, like every
 top-level `const`.
 
-A `[3][3]u8` like `compass` is nine bytes in a row, laid out just like
-our grid. We index the grid by hand with `peek` and `poke` anyway,
-because those charge the meter for every read.
+Here Zig differs from JavaScript in exactly the way this chapter is
+about: a `[3][3]u8` like `compass` isn't three arrays reached through
+pointers, it's nine bytes in a row, laid out exactly like our grid. We
+could even ask the machine for the grid as a `[25][40]u8` with Chapter
+3's `m.view`. We index it by hand instead, with `peek` and `poke`,
+because those charge the meter for every read, and the meter is the
+point of this chapter.
 
 `step_x` and `step_y` say how far a step goes each way: a fat pixel
-across, two rows up or down. They hold **no negative numbers**, and they
-don't need to.
+across, two rows up or down. Look closely and you'll see they hold **no
+negative numbers**, even though he walks left and climbs up. They don't
+need any. That's the next trick.
 
 ### 255 is minus one
 
-Add 255 to a byte and let it wrap. 10 + 255 is 265, and 265 − 256 is
-9. Adding 255 with `+%` *is* subtracting 1. This isn't a coincidence;
-it's how computers store negative numbers:
+Okay, this is my favourite trick in the chapter. Add 255 to a byte and
+let it wrap. 10 + 255 is 265, and 265 − 256 is 9. Adding 255 with `+%`
+*is* subtracting 1. Adding 254 is subtracting 2. This isn't a
+coincidence; it's how computers store negative numbers:
 
 ```
      0000 1010   10
@@ -859,15 +892,17 @@ it's how computers store negative numbers:
 
 That's **two's complement**: an `i8` reads the top half of the dial,
 the bytes with the top bit set, as the negative numbers, so the ordinary
-wrapping add just works:
+wrapping add works unchanged:
 
 :::diagram ch04-minus-one
 A byte is a dial. Going 255 steps forward lands one step back.
 :::
 
-The processor doesn't even know which kind of byte it's adding. So the step
-tables store `0xFF` for "back one" and `0xFE` for "back two", and `x +%=
-step_x[way]` moves him either way with one add.
+The processor doesn't even know which kind of byte it's adding; minus
+one is only a way of looking at 255. So the step tables store `0xFF` for
+"back one" and `0xFE` for "back two", and `x +%= step_x[way]` moves him
+either way with one add. Forwards and backwards, one instruction, no
+`if`.
 
 ### Taking a step
 
@@ -961,7 +996,9 @@ Here's what a step does.
 direction is open, he goes that way. If not, there's one more chance,
 and it's what makes the stick feel right: if he's already moving and the
 stick is pushed *next to* that direction (usually a diagonal), he keeps
-going. Walking right with the stick at up-and-right, he keeps walking.
+going. Walking right with the stick at up-and-right, he keeps walking;
+on a ladder with the stick at down-and-left, he keeps climbing down.
+Sloppy thumbs on a worn-out joystick still get where they meant to go.
 "Next to" is one more or one less round the compass, and the compass
 wraps: `(last +% 1) & 7` takes 7 to 0, and `(last -% 1) & 7` takes 0 to
 255 and then to 7. (Zig binds `&` tighter than `==`, so `way & 3 == 2`
@@ -972,10 +1009,13 @@ pixel into the cell, `x - fx % 4 + 1`, centred between a ladder's rails.
 Going sideways, his Y is pulled up to the cell's top row, `y -= fy % 8`.
 That matters at the top of a ladder: the top rung doesn't open up, so a
 climb ends with his boots six rows below the walkway, and pushing left
-or right steps him onto it. No instructions needed.
+or right steps him onto it. That's why stepping off a ladder needs no
+instructions: you push the way you want to go.
 
 **The step** is the two table adds. Stopping at a walkway's end, not
-climbing a pole: none of it has code. It falls out of the bits.
+climbing a pole: none of it has code. It falls out of the bits. This is
+the payoff for all that bookkeeping: the castle's rules live in the
+data, and `steer` only has to read them.
 
 :::pro-tip Shifting by a direction
 `bit` shifts 1 left by `way`, a `u8`. Shift by it directly and Zig
@@ -991,10 +1031,13 @@ panics if `way` is ever 8 or more.
 :::
 
 Build and run, press N twice, and walk him right to the ladder. Push up.
-**He climbs!** At the top, push right to step off and walk to the door.
-In the Long Gallery (one N), try walking off the end of the walkway: you
-can't. In Sliding Poles, walk onto the pole and push down. He climbs and
-slides standing bolt upright in his walking pose, which we fix next.
+**He climbs!** Three chapters of bytes, and now the castle is a place he
+can move through. At the top, push right to step off and walk to the
+door, at the right-hand edge of the screen. In the Long Gallery (one N),
+try walking off the end of the walkway: you can't, however hard you
+push. In Sliding Poles, walk onto the pole and push down. He climbs and
+slides standing bolt upright in his walking pose, like a man riding an
+invisible lift. We fix that next.
 
 ## Climbing and sliding
 
@@ -1115,15 +1158,19 @@ Going up or down, he's on a ladder if there's a way **up** from his cell
 or the one just below (the top rung opens only down). Poles never open
 up, so on a pole he slides. Climbing frames come from bits 2 and 3 of
 his Y and play backwards on the way down. When he stops on a ladder or
-pole he holds on and keeps his picture.
+pole he holds on and keeps his picture. That includes the bottom of a
+pole: he lands in his sliding pose and stays in it until you walk him
+off, as the 1984 explorer does.
 
 Build and run. Now he climbs hand over hand and slides down the pole with
-his knees round it.
+his knees round it. Five small pictures, and he stops being a sprite on
+rails and starts being somebody climbing.
 
 ## What the grid saved
 
-How fast is the grid? Try the other way: here's the question answered
-by walking the room's whole stream:
+The grid is fast, but how fast? There's one honest way to find out:
+build the slow version on purpose and race them. Here's the question
+answered the JavaScript way, by walking the room's whole stream:
 
 **`src/grid.zig`** (add at the end of the file)
 
@@ -1191,18 +1238,25 @@ to the meter's sprite bucket, bucket 2. Press Q and walk again:
 The frame budget while the explorer climbs: once reading the grid, once searching.
 :::
 
-A search costs 1,100 to 1,650 cycles, mostly stepping over the room's
-text letter by letter. The grid costs 20. One explorer can afford to search. But later chapters fill a
-room with up to eight sprites, and everything that walks asks the same
-question. Eight searchers climbing would spend 23,000 cycles a step just
-asking, more than a whole frame. Eight grid readers spend 320.
+A search costs 1,100 to 1,650 cycles depending on the room, mostly
+stepping over the room's text letter by letter. The grid costs 20 in
+every room, however full it is. One explorer can afford to search:
+3,700 cycles is a fifth of a frame. But everything that walks the castle
+asks the same question every step, and later chapters fill a room with
+up to eight sprites: a second explorer, mummies, Frankenstein's
+monsters. Eight searchers climbing would spend 23,000 cycles a step only
+asking, more than a whole frame, before anything has been drawn. Eight
+grid readers spend 320. That's the difference between a castle that
+crawls and one that plays.
 
 :::power-up The Precompute Power-Up
 When an answer only changes when the world changes, work it out then,
 not when you ask. The room changes once, when it's drawn; the explorer
-asks 25 times a second. It's Chapter 2's Lookup Table Power-Up with the
-table built at run time: 1,000 bytes and about 10,000 cycles in a
-loading pause nobody feels, and every step after that is cheap.
+asks 25 times a second. So the drawing pass writes every answer down,
+and asking becomes one read. It's Chapter 2's Lookup Table Power-Up with
+the table built at run time: 1,000 bytes and about 10,000 cycles in a
+loading pause nobody feels, and every step after that is cheap. Collect
+this one; you'll use it all the way to the last castle.
 :::
 
 :::byte-budget Chapter 4
@@ -1216,12 +1270,18 @@ frame slots), and 196 to 228 cycles a step in play.
 
 :::inside-the-disk Eight directions, four used
 The 1984 game keeps its grid at `$C000` with **two bytes per cell**,
-2,560 bytes in all, and never reads the second byte. The direction bits
-are exactly ours, and the movement code is ready for diagonals that
-nothing ever sets. And the grid isn't
-only written when a room is drawn: an opening trapdoor clears the bits
-that let you walk across it, and sets them again when it shuts. Chapter
-6 does the same.
+2,560 bytes in all, and never reads the second byte. Half a kilobyte of
+nothing, on a machine that counts every byte! The direction bits are
+exactly ours, and the movement code is ready for diagonals that nothing
+ever sets.
+
+Look closely and you'll catch the 1984 explorer in his pole pose for a
+moment when he starts down a ladder, because the top rung's cell has no
+way up. Ours looks one cell further down before it picks his picture.
+
+And the grid isn't only written when a room is drawn: an opening
+trapdoor clears the bits that let you walk across it, and sets them
+again when it shuts. Chapter 6 does the same.
 :::
 
 ## Tests that walk the castle
@@ -1382,8 +1442,11 @@ start anywhere.
   Widen first: `@as(u16, x) * 2`.
 - **`panic: integer overflow` in `column` or `add`.** An `x / 4 - 4` on
   an X below 16. Test first, as `column` does.
+- **He stops six rows short of the top of a ladder.** Not a bug: that's
+  the rule. Push left or right to step off.
 - **He slides through the floor.** A pole ends on the floor instead of
-  just above it.
+  just above it. The builder refuses that; in bytes typed by hand,
+  count again.
 - **He won't climb.** His feet aren't in the ladder's cell: walk a
   little closer. If he never climbs anywhere, check that `room.draw`
   calls `grid.add` inside the loop, after the `switch`.
@@ -1429,7 +1492,9 @@ python3 -m http.server -d web
 Open <http://localhost:8000>, press Space, and explore: arrows to walk
 and climb, N and P for rooms, G for the grid, Q for the slow way.
 
-**He knows the castle!** Next chapter, the doors open.
+**He knows the castle!** Every floor, ladder and pole in the Training
+Castle works, read from 1,000 bytes the room wrote down as it was drawn.
+Next chapter, the doors open.
 :::
 
 :::warp-zone
@@ -1449,7 +1514,8 @@ rm -rf my-creep/.zig-cache my-creep/zig-out my-creep/web
 
 :::bonus-stage
 - **A tower of ladders.** Add a room with ladders between three or four
-  walkways. The G switch shows you the paths.
+  walkways. The builder checks the ends; the G switch shows you the
+  paths.
 - **A pole through a floor.** A pole that passes a middle walkway: its
   piece there opens down *and* sideways. Walk off, or keep sliding.
 - **A faster explorer.** Take out the `game_tick` line and feel the
