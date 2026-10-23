@@ -66,7 +66,7 @@ pub const plan: author.Castle(Room) = .{
         .gatehouse = .{
             .color = .red,
             .map = spot(0),
-            .door = &.{.{ .x = 156, .y = 160, .to = .gallery }},
+            .door = &.{.{ .x = 156, .y = 160, .to = .galery }},
             .walkway = &.{floor},
             .bell = &.{.{ .x = 140, .y = 168, .door = 0 }},
             .text = says("THE GATEHOUSE", &.{

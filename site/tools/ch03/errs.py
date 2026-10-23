@@ -1,6 +1,6 @@
 # Reproduce every compile error the chapter quotes; write errs.json.
 import os, shutil, subprocess, json, re
-S = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+S = os.path.dirname(os.path.abspath(__file__))
 CH3 = '/home/user/dr-creep-in-zig/site/code/ch03/'
 W = S + '/errs2'; shutil.rmtree(W, ignore_errors=True); os.makedirs(W)
 shutil.copytree('/home/user/dr-creep-in-zig/site/code/machine', W + '/machine', ignore=shutil.ignore_patterns('.zig-cache', 'zig-out'))

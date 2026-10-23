@@ -3,7 +3,7 @@
 import sys, os, re, json
 sys.path.insert(0, os.path.dirname(__file__))
 from listings import STEPS, CH3, f3, span, fn
-S = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+S = os.path.dirname(os.path.abspath(__file__))
 outputs = json.load(open(S + '/outputs.json'))
 errs = json.load(open(S + '/errs.json'))
 steps = {s['key']: s for s in STEPS}

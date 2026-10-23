@@ -3,8 +3,9 @@
 import sys, os, shutil, subprocess, re
 sys.path.insert(0, os.path.dirname(__file__))
 from listings import STEPS, CH2, CH3
-S = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-work = S + '/rebuild'
+S = os.path.dirname(os.path.abspath(__file__))
+import tempfile
+work = os.environ.get('WORK') or os.path.join(tempfile.gettempdir(), 'ch03-rebuild')
 shutil.rmtree(work, ignore_errors=True); os.makedirs(work)
 shutil.copytree('/home/user/dr-creep-in-zig/site/code/machine', work + '/machine', ignore=shutil.ignore_patterns('.zig-cache', 'zig-out'))
 P = work + '/my-creep/'
@@ -72,7 +73,7 @@ for st in STEPS:
         for cmd in (['zig', 'fmt', '--check', 'src'], ['zig', 'build'], ['zig', 'build', 'test']):
             r = subprocess.run(cmd, cwd=P, capture_output=True, text=True)
             if r.returncode: print(tag, ' '.join(cmd), 'FAILED\n', r.stdout[-2000:], r.stderr[-3000:]); sys.exit(1)
-        d = S + '/rb-' + tag; shutil.rmtree(d, ignore_errors=True)
+        d = work + '-rb-' + tag; shutil.rmtree(d, ignore_errors=True)
         r = subprocess.run(['zig', 'build', 'run', '--'] + RUNS[tag] + ['--dump', d], cwd=P, capture_output=True, text=True)
         if r.returncode: print(tag, 'run FAILED', r.stderr[-2000:]); sys.exit(1)
         outputs[tag] = r.stdout.replace(d, 'frames')
