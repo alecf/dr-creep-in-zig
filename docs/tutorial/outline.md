@@ -188,8 +188,9 @@ cooperate on a switch.
 ## The machine we target
 
 The reader writes the game in ordinary Zig against a small **"fantasy
-C64"** module, `hw`, written in chapter 1 and provided as a package after
-that. `hw` is a **deliberately forgiving emulator**: it does not model
+C64"** module, provided ready-made as the in-world **Comet 64** computer
+(see `site/AUTHORING.md` §3). The reader writes the game, not the
+hardware. `hw` is a **deliberately forgiving emulator**: it does not model
 cycle timing, bus quirks or chip bugs. It models only the hard limits, and
 it makes those impossible to ignore. Breaking a limit fails loudly: a
 compile error where possible, otherwise a red overlay and a log line.
