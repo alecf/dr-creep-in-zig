@@ -1,0 +1,14 @@
+<style>
+.ch01-by { align-self: flex-start; display: inline-grid; grid-template-columns: auto repeat(8, minmax(2.2em, 3em)); gap: 4px 3px; align-items: center; }
+.ch01-by .dg-label { text-align: center; }
+.ch01-by .ch01-by-head { text-align: right; padding-right: 8px; }
+.ch01-by .dg-bit { min-width: 0; font-weight: 700; }
+.ch01-by .ch01-by-w { text-align: center; font-variant-numeric: tabular-nums; }
+.ch01-by-sum { color: var(--ink-soft); }
+</style>
+<div class="ch01-by" role="table" aria-label="A byte with all eight bits on, and what each bit is worth">
+<span role="row" style="display:contents"><span class="dg-label ch01-by-head" role="rowheader">bit</span><span class="dg-label" role="columnheader">7</span><span class="dg-label" role="columnheader">6</span><span class="dg-label" role="columnheader">5</span><span class="dg-label" role="columnheader">4</span><span class="dg-label" role="columnheader">3</span><span class="dg-label" role="columnheader">2</span><span class="dg-label" role="columnheader">1</span><span class="dg-label" role="columnheader">0</span></span>
+<span role="row" style="display:contents"><span class="dg-label ch01-by-head" role="rowheader">value</span><span class="dg-bit dg-on" role="cell">1</span><span class="dg-bit dg-on" role="cell">1</span><span class="dg-bit dg-on" role="cell">1</span><span class="dg-bit dg-on" role="cell">1</span><span class="dg-bit dg-on" role="cell">1</span><span class="dg-bit dg-on" role="cell">1</span><span class="dg-bit dg-on" role="cell">1</span><span class="dg-bit dg-on" role="cell">1</span></span>
+<span role="row" style="display:contents"><span class="dg-label ch01-by-head" role="rowheader">worth</span><span class="ch01-by-w" role="cell">128</span><span class="ch01-by-w" role="cell">64</span><span class="ch01-by-w" role="cell">32</span><span class="ch01-by-w" role="cell">16</span><span class="ch01-by-w" role="cell">8</span><span class="ch01-by-w" role="cell">4</span><span class="ch01-by-w" role="cell">2</span><span class="ch01-by-w" role="cell">1</span></span>
+</div>
+<div class="ch01-by-sum">128 + 64 + 32 + 16 + 8 + 4 + 2 + 1 = <b>255</b>, the biggest u8</div>

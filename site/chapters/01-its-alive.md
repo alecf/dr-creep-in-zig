@@ -343,9 +343,10 @@ meter**, the thin bar in the bottom border, shows how much of each frame
 your code used: green, then yellow when it's tight, then red when a frame
 goes over. Chapter 2 teaches you to read it properly.
 
-A JavaScript game has a frame budget too, about 16 ms, but on a modern
-machine that's a vast, comfy room you rarely think about. Here it's a
-broom cupboard. So every chapter has a
+A JavaScript game has a frame budget too, about 16 ms, but a modern
+machine gets so much done in that time that you rarely think about it.
+The Comet 64 gets far less done in its fiftieth of a second: where the
+browser gives you a ballroom, this is a broom cupboard. So every chapter has a
 second job besides "make it work": make it fit. Think of it as the
 level's clock. (`boot` is on the house: the meter starts with the first
 frame.)
@@ -365,10 +366,12 @@ Constants (tables, pictures, the castle you ship) can be Zig `const`s,
 part of the program image on the disk. Anything that changes gets an
 address.
 
-Why so strict? A Zig `var` hides at an address only the compiler knows,
-and on a 64 KB machine a byte nobody wrote down is a byte you'll end up
-spending twice. There's no "somewhere else" on this machine: there's the
-64 KB, and you decide what goes where. And the rule pays for itself. With
+Why so strict? A Zig `var` lives at an address the compiler picks, and
+you never see it. On a 64 KB machine that's dangerous: if a byte isn't
+listed in the memory map, sooner or later you'll put something else in
+the same byte, and the two will quietly overwrite each other. There's no
+"somewhere else" on this machine: there's the 64 KB, and you decide what
+goes where. And the rule pays for itself. With
 all the state in `m.ram`, the widgets can show it live, tests can check
 it, and you never wonder where something is: it's wherever the map says.
 
