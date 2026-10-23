@@ -380,9 +380,13 @@ Keep a running list of rooms and their room numbers in the Decision log.
   beam during `frame` with the display on; otherwise it's a **loading
   pause** (grey bar, counted in `stats.loading`, not an overrun). Lines
   drawn at end-of-frame completion don't count, so "blank → big job →
-  re-enable → return" is a loading pause whose final picture is the
-  finished screen. Consequence the chapters must teach: blank in the
-  first 3,213 cycles (before raster 51). Card §6 "Racing the beam" /
+  re-enable → return" is still a loading pause, **but** (corrected in the
+  ch02 review) its picture is the rest of the current lap drawn with the
+  display on, so the new screen shows from wherever the beam stopped
+  downwards for every slot of the pause. The pattern the chapters teach
+  (ch02, and card §6 now): blank in the first 3,213 cycles (before raster
+  51) of the long frame, and re-enable at the top of the **next** frame,
+  also before raster 51. Card §6 "Racing the beam" /
   "Blank the screen for big jobs".
 - **`m.load(dst, bytes)`** copies a Zig slice (a `const` table, the
   program image) into RAM at 8 cycles/byte (free during boot, like
@@ -527,10 +531,17 @@ Keep a running list of rooms and their room numbers in the Decision log.
   the provided machine (§2), and ch1 doesn't look inside them. Don't flag
   its absence.
 - **Chapter 2 file, title, images.** `site/chapters/02-ghosts-in-the-bitmap.md`,
-  `title: "Ghosts in the Bitmap"`. Screenshots: `02-title.png` and
+  `title: "Ghosts in the Bitmap"` (paid off in the tear Secret Passage:
+  "the ghost in the bitmap, half of one frame haunting the next"). Title
+  text colours: light blue / light green / white. The tear experiment is
+  `m.work(14500);` before `player.steer(m)` plus `^ 8` removed, `--frames
+  72 --press 20:f:5 --press 60:r:30`, torn `frame_00071`. Screenshots: `02-title.png` and
   `02-room.png` (full frames at 2×, 768×544) and `02-tear.png` (a zoomed
   two-panel close-up of the explorer, torn vs. double-buffered, 656×256;
-  close-ups are fine when a full frame would hide the point).
+  close-ups are fine when a full frame would hide the point). ch02 has no
+  closing "complete `main.zig`" listing (cut for length in review; every
+  change is still shown as an insertion listing, and the rebuild from
+  listings is byte-identical).
 - **Game source layout (from ch02).** Adds `screen.zig` (row table,
   `plot`/`codeAt`, `clear`, `drawShape`), `shapes.zig` (shape-table
   format, `Id`, comptime packer, `address`), `art.zig` (all pictures, bulk
@@ -546,16 +557,17 @@ Keep a running list of rooms and their room numbers in the Decision log.
   (`text_widen` 16 B at `$0300`, `text_glyph` scratch shape 23 B at
   `$0310`, `text_buffer` 48 B at `$0330`, `text_buffer_size`); program
   image `$0800–$66FF` (last = `stars.first - 1`); star map `$6700–$67FF`;
-  shape table `$6800–$77FF` (4 KB region, 1,059 B used); row table
+  shape table `$6800–$77FF` (4 KB region, 1,044 B used); row table
   `$BB00–$BC8F` (200 × u16 LE); new hardware row: screen plane
   `$CC00–$CFE7`.
 - **Modes and loading pauses.** `const Mode = enum(u8) { draw_title,
   title, draw_room, room }` in `main.zig`; power-on 0 = `draw_title`.
   Every whole-screen draw is a `draw_*` mode whose branch starts with
-  `m.poke(hw.control, 0)`, draws, re-enables, and sets the next mode (a
-  loading pause; ch1's "the meter will finally have something to say" is
-  paid off here). Title draw 156,428 cycles (8 slots), room 125,476 (7);
-  `clear` alone is 80,000.
+  `m.poke(hw.control, 0)`, draws, and sets the next mode; the next mode's
+  branch starts with `m.poke(hw.control, machine.display_on)` (4 cycles a
+  frame) so the reveal is one clean cut (a loading pause; ch1's "the
+  meter will finally have something to say" is paid off here). Title draw
+  156,200 cycles (8 slots), room 126,172 (7); `clear` alone is 80,000.
 - **Meter buckets (stable).** 0 = everything else (frame glue, input),
   1 = drawing into the bitmap/planes, 2 = sprites (player show/steer and
   frame unpacking). Constants `bucket_drawing = 1`, `bucket_sprites = 2`
@@ -603,7 +615,8 @@ Keep a running list of rooms and their room numbers in the Decision log.
   draws it. No AND mask (letters OR onto what's there) and no font/size
   byte yet: **ch3** must decide how the castle Text object's font byte is
   handled. ch2 told readers "Chapter 3 points `draw` straight at text
-  inside the castle file".
+  inside the castle file". `draw` stops at the right edge (`left >= 152`):
+  letters past it are left out, 20 to a line (no overflow panic).
 - **Sprites.** Player = sprite 0, multicolour (`$D01C` bit 0 at boot);
   shared colours set once at boot: `$D025` pink (skin), `$D026` orange
   (hat/belt/boots) — every later multicolour sprite shares them. Double
@@ -613,23 +626,43 @@ Keep a running list of rooms and their room numbers in the Decision log.
   8 fat px × 21 rows, coat = own colour white (flags), four right-facing
   drawings plus `mirror` for left. Walk frame = `(x >> 2) & 0b11`; standing
   = frame 0 of the facing direction (derived from `player_frame`).
-  Unpack ≈ 630 cycles; room frame 100 cycles idle, 728 on a frame change.
+  Unpack ≈ 630 cycles; room frame 104 cycles idle, 732 on a frame change;
+  title frame 6,698 (stars 6,660). A `comptime` block in `player.zig`
+  fails the build unless the eight explorer IDs are consecutive.
 - **Player API at ch02.** `start` (boot: multicolour, shared colours,
   `player_last_stick = $FF`, `player_block = 8`), `enter` (room drawn:
   x 160, y on floor, first frame, enable), `show`, `steer` (left/right
   only; up/down and the fire colour cycle removed), `pressedFire` (edge
-  detector, now `pub`, used by the title), private `held` (still the only
-  place active-low is spelled out). `room.floor_top` = 184. The X wall at
-  255 remains (ch4 promise unchanged).
+  detector, now `pub`, used by the title; it also stores the stick, so it
+  must be called exactly once a frame), private `held` (still the only
+  place active-low is spelled out). `room.floor_top` = 192 (unchanged
+  from ch01; the floor walkway fills the bottom cell row). The X wall at
+  255 remains (ch4 promise unchanged). **Note for ch5 (doorbells):** in
+  room mode nothing updates `player_last_stick` any more. Before a
+  doorbell tests for a press only while the explorer stands at it,
+  restructure: update `player_last_stick` once per frame (e.g. at the end
+  of `steer`) and make the press test a pure function of `stick` and
+  `before`, or a fire held across the room counts as a fresh press.
 - **Ladder bookkeeping (ch02).** Taught: shifts/masks (plot, packing two
   colours in a screen byte, the flags byte), pointers (row table, shape
   directory, string walking; Zig `*T` = typed address), lookup tables vs
-  `mul8` (title stars: 6,672 vs 22,020 cycles/frame, the latter overruns).
+  `mul8` (title stars: 6,660 vs 22,020 cycles/frame, the latter overruns).
   Used in passing with forward pointers: `^` (flip bit 3; "Chapter 8 has a
   lot more to say about `^`"), `+%` wrapping add (ch4 covers overflow),
   a comptime LCG for star positions ("Chapter 8 has the proper story of
-  making numbers look random"), `comptime` blocks, `@field`/`@tagName`
-  (ch3 teaches comptime properly; it can refer back to `shapes.zig`).
+  making numbers look random"), `comptime` blocks, `@field`/`@tagName`.
+  **ch3 must build on ch2's comptime use, not introduce comptime from
+  zero:** ch2 has a Pro Tip "Reading comptime code" ("Chapter 3 takes
+  `comptime` apart properly") that already covered top-level `const`s
+  being evaluated at compile time, `blk:` as only a label, `comptime`
+  parameters, `?T` + `if (x) |v|`, `[_]u8{x} ** n`, `undefined`, and
+  freezing a comptime value (`const done = x; ... &done`). ch3 should
+  refer back to `shapes.zig`/`pack` and go deeper (branch quota, comptime
+  vs runtime, type-returning functions). Also taught early: **several
+  flags in one byte** (the sprite-frame flags byte, ladder row 4), so ch4
+  should refer back rather than re-teach; **little-endian** was only
+  mentioned ("two-byte values on the Comet go low byte first; Chapter 3
+  says why"), so ch3 owes that explanation.
 - **Zig 0.16 gotchas found in ch02.** `&`, `^` and `|` share one
   precedence level (left to right), unlike C/JS: always parenthesise mixed
   bitwise expressions (the chapter has a Pro Tip). A `comptime { ... return

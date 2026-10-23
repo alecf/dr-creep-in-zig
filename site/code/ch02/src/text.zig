@@ -33,7 +33,8 @@ pub fn start(m: *Machine) void {
 
 /// Print the string at `addr` with its top-left corner at fat pixel
 /// (x, y). Letters are 8 fat pixels wide. The string ends at the first
-/// byte with bit 7 set, which is its last letter.
+/// byte with bit 7 set, which is its last letter; letters that would run
+/// off the right edge of the screen are left out.
 pub fn draw(m: *Machine, x: u8, y: u8, color: Color, addr: u16) void {
     // Glyph pixels are code 01, whose colour is the high half of the
     // screen-plane byte.
@@ -59,7 +60,7 @@ pub fn draw(m: *Machine, x: u8, y: u8, color: Color, addr: u16) void {
             m.work(10); // the shift, the mask, the loop
         }
         screen.drawShape(m, .glyph, left, y);
-        if (letter & 0x80 != 0) break;
+        if (letter & 0x80 != 0 or left >= 160 - 8) break; // the end, or the edge
     }
 }
 

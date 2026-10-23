@@ -17,7 +17,8 @@ const map = @import("map.zig");
 const art = @import("art.zig");
 
 /// Every shape, by ID. Each name except `glyph` has a picture of the same
-/// name in art.zig.
+/// name in art.zig. New shapes go at the end: the walk counts on the
+/// explorer's frames being in a row, and IDs will be stored in castles.
 pub const Id = enum(u8) {
     glyph, // built by text.zig, one letter at a time
     walkway,
@@ -125,7 +126,7 @@ pub const table: []const u8 = build();
 
 fn build() []const u8 {
     comptime {
-        @setEvalBranchQuota(200_000);
+        @setEvalBranchQuota(200_000); // compile-time loops are capped; this raises the cap
         const ids = std.enums.values(Id);
         var directory: []const u8 = &.{};
         var shapes: []const u8 = &.{};

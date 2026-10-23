@@ -13,7 +13,7 @@ pub const star_count = 128;
 /// Where the stars are: x then y for each, scattered while the game
 /// compiles, keeping clear of the cells the words and the moon use.
 pub const star_map: [star_count * 2]u8 = blk: {
-    @setEvalBranchQuota(100_000);
+    @setEvalBranchQuota(100_000); // compile-time loops are capped; this raises the cap
     var out: [star_count * 2]u8 = undefined;
     var seed: u32 = 1984;
     var n = 0;
@@ -43,7 +43,7 @@ pub fn draw(m: *Machine) void {
     m.fill(hw.color_ram, 1000, @intFromEnum(Color.white));
 
     screen.drawShape(m, .moon, 124, 4);
-    text.say(m, 24, 40, .yellow, "THE CASTLES OF");
+    text.say(m, 24, 40, .light_blue, "THE CASTLES OF");
     text.say(m, 44, 56, .light_green, "DR. CREEP");
     text.say(m, 40, 104, .white, "PRESS FIRE");
 
@@ -57,8 +57,8 @@ pub fn draw(m: *Machine) void {
     screen.drawShape(m, .door, 76, 168);
 }
 
-/// Every frame: move each star one step through off, dim, bright and
-/// brightest, each star a little out of step with the last.
+/// Every frame, replot the stars. Every eighth frame each one moves a step
+/// through off, dim, bright and brightest, a little out of step with the last.
 pub fn twinkle(m: *Machine) void {
     const phase = m.peek(map.game_tick) >> 3; // a new step every 8 frames
     var i: u8 = 0;

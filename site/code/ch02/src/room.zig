@@ -7,7 +7,7 @@ const screen = @import("screen.zig");
 const text = @import("text.zig");
 
 /// Display row (0-199) of the top of the floor the explorer walks on.
-pub const floor_top = 184;
+pub const floor_top = 192; // the bottom row of cells, as in Chapter 1
 
 /// Draw the whole room. Far too big for one frame: call it with the
 /// display blanked.

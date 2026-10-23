@@ -24,6 +24,10 @@ const floor_y = video.sprite_origin_y + room.floor_top - 21; // boots on the flo
 /// The first frame of each walk: four frames facing right, then four left.
 const right_0 = @intFromEnum(shapes.Id.explorer_right_0);
 const left_0 = @intFromEnum(shapes.Id.explorer_left_0);
+comptime {
+    if (left_0 != right_0 + 4 or @intFromEnum(shapes.Id.explorer_left_3) != left_0 + 3)
+        @compileError("the explorer's eight frames must be in a row in shapes.Id");
+}
 
 /// Once, at power-on.
 pub fn start(m: *Machine) void {
@@ -90,7 +94,8 @@ fn setFrame(m: *Machine, id: shapes.Id) void {
     m.poke(map.player_frame, @intFromEnum(id));
 }
 
-/// Was fire pressed this frame? (Held now, and not last frame.)
+/// Was fire pressed this frame? (Held now, and not last frame.) It also
+/// remembers this frame's stick for next time, so call it once a frame.
 pub fn pressedFire(m: *Machine) bool {
     const stick = m.peek(hw.joy1);
     const before = m.peek(map.player_last_stick);

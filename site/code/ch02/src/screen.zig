@@ -64,7 +64,8 @@ pub fn clear(m: *Machine) void {
     m.fill(hw.color_ram, 1000, 0);
 }
 
-/// Draw shape `id` with its top-left corner at fat pixel (x, y). x is
+/// Draw room shape (or glyph) `id` with its top-left corner at fat pixel
+/// (x, y); sprite frames have no colours, so they don't belong here. x is
 /// rounded down to a multiple of 4, because shapes sit on whole bitmap
 /// bytes. Anything past the right or bottom edge of the screen is cut off.
 pub fn drawShape(m: *Machine, id: shapes.Id, x: u8, y: u8) void {

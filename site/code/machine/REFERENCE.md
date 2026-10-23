@@ -253,12 +253,21 @@ and no collisions are reported. A long frame that never showed the
 display is a **loading pause**, not an overrun. The meter shows a grey
 bar instead. Blank it early, before the beam reaches the display (in
 the first 3,213 cycles); a display line already drawn with the display
-on counts. Switch the display back on when you're done, and the rest of
-the picture is drawn with your finished screen:
+on counts.
+
+Switch the display back on at the start of the **next** frame, before the
+beam reaches the display, and the player sees one clean cut from blank to
+the finished screen. (A long frame ends partway down a sweep of the beam.
+Switch the display on at the end of it instead, and the beam finishes
+that sweep with the display on: the bottom of the new screen shows under
+a blank top for the rest of the pause.)
 
 ```zig
-m.poke(hw.control, 0);                    // blank
+// The long frame:
+m.poke(hw.control, 0);                    // blank, in the first 3,213 cycles
 drawTheWholeRoom(m);                      // as long as it takes
+
+// The next frame, first thing:
 m.poke(hw.control, machine.display_on);   // and reveal
 ```
 

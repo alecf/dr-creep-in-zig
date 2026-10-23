@@ -38,10 +38,10 @@ pub fn frame(m: *Machine) void {
             m.poke(hw.control, 0); // blank first, inside the first 3,213 cycles
             m.bucket(bucket_drawing);
             title.draw(m);
-            m.poke(hw.control, machine.display_on);
-            setMode(m, .title);
+            setMode(m, .title); // the display comes back on next frame
         },
         .title => {
+            m.poke(hw.control, machine.display_on); // before the beam reaches the display
             m.bucket(bucket_drawing);
             title.twinkle(m);
             m.bucket(0);
@@ -53,12 +53,12 @@ pub fn frame(m: *Machine) void {
             room.draw(m);
             m.bucket(bucket_sprites);
             player.enter(m);
-            m.poke(hw.control, machine.display_on);
             setMode(m, .room);
         },
         .room => {
             // Hardware first. The beam reaches the top of the display 3,213
             // cycles into the frame; registers written before then can't tear.
+            m.poke(hw.control, machine.display_on);
             m.bucket(bucket_sprites);
             player.show(m);
 
