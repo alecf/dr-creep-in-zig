@@ -25,26 +25,12 @@ You know the look: on machines like this one the pixels are wide, and a
 colour never quite ends where you'd like it to. That's the multicolour
 bitmap (card section 3). The display is 320 × 200, but a pixel takes
 **two bits**, so each one is two dots wide: 160 **fat pixels** across.
-A byte holds **four fat pixels**, leftmost in the top two bits:
+A byte holds **four fat pixels**, leftmost in the top two bits. The two
+bits aren't a colour but a **code** that says where to *find* one:
 
-```
-  bit:     7   6     5   4     3   2     1   0
-         ┌───────┬───────┬───────┬───────┐
-  byte:  │ 0   1 │ 1   0 │ 1   1 │ 0   0 │   = $6C
-         └───────┴───────┴───────┴───────┘
-          pixel 0 pixel 1 pixel 2 pixel 3
-          code 01 code 10 code 11 code 00
-```
-
-A pixel's two bits aren't a colour. They're a **code** that says where
-to *find* its colour:
-
-| Code | Colour comes from |
-|---|---|
-| `00` | the background colour, `$D021`, shared by the whole screen |
-| `01` | this cell's screen-plane byte (`$CC00` + cell), **high** four bits |
-| `10` | this cell's screen-plane byte, **low** four bits |
-| `11` | this cell's colour-RAM byte (`$D800` + cell) |
+:::diagram ch02-fat-pixels
+Byte `$6C` in a cell with the walkway's colours: screen plane `$9A`, colour RAM `$0F`.
+:::
 
 A **cell** is 8 × 8 dots (4 fat pixels across, 8 rows down), 40 cells by
 25. Each cell owns one screen-plane byte and one colour-RAM byte, so a
@@ -56,8 +42,8 @@ So `$FF` is `11 11 11 11`, four pixels of "whatever colour RAM says".
 **One byte held four pixels; a second byte coloured the whole cell.** (A
 browser canvas spends four bytes on *each* pixel.)
 
-Notice the screen-plane byte holds *two* colours, one per half: a palette
-number is 0–15, four bits, and a byte has room for two. That's the
+The screen-plane byte holds *two* colours: a palette number is 0–15,
+four bits, and a byte has room for two. That's the
 chapter's first new idea, **packing several values into one byte**, and
 this machine does it everywhere.
 
@@ -189,9 +175,11 @@ The card gives the address of the byte holding fat pixel (`x`, `y`):
 byte = $E000 + (y / 8) × 320 + (x / 4) × 8 + (y mod 8)
 ```
 
-That's Chapter 1's cell layout: the line inside the cell, plus 8 bytes
-per cell to the left, plus 320 per row of cells above. Here's the first
-version, straight from the card. The machine has no
+:::diagram ch02-cell-order
+Chapter 1's cell layout. A row of pixels isn't one run of bytes: fat pixel (6, 3) is `$E000 + 0 × 320 + 1 × 8 + 3 = $E00B`.
+:::
+
+Here's the first version, straight from the card. The machine has no
 multiply instruction, so `× 40` is a call to `m.mul8`, the card's multiply
 routine, at **120 cycles**. Keep an eye on that number.
 
@@ -500,9 +488,11 @@ over and over, and the answers never change. So answer each once, at
 boot, and from then on **look them up**.
 
 That's the **row table**: 200 two-byte addresses at `$BB00`. We can build
-it without multiplying, by walking down the screen: inside a cell the
-next row is the next byte, and below a cell's last row is the top of the
-cell underneath, 313 bytes on.
+it without multiplying, by walking down the screen:
+
+:::diagram ch02-row-table
+Each entry is a row's first byte, low byte first. Down a cell is +1; from a cell's last line to the top of the one below is +313.
+:::
 
 **`src/screen.zig`** (add above `rowAddress`)
 
@@ -615,23 +605,13 @@ You store **pieces**, once, and a room says where to put them.
 The **shape table** holds every piece and gives each a number, its
 **shape ID**. Room pieces, sprite frames and even letters go through it:
 
-```
-  $6800  ┌────────────────────────────────────────┐
-         │ directory: a 2-byte pointer per shape  │  shape 0's address
-         │                                        │  shape 1's address ...
-         ├────────────────────────────────────────┤
-         │ shape: width │ height │ flags │        │  width in bytes (4 fat pixels each)
-         │   pixels: width × height bytes         │  row by row, top first
-         │   screen plane: width × cells bytes    │  room shapes only:
-         │   colour RAM:   width × cells bytes    │  cells = ceil(height / 8) rows
-         ├────────────────────────────────────────┤
-         │ the next shape ...                     │
-```
+:::diagram ch02-shape-entry
+The directory, then each shape: a header, its pixels, and (room shapes only) a screen-plane and a colour-RAM byte per cell.
+:::
 
 Shapes are all different sizes, so you can't find shape 7 by
-multiplying, but a directory finds any of them in one read of
-`$6800 + id × 2`. The castle file's pictures use the same layout, so one
-drawing routine will serve both.
+multiplying, but the directory finds any of them in one read. The castle
+file's pictures use the same layout, so one drawing routine serves both.
 
 ### Drawing pictures as text
 
@@ -671,9 +651,7 @@ pub const walkway = room(stone, &.{
 });
 ```
 
-`room` attaches three colours: brown mortar (01), pink brick (10), and a
-light grey top edge (11). Squint and you can see the bricks, offset row
-to row. The rest of `art.zig` is about 370 lines of pictures; copy it
+`room` attaches the three colours you saw above. The rest of `art.zig` is about 370 lines of pictures; copy it
 from the checkpoint (`code/ch02/src/art.zig`, see the Warp Zone) into
 your `src/`. Now the code that turns strings into the table:
 
@@ -1478,14 +1456,13 @@ table, and only the one on screen needs a block.
 ### The Double Buffer Power-Up
 
 Here's the catch. Unpacking a frame is about 630 cycles of writes, and
-the VIDEO chip reads the block every time the beam passes the explorer.
-Unpack into the block on screen while the beam is crossing him, and the
-top of him shows the old frame and the bottom the new: a tear.
+the VIDEO chip reads the block as the beam passes the explorer. Today
+the unpack is done long before that, but a room full of monsters will
+push it later. So each sprite gets **two blocks**:
 
-Today it finishes long before the beam reaches the floor, but a room
-full of monsters will push it later. So each sprite gets **two
-blocks**: the chip shows one while we unpack into the other, and we flip
-the sprite pointer, one byte, at the top of the next frame.
+:::diagram ch02-double-buffer
+Unpack into the block the beam isn't reading, and flip the pointer, one byte, at the top of the next frame.
+:::
 
 The explorer uses blocks 0 and 8, and `player_block` at `$0204` says
 which one is showing. 0 is `0000_0000` and 8 is `0000_1000`, differing

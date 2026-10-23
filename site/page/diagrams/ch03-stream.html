@@ -1,0 +1,40 @@
+<style>
+.ch03-st { display: grid; grid-template-columns: max-content 1fr; gap: 8px 10px; align-items: start; }
+.ch03-st .a { color: var(--ink-soft); font-size: .72rem; padding-top: 5px; }
+.ch03-st .row { display: flex; flex-wrap: wrap; gap: 4px; align-items: flex-start; }
+.ch03-st .ck { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; }
+.ch03-st .ck > span { padding: 3px 5px; border-radius: 4px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ch03-st .ck > i { font-style: normal; font-size: .6rem; line-height: 1.1; color: var(--ink-soft); white-space: nowrap; }
+.ch03-st .t > span, .ch03-key .t { box-shadow: inset 0 0 0 2px var(--accent); font-weight: 700; color: var(--accent); }
+.ch03-st .n > span, .ch03-key .n { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.ch03-st .r > span, .ch03-key .r { background: var(--code-bg); box-shadow: inset 0 0 0 1px var(--rule); }
+.ch03-st .e > span, .ch03-key .e { background: var(--accent); color: var(--sheet); }
+.ch03-st .sch { grid-column: 2; margin-top: -4px; font: 400 .6rem/1.2 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+.ch03-st .sep { grid-column: 1 / -1; border-top: 1px dashed var(--rule); padding-top: 4px; font-size: .7rem; color: var(--ink-soft); }
+.ch03-key { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: .72rem; color: var(--ink-soft); }
+.ch03-key span { padding: 1px 6px; border-radius: 4px; color: var(--ink); }
+</style>
+<div class="ch03-key"><span class="t">03 08</span>tag <span class="n">02</span>count <span class="r">20 28 …</span>record <span class="e">00</span>end marker</div>
+<div class="ch03-st">
+  <span class="a">$7909</span>
+  <div class="row"><span class="ck t"><span>03 08</span><i>doors</i></span><span class="ck n"><span>02</span><i>two</i></span><span class="ck r"><span>20 28 03 00 01 00 06 00</span><i>door 0</i></span><span class="ck r"><span>98 60 01 00 00 0E 0D 00</span><i>door 1</i></span></div>
+  <span class="sch">counted</span>
+  <span class="a">$791C</span>
+  <div class="row"><span class="ck t"><span>06 08</span><i>walkways</i></span><span class="ck r"><span>0F 18 48</span><i>15 long</i></span><span class="ck r"><span>11 6C 80</span><i>17 long</i></span><span class="ck r"><span>28 10 C0</span><i>the floor</i></span><span class="ck e"><span>00</span><i>end</i></span></div>
+  <span class="sch">end marker</span>
+  <span class="a">$7928</span>
+  <div class="row"><span class="ck t"><span>09 08</span><i>poles</i></span><span class="ck r"><span>10 40 48</span><i>&nbsp;</i></span><span class="ck e"><span>00</span><i>end</i></span><span class="ck t"><span>0C 08</span><i>ladders</i></span><span class="ck r"><span>09 78 80</span><i>&nbsp;</i></span><span class="ck e"><span>00</span><i>end</i></span></div>
+  <span class="sch">end marker, twice</span>
+  <span class="a">$7934</span>
+  <div class="row"><span class="ck t"><span>0F 08</span><i>bells</i></span><span class="ck n"><span>01</span><i>one</i></span><span class="ck r"><span>88 68 01</span><i>rings door 1</i></span></div>
+  <span class="sch">counted</span>
+  <span class="a">$793A</span>
+  <div class="row"><span class="ck t"><span>33 08</span><i>text</i></span><span class="ck r"><span>1C 08 0F 21</span><i>x y colour style</i></span><span class="ck r"><span>54 48 45 … 4C CC</span><i>THE ENTRANCE HALL</i></span><span class="ck e"><span>00</span><i>end</i></span></div>
+  <span class="sch">end marker</span>
+  <span class="a">$7952</span>
+  <div class="row"><span class="ck e"><span>00 00</span><i>end of room</i></span></div>
+  <span class="sep">From the final room, at $88C5: one picture, drawn in six places</span>
+  <span class="a">$88C5</span>
+  <div class="row"><span class="ck t"><span>36 08</span><i>picture</i></span><span class="ck r"><span>01 08 00 04 04 5D … 77 01</span><i>a sparkle, 1×8</i></span><span class="ck r"><span>40 40</span><i>x y</i></span><span class="ck r"><span>78 48</span><i>&nbsp;</i></span><span class="ck r"><span>34 68</span><i>&nbsp;</i></span><span class="ck r"><span>84 70</span><i>&nbsp;</i></span><span class="ck r"><span>48 80</span><i>&nbsp;</i></span><span class="ck r"><span>70 88</span><i>&nbsp;</i></span><span class="ck e"><span>00</span><i>end</i></span></div>
+  <span class="sch">one tag per thing</span>
+</div>

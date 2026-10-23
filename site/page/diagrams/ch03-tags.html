@@ -1,0 +1,45 @@
+<style>
+.ch03-tg { display: flex; flex-direction: column; gap: 6px; }
+.ch03-tg .cells { display: flex; flex-wrap: wrap; gap: 3px; align-items: stretch; }
+.ch03-tg .cell { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 2.6em; padding: 3px 4px; border-radius: 4px; background: var(--code-bg); box-shadow: inset 0 0 0 1px var(--rule); }
+.ch03-tg .cell small { font-size: .6rem; color: var(--ink-soft); line-height: 1.1; }
+.ch03-tg .jmp { min-width: 6.4em; }
+.ch03-tg .hit { box-shadow: inset 0 0 0 2px var(--accent); }
+.ch03-tg .hit small { color: var(--accent); }
+.ch03-tg .null { color: var(--ink-soft); opacity: .7; }
+.ch03-tg .kind { background: color-mix(in srgb, var(--accent) 22%, transparent); box-shadow: none; }
+.ch03-tg .gap { background: none; box-shadow: none; justify-content: center; color: var(--ink-soft); min-width: 1.4em; }
+.ch03-tg .sum { font-size: .75rem; color: var(--ink-soft); }
+.ch03-tg .sum b { color: var(--accent); }
+</style>
+<div class="ch03-tg">
+  <span class="dg-label">1984: the tag is where to jump</span>
+  <div class="cells">
+    <span class="cell jmp">4C lo hi<small>$0803 door code</small></span>
+    <span class="cell jmp hit">4C lo hi<small>$0806 walkways ◂ tag</small></span>
+    <span class="cell jmp">4C lo hi<small>$0809 pole code</small></span>
+    <span class="cell gap">…</span>
+    <span class="cell jmp">4C lo hi<small>$0836 picture code</small></span>
+  </div>
+  <span class="sum">4C is the processor's "jump"; the two bytes after it say where to.</span>
+</div>
+<div class="ch03-tg">
+  <span class="dg-label">Ours: tag − $0803 looks up the kind</span>
+  <div class="cells">
+    <span class="cell kind">door<small>0</small></span>
+    <span class="cell null">null<small>1</small></span>
+    <span class="cell null">null<small>2</small></span>
+    <span class="cell kind hit">walkway<small>3 ◂ $0806</small></span>
+    <span class="cell null">null<small>4</small></span>
+    <span class="cell null">null<small>5</small></span>
+    <span class="cell kind">pole<small>6</small></span>
+    <span class="cell gap">…</span>
+    <span class="cell kind">text<small>48</small></span>
+    <span class="cell null">null<small>49</small></span>
+    <span class="cell null">null<small>50</small></span>
+    <span class="cell kind">image<small>51</small></span>
+    <span class="cell null">null<small>52</small></span>
+    <span class="cell null">null<small>53</small></span>
+  </div>
+  <span class="sum">$0806 − $0803 = <b>3</b> → walkway. Kind <i>k</i> sits at 3<i>k</i>, so its tag is $0803 + 3<i>k</i>.</span>
+</div>

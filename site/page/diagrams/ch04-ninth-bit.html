@@ -1,0 +1,47 @@
+<style>
+.ch04-nb { display: grid; gap: 16px; min-width: 330px; }
+.ch04-nb .ch04-lane { display: grid; gap: 3px; }
+.ch04-nb .ch04-bar { position: relative; height: 22px; border-radius: 3px; }
+.ch04-nb .ch04-bar > span { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; padding: 0 6px; font-size: .72rem; white-space: nowrap; overflow: hidden; border-radius: 3px; }
+.ch04-nb .ch04-screen { background: var(--c0); color: var(--c1); justify-content: space-between; }
+.ch04-nb .ch04-fits { background: color-mix(in srgb, var(--accent) 22%, var(--sheet)); box-shadow: inset 0 0 0 1px var(--accent); }
+.ch04-nb .ch04-over { background: repeating-linear-gradient(135deg, var(--accent) 0 3px, transparent 3px 7px); box-shadow: inset 0 0 0 2px var(--accent); }
+.ch04-nb .ch04-ends { display: flex; justify-content: space-between; font-size: .72rem; color: var(--ink-soft); }
+.ch04-nb .ch04-mark { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
+.ch04-nb .ch04-tags { position: relative; height: 1.3em; font-size: .72rem; }
+.ch04-nb .ch04-tags > span { position: absolute; white-space: nowrap; transform: translateX(-100%); padding-right: 4px; }
+.ch04-nb .ch04-split { display: grid; grid-template-columns: auto auto minmax(8em, 1fr); gap: 4px 10px; align-items: center; }
+.ch04-nb .ch04-split .dg-bit { min-width: 1.4em; }
+.ch04-nb .ch04-to { font-size: .72rem; color: var(--ink-soft); }
+</style>
+<div class="ch04-nb">
+  <div class="ch04-lane">
+    <span class="dg-label">The display, 320 pixels wide</span>
+    <div class="ch04-bar ch04-screen"><span style="left:0;right:0;justify-content:space-between"><b>left edge</b><b>right edge</b></span></div>
+  </div>
+  <div class="ch04-lane">
+    <span class="dg-label">Castle X: one byte, with 80 to spare</span>
+    <div class="ch04-bar"><span class="ch04-fits" style="left:0;right:0">16 … 96 (middle) … 175</span></div>
+  </div>
+  <div class="ch04-lane">
+    <span class="dg-label">Sprite X = 2x − 8: needs a ninth bit</span>
+    <div class="ch04-bar">
+      <span class="ch04-fits" style="left:0;width:72.2%">24 … 255: fits a byte</span>
+      <span class="ch04-over" style="left:72.2%;right:0"></span>
+      <i class="ch04-mark" style="left:72.2%"></i><i class="ch04-mark" style="left:95.6%"></i>
+    </div>
+    <div class="ch04-tags"><span style="left:72.2%">255: Chapter 1's wall</span><span style="left:95.6%;transform:translateX(-50%);padding:0">330</span></div>
+    <div class="ch04-ends"><span>striped: 256 … 343, bit 8 set</span></div>
+  </div>
+  <div class="ch04-split">
+    <span class="dg-label">330: bit 8</span>
+    <span class="dg-bytes" style="justify-self:end"><span class="dg-bit dg-on">1</span></span>
+    <span class="ch04-to">bit 8 → <b>$D010</b>, sprite 0's bit</span>
+    <span class="dg-label">330: low 8</span>
+    <span class="dg-bytes"><span class="dg-bit">0</span><span class="dg-bit dg-on">1</span><span class="dg-bit">0</span><span class="dg-bit">0</span><span class="dg-bit dg-on">1</span><span class="dg-bit">0</span><span class="dg-bit dg-on">1</span><span class="dg-bit">0</span></span>
+    <span class="ch04-to">$4A = 74 → <b>$D000</b>, sprite 0's X</span>
+    <span class="dg-label">$D010</span>
+    <span class="dg-bytes"><span class="dg-bit">7</span><span class="dg-bit">6</span><span class="dg-bit">5</span><span class="dg-bit">4</span><span class="dg-bit">3</span><span class="dg-bit">2</span><span class="dg-bit">1</span><span class="dg-bit dg-on">0</span></span>
+    <span class="ch04-to">bit n is sprite n's ninth X bit; the other seven are left alone</span>
+  </div>
+</div>

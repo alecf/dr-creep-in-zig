@@ -1,0 +1,43 @@
+<style>
+.ch02-fp { display: grid; gap: 14px; }
+.ch02-fp-byte b { font-weight: 600; }
+.ch02-fp-byte { display: grid; grid-template-columns: repeat(4, minmax(0, 66px)); column-gap: 6px; row-gap: 4px; justify-items: center; align-items: center; }
+.ch02-fp-pair { display: inline-grid; grid-auto-flow: column; gap: 2px; }
+.ch02-fp-strip { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 66px)); column-gap: 6px; width: 100%; }
+.ch02-fp-strip > i { display: block; height: 33px; box-shadow: 0 0 0 1px var(--rule); }
+.ch02-fp-src { display: grid; grid-template-columns: max-content max-content minmax(0, 1fr); gap: 8px 12px; align-items: center; }
+.ch02-fp-src b { font-weight: 600; }
+.ch02-fp-nib { justify-self: start; display: inline-grid; grid-auto-flow: column; gap: 2px; }
+.ch02-fp-nib > span { min-width: 2.2em; padding: 4px 6px; text-align: center; border-radius: 4px; font-weight: 600; box-shadow: inset 0 0 0 1px var(--rule); }
+.ch02-fp-addr { color: var(--ink-soft); }
+</style>
+<div class="ch02-fp">
+  <div class="dg-label">one bitmap byte: $6C</div>
+  <div class="ch02-fp-byte">
+    <span class="ch02-fp-pair"><span class="dg-bit">0</span><span class="dg-bit">1</span></span>
+    <span class="ch02-fp-pair"><span class="dg-bit">1</span><span class="dg-bit">0</span></span>
+    <span class="ch02-fp-pair"><span class="dg-bit">1</span><span class="dg-bit">1</span></span>
+    <span class="ch02-fp-pair"><span class="dg-bit">0</span><span class="dg-bit">0</span></span>
+    <span class="dg-label">bits 7–6</span><span class="dg-label">bits 5–4</span><span class="dg-label">bits 3–2</span><span class="dg-label">bits 1–0</span>
+    <div class="ch02-fp-strip" aria-label="four fat pixels: brown, pink, light grey, black">
+      <i style="background:var(--c9)"></i><i style="background:var(--c10)"></i><i style="background:var(--c15)"></i><i style="background:var(--c0)"></i>
+    </div>
+    <span>pixel 0</span><span>pixel 1</span><span>pixel 2</span><span>pixel 3</span>
+    <b>code 01</b><b>code 10</b><b>code 11</b><b>code 00</b>
+  </div>
+  <div class="dg-label">where each code finds its colour</div>
+  <div class="ch02-fp-src">
+    <b>code 00</b>
+    <span class="ch02-fp-nib"><span style="background:var(--c0);color:var(--c1)">0</span></span>
+    <span>background <span class="ch02-fp-addr">$D021</span>: black, for the whole screen</span>
+    <b>code 01</b>
+    <span class="ch02-fp-nib"><span style="background:var(--c9);color:var(--c1)">9</span><span class="dg-byte">A</span></span>
+    <span>screen plane <span class="ch02-fp-addr">$CC00 + cell</span>, high half: brown</span>
+    <b>code 10</b>
+    <span class="ch02-fp-nib"><span class="dg-byte">9</span><span style="background:var(--c10);color:var(--c1)">A</span></span>
+    <span>the same byte, low half: pink</span>
+    <b>code 11</b>
+    <span class="ch02-fp-nib"><span class="dg-byte">0</span><span style="background:var(--c15);color:var(--c0)">F</span></span>
+    <span>colour RAM <span class="ch02-fp-addr">$D800 + cell</span>: light grey</span>
+  </div>
+</div>

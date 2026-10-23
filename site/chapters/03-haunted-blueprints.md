@@ -74,21 +74,16 @@ together: `peek(a) | peek(a + 1) << 8`.
 ## The room directory
 
 Right after the header, at `$7900`, comes the **room directory**: 8 bytes
-per room, so room *n*'s entry is at `$7900 + n × 8`.
+per room, so room *n*'s entry is at `$7900 + n × 8`. Its last two bytes
+say where that room's objects start:
 
-```
-     +0       +1      +2      +3      +4  +5        +6  +7
-  ┌────────┬───────┬───────┬───────┬───────────┬───────────┐
-  │ colour │ map x │ map y │ size  │   skip    │  objects  │
-  └────────┴───────┴───────┴───────┴───────────┴───────────┘
-```
+:::diagram ch03-castle-file
+The Training Castle in memory. Each directory entry points at its room's stream; the header points at the final room's.
+:::
 
-- **Colour.** The low four bits are the room's colour.
-- **Map x, map y, size.** Where the room sits on the castle map, and how
-  big. The size byte packs two numbers: bits 3–5 the width, 0–2 the
-  height.
-- **Skip.** Two bytes nothing reads (see the end of the chapter).
-- **Objects.** The address of the room's objects, low byte first.
+:::diagram ch03-entry
+One entry, field by field. Nothing reads the two **skip** bytes (see the end of the chapter).
+:::
 
 There's no room count. Instead, the byte after the last entry has **bit 6
 set**, which no colour byte ever does: `$40` if the castle has a final
@@ -106,22 +101,14 @@ is 6, and the struct *is* the format. (A plain `struct`, like the `Walker`
 coming up, makes no such promise; Zig may reorder its fields.)
 
 One catch. A `u16` likes to start on an even address (its
-**alignment**), so a two-byte field after a single byte gets padding:
+**alignment**), so a two-byte field after a single byte gets padding, and
+every field after it reads one byte late:
 
-```
-  extern struct { color: u8, objects: u16 }
+:::diagram ch03-padding
+Top: a JavaScript object is found by name; an `extern struct` is bytes in order. Bottom: one padding byte puts `objects` on the wrong bytes.
+:::
 
-  byte:      0         1          2          3
-          ┌───────┬───────────┬──────────┬──────────┐
-  Zig:    │ color │ (padding) │ objects  │ objects  │   4 bytes
-          │       │           │   low    │   high   │
-          ├───────┼───────────┼──────────┼──────────┘
-  castle: │ color │  objects  │ objects  │              3 bytes
-          │       │    low    │   high   │
-          └───────┴───────────┴──────────┘
-```
-
-Every field after the padding reads one byte late. The castle packs its
+The castle packs its
 bytes tight (the final-room word is at `$5F`, an odd offset), so castle
 words are `[2]u8` in our structs, read with `m.peek16`. `m.view`, the
 reference card's typed pointer into memory (section 9), refuses padded
@@ -401,40 +388,33 @@ bricks are red because the castle file said so.
 ## Streams of tagged objects
 
 A room's objects are a **stream**: groups of records, one group per kind
-of object, each introduced by a two-byte **tag**. Here's the hall in memory
-from `$7909`:
+of object, each introduced by a two-byte **tag**. Here's the hall from `$7909`,
+plus one group from the final room:
 
-```
-  03 08  02  20 28 03 00 01 00 06 00  98 60 01 00 00 0E 0D 00   doors: a count, then 8 bytes each
-  06 08  0F 18 48  11 6C 80  28 10 C0  00                        walkways: 3 bytes each, then a 0
-  09 08  10 40 48  00                                            one sliding pole
-  0C 08  09 78 80  00                                            one ladder
-  0F 08  01  88 68 01                                            doorbells: a count, then 3 bytes each
-  33 08  1C 08 0F 21  54 48 45 20 ... 48 41 4C CC  00            text: x, y, colour, style, letters; a 0
-  00 00                                                          the end of the room
-```
+:::diagram ch03-stream
+Every group starts with a tag; how it ends depends on the kind.
+:::
 
-Read low byte first, the tags are `$0803` (doors), `$0806` (walkways),
-`$0809`, `$080C`, `$080F`, `$0833`, and `$0000` for the end of the room.
-They're three apart. There are eighteen, from `$0803` to `$0836`, one for
-each kind of object a castle can hold.
+Read low byte first, the tags are three apart: `$0803` for doors, `$0806`
+for walkways, and so on up to `$0836`, one for each of the eighteen kinds
+of object. `$0000` ends the room.
 
 :::inside-the-disk The tag is the address
 Why `$0803`, and why three apart? Because the tags are **addresses in the
 program**. The 1984 engine starts with a table of jumps at `$0803`, three
-bytes each: one for the processor's "jump" instruction and two for where
-to jump. To prepare a room, the engine reads a tag and jumps straight to
-it, landing in the code that understands that kind of object. No lookup,
-no comparison: **the data carries the address of the code that reads it.**
-The title screens skip the table entirely; their tags are the routines'
-own addresses, `$160A` and `$2A6D`.
+bytes each. To prepare a room, it jumps straight to the tag, landing in
+the code for that kind of object. No lookup, no comparison: **the data
+carries the address of the code that reads it.** The title screens' tags
+are the routines' own addresses, `$160A` and `$2A6D`.
+:::
+
+:::diagram ch03-tags
+Top: the jump table the tags point into. Bottom: our 54-entry table, every third entry a kind.
 :::
 
 Our functions live wherever the compiler puts them, so we turn the tag
-back into a kind: subtract `$0803` and look it up in a 54-entry table,
-every third entry a kind and the rest `null` (Chapter 2's Lookup Table
-Power-Up: no dividing by three). The enum is in table order, so kind
-*k*'s tag is `$0803 + 3k`.
+back into a kind with that table (Chapter 2's Lookup Table Power-Up: no
+dividing by three). The enum is in table order.
 
 **`src/castle.zig`** (add at the end of the file)
 
@@ -549,20 +529,16 @@ pub const Frankenstein = extern struct { state: u8, x: u8, y: u8, runtime: [4]u8
 
 ### Three ways to end a list
 
-The hall's groups don't all end the same way. The castle uses three
-framing schemes:
+The castle uses three framing schemes, all in the stream figure above:
 
-- **Counted.** Doors and doorbells: a count after the tag, then that many
-  records.
-- **End marker.** Everything else that comes in lists: records until one
-  starts with an end marker, which is skipped. Walkways, ladders, poles
-  and text end on a 0 where the next record's first byte would be. Most
-  machines can have a state byte of 0, so they end on a bit their state
-  never uses: bit 5 for lightning, bit 7 for ray guns, trapdoors,
-  conveyors and Frankensteins.
-- **One tag per thing.** A picture is a whole shape and a list of places
-  to draw it, up to a 0. A matter transmitter is one booth and a list of
-  pads, up to a 0.
+- **Counted.** Doors and doorbells: a count, then that many records.
+- **End marker.** Everything else that comes in lists, up to a record
+  that starts with the marker, which is skipped. Mostly that's a 0;
+  machines whose state byte can be 0 end on a bit their state never uses:
+  bit 5 for lightning, bit 7 for ray guns, trapdoors, conveyors and
+  Frankensteins.
+- **One tag per thing.** A picture is one shape and its places, up to a 0;
+  a matter transmitter is one booth and its pads, up to a 0.
 
 :::power-up The Sentinel Power-Up
 Mark the end of a list *inside* the data instead of storing its length.

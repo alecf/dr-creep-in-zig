@@ -1,0 +1,39 @@
+<style>
+.ch02-se { display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: flex-start; }
+.ch02-se-box { display: grid; gap: 8px; }
+.ch02-se-dir { display: grid; grid-template-columns: repeat(4, max-content); gap: 4px 10px; align-items: center; }
+.ch02-se-soft { color: var(--ink-soft); }
+.ch02-se-hdr { display: grid; grid-template-columns: repeat(3, max-content); gap: 2px 6px; justify-items: center; }
+.ch02-se-rows { display: grid; grid-template-columns: max-content max-content max-content; gap: 3px 10px; align-items: center; }
+.ch02-se-codes { font-size: .72rem; color: var(--ink-soft); }
+.ch02-se-px { display: inline-grid; grid-template-columns: repeat(4, 20px); box-shadow: 0 0 0 1px var(--rule); }
+.ch02-se-px > i { display: block; height: 10px; }
+.ch02-se-big { display: inline-grid; grid-template-columns: repeat(4, 28px); box-shadow: 0 0 0 1px var(--rule); justify-self: start; }
+.ch02-se-big > i { display: block; height: 14px; }
+.ch02-se-col { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 10px; align-items: center; }
+</style>
+<div class="ch02-se">
+  <div class="ch02-se-box">
+    <div class="dg-label">directory at $6800: shape id × 2</div>
+    <div class="ch02-se-dir"><span>0</span><span class="ch02-se-soft">$6800</span><span class="dg-bytes"><span class="dg-byte">10</span><span class="dg-byte">03</span></span><span class="ch02-se-soft">→ $0310 glyph</span><span>1</span><span class="ch02-se-soft">$6802</span><span class="dg-bytes"><span class="dg-byte dg-on">28</span><span class="dg-byte dg-on">68</span></span><span class="ch02-se-soft">→ $6828 walkway</span><span>2</span><span class="ch02-se-soft">$6804</span><span class="dg-bytes"><span class="dg-byte">34</span><span class="dg-byte">68</span></span><span class="ch02-se-soft">→ $6834 walkway_left</span><span class="ch02-se-soft">⋮</span><span></span><span></span><span></span></div>
+  </div>
+  <div class="ch02-se-box">
+    <div class="dg-label">shape 1, the walkway, at $6828</div>
+    <div class="ch02-se-hdr">
+      <span class="dg-byte">01</span><span class="dg-byte">07</span><span class="dg-byte">00</span>
+      <span class="dg-label">width</span><span class="dg-label">height</span><span class="dg-label">flags</span>
+    </div>
+    <div class="dg-label">pixels: width × height bytes, top row first</div>
+    <div class="ch02-se-rows"><span class="dg-byte">FF</span><span class="ch02-se-codes">11 11 11 11</span><span class="ch02-se-px"><i style="background:var(--c15)"></i><i style="background:var(--c15)"></i><i style="background:var(--c15)"></i><i style="background:var(--c15)"></i></span><span class="dg-byte">A9</span><span class="ch02-se-codes">10 10 10 01</span><span class="ch02-se-px"><i style="background:var(--c10)"></i><i style="background:var(--c10)"></i><i style="background:var(--c10)"></i><i style="background:var(--c9)"></i></span><span class="dg-byte">A9</span><span class="ch02-se-codes">10 10 10 01</span><span class="ch02-se-px"><i style="background:var(--c10)"></i><i style="background:var(--c10)"></i><i style="background:var(--c10)"></i><i style="background:var(--c9)"></i></span><span class="dg-byte">55</span><span class="ch02-se-codes">01 01 01 01</span><span class="ch02-se-px"><i style="background:var(--c9)"></i><i style="background:var(--c9)"></i><i style="background:var(--c9)"></i><i style="background:var(--c9)"></i></span><span class="dg-byte">9A</span><span class="ch02-se-codes">10 01 10 10</span><span class="ch02-se-px"><i style="background:var(--c10)"></i><i style="background:var(--c9)"></i><i style="background:var(--c10)"></i><i style="background:var(--c10)"></i></span><span class="dg-byte">9A</span><span class="ch02-se-codes">10 01 10 10</span><span class="ch02-se-px"><i style="background:var(--c10)"></i><i style="background:var(--c9)"></i><i style="background:var(--c10)"></i><i style="background:var(--c10)"></i></span><span class="dg-byte">55</span><span class="ch02-se-codes">01 01 01 01</span><span class="ch02-se-px"><i style="background:var(--c9)"></i><i style="background:var(--c9)"></i><i style="background:var(--c9)"></i><i style="background:var(--c9)"></i></span></div>
+    <div class="dg-label">colours: one byte per cell, each</div>
+    <div class="ch02-se-col">
+      <span class="dg-byte">9A</span><span>screen plane: 01 brown, 10 pink</span>
+      <span class="dg-byte">0F</span><span>colour RAM: 11 light grey</span>
+    </div>
+  </div>
+  <div class="ch02-se-box">
+    <div class="dg-label">drawn into one cell</div>
+    <div class="ch02-se-big" aria-label="the walkway piece: a light grey top edge over pink bricks with brown mortar"><i style="background:var(--c15)"></i><i style="background:var(--c15)"></i><i style="background:var(--c15)"></i><i style="background:var(--c15)"></i><i style="background:var(--c10)"></i><i style="background:var(--c10)"></i><i style="background:var(--c10)"></i><i style="background:var(--c9)"></i><i style="background:var(--c10)"></i><i style="background:var(--c10)"></i><i style="background:var(--c10)"></i><i style="background:var(--c9)"></i><i style="background:var(--c9)"></i><i style="background:var(--c9)"></i><i style="background:var(--c9)"></i><i style="background:var(--c9)"></i><i style="background:var(--c10)"></i><i style="background:var(--c9)"></i><i style="background:var(--c10)"></i><i style="background:var(--c10)"></i><i style="background:var(--c10)"></i><i style="background:var(--c9)"></i><i style="background:var(--c10)"></i><i style="background:var(--c10)"></i><i style="background:var(--c9)"></i><i style="background:var(--c9)"></i><i style="background:var(--c9)"></i><i style="background:var(--c9)"></i><i style="background:var(--c0)"></i><i style="background:var(--c0)"></i><i style="background:var(--c0)"></i><i style="background:var(--c0)"></i></div>
+    <span class="ch02-se-soft">line 8 is left alone: code 00</span>
+  </div>
+</div>
