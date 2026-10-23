@@ -23,8 +23,8 @@ also start the game's **memory map**, the record of every byte it uses.
 
 Think back to the first time a game answered you. You pushed the stick
 and a little figure on the screen moved, right away, exactly as far as
-you pushed. It's so basic that you forget it's the moment a game comes
-alive. Everything else (the ladders, the doors, the monsters) sits on top
+you pushed. It's so basic that it's easy to forget: that's the moment a
+game comes alive. Everything else (the ladders, the doors, the monsters) sits on top
 of that one loop: read the stick, move the figure, draw it, fifty times a
 second.
 
@@ -79,7 +79,7 @@ Two functions. The machine calls `boot` once, at power-on, and `frame`
 fifty times a second after that. Both get `m: *Machine`, "a pointer to a `Machine`":
 like passing an object to a function in JavaScript, they get the machine
 itself, not a copy. (Chapter 2 shows what a pointer really is.) And
-`boot` does one thing, twice: `m.poke(address, value)`.
+`boot` calls one function, twice: `m.poke(address, value)`.
 
 To see what that means, I want to show you my favourite line in the
 whole Comet 64. It's from the machine's own definition, in `machine/src`,
@@ -105,12 +105,12 @@ a register, a stack, a slot in a closure object out on the heap. You
 never learn where, and you never need to. Your program has gigabytes to
 play with and never sees an address.
 
-The Comet 64 hands all 64 KB to you, and there's no engine deciding where
-things go, because there's nobody else to decide. So in this game `x`
-doesn't live "somewhere". It lives at **`$0200`**, because we say so.
-It costs exactly one byte, and you always know where it is. Picking those
-addresses, and writing them down so two things never pick the same one,
-is a big part of writing a game for this machine.
+On the Comet 64 there's no engine. All 64 KB are yours, and nobody but
+you decides where things go. So in this game `x` doesn't live
+"somewhere". It lives at **`$0200`**, because we say so. It costs exactly
+one byte, and you always know where it is. Picking those addresses, and
+listing them in the game's memory map so two things never get the same
+one, is a big part of writing a game for this machine.
 :::
 
 ### A byte, and why it stops at 255
@@ -127,14 +127,14 @@ Each bit is worth twice the one to its right, the way each decimal digit
 is worth ten times the one to its right. Add up the bits that are on:
 all eight is 255. 256 would need a ninth bit.
 
-That sounds like trivia. It isn't: it's going to stop our explorer in
-his tracks before the chapter's out. In JavaScript you almost never think
+The 255 limit sounds like trivia. It isn't: before this chapter is out,
+it stops our explorer in his tracks. In JavaScript you almost never think
 about how big a number can get. On the Comet 64 nearly every number is a
 byte, and a byte runs out at 255.
 
 :::pro-tip Zig knows how big a byte is
-A number in your code takes the type of wherever you put it, and Zig
-checks at compile time that it fits:
+A number you write in your code takes on the type of the variable or
+parameter it goes into, and Zig checks at compile time that it fits:
 
 ```zig snippet
 const x: u8 = 256;
@@ -174,7 +174,7 @@ address**, `$0000` to `$FFFF`. You can read bits straight off the hex:
 `$A5` is `1010` `0101`. It pays off most with addresses:
 
 :::diagram ch01-memory-map
-All 65,536 bytes, `$0000` at the top. In decimal the addresses are noise; in hex they're round numbers.
+All 65,536 bytes, `$0000` at the top. In decimal the region boundaries look like random numbers; in hex they're round ones.
 :::
 
 The structure jumps out: `$D000`–`$DFFF` is hardware, and the border
@@ -195,7 +195,7 @@ floor plan, and we'll be in and out of it all chapter.
 
 Back to `boot`, and the line that puts 4 at `$D020`. The card's section
 4 says `$D020` is the **border colour** register, and colour 4 is purple.
-That's the whole trick. There isn't a `setBorderColour` function anywhere
+That's all there is to it. There isn't a `setBorderColour` function anywhere
 in the machine. There's a byte, and the chip looks at it:
 
 :::diagram ch01-border-byte
@@ -212,7 +212,7 @@ Comet 64 stops being a black box for good.
 
 Now let's tidy up. The machine names every address in `machine.hw` (the
 card's Zig-name column), and `machine.Color` names the sixteen colours;
-`@intFromEnum` turns one into its number.
+`@intFromEnum` turns a colour name into its number.
 
 **`src/main.zig`** (replace the whole file)
 
@@ -237,11 +237,11 @@ pub fn frame(m: *Machine) void {
 
 Same result, but the next reader (you, in three weeks) doesn't need the
 card open. From here on, addresses in game code are always named. A bare
-`0xD020` is a puzzle; `hw.border` is a sentence.
+`0xD020` sends the reader to the card; `hw.border` says what it is.
 
 :::pro-tip `_ = m;`
 Zig refuses to compile a function that ignores a parameter. `_ = m;`
-says "yes, I know." It goes away once `frame` has something to do.
+tells it "yes, I know I'm not using this one." It goes away once `frame` has something to do.
 :::
 
 ## Laying a floor
@@ -261,8 +261,8 @@ from the card's section 3:
 3. **Colour RAM**, 1,000 bytes from `$D800`, has one byte per cell: the
    colour of the pixels that are on in that cell.
 
-So the floor is the bottom row of cells, row 24, and painting it takes
-two writes: 320 bytes of `$FF` into the bitmap, and 40 bytes of grey into
+The floor is the bottom row of cells, row 24. Painting it takes two
+writes: 320 bytes of `$FF` into the bitmap, and 40 bytes of grey into
 colour RAM.
 
 :::diagram ch01-floor
@@ -299,8 +299,8 @@ pub fn paint(m: *Machine) void {
 }
 ```
 
-Zig does the sums at compile time; the comments hold the answers to
-check against the card. `m.fill(address, count, value)` sets `count`
+Zig works out those sums while it compiles. The comments show the
+results, so you can check them against the card. `m.fill(address, count, value)` sets `count`
 bytes in a row to `value`. (The comment's "four pixels" and "code 11"
 are Chapter 2's business: on this screen pixels come in side-by-side
 pairs, the dotted lines in the close-up.) Only `pub` declarations are visible outside a file, so
@@ -325,9 +325,6 @@ byte you put there.
 
 ## Fifty times a second
 
-Before anything moves on that floor, let's look at `frame` properly,
-because it's the heartbeat of the whole game.
-
 Each call to `frame` is one **frame**: one picture on the screen. There's
 no "move left for half a second" call anywhere. Motion is an illusion
 built out of tiny changes: each frame the game reads the joystick, moves
@@ -347,9 +344,8 @@ A JavaScript game has a frame budget too, about 16 ms, but a modern
 machine gets so much done in that time that you rarely think about it.
 The Comet 64 gets far less done in its fiftieth of a second: where the
 browser gives you a ballroom, this is a broom cupboard. So every chapter has a
-second job besides "make it work": make it fit. Think of it as the
-level's clock. (`boot` is on the house: the meter starts with the first
-frame.)
+second job besides "make it work": make it fit. (`boot` is free: the meter starts counting with the
+first frame.)
 
 :::widget budget-meter
 This checkpoint's work meter, live: one bar per frame against the budget, with the last frame's cycles.
@@ -371,7 +367,7 @@ you never see it. On a 64 KB machine that's dangerous: if a byte isn't
 listed in the memory map, sooner or later you'll put something else in
 the same byte, and the two will quietly overwrite each other. There's no
 "somewhere else" on this machine: there's the 64 KB, and you decide what
-goes where. And the rule pays for itself. With
+goes where. The rule has a bonus, too. With
 all the state in `m.ram`, the widgets can show it live, tests can check
 it, and you never wonder where something is: it's wherever the map says.
 
@@ -385,13 +381,14 @@ address above the processor's stack (the processor's own scratch space).
 The player, four bytes in a row. Every piece of code that wants to know where he is reads it from here.
 :::
 
-The rest of the code imports `map.zig`, so it has to go in now. Open the
-side quest to type it in, and to see how Zig catches two regions
-sharing a byte before the game ever runs.
+The rest of the code imports `map.zig`, so open the side quest and type
+it in now. It also shows how Zig catches two regions sharing a byte.
 
 :::side-quest Type in the memory map
-The map lists every region of memory the game uses: ours, and the
-hardware's, so nothing of ours can land on them. This chapter's plan:
+The map lists every region of memory the game uses: the game's own, and
+the hardware's. The hardware's regions are in there so that the check
+below catches anything of ours that lands on top of them. This chapter's
+plan:
 
 | Address | Bytes | What |
 |---|---|---|
@@ -471,7 +468,8 @@ bits wide.
 
 **Each region records its first and last byte**, the way the card writes
 ranges, and the player's field addresses count from its start, so moving
-the player is a one-line change. That's the convention to the end: a
+the player is a one-line change. We'll keep that convention for the rest
+of the tutorial: a
 `Region` named for what it holds, fields named `region_field`, all in
 `map.zig`.
 
@@ -510,8 +508,8 @@ sprite each pixel is **one bit**: 1 is the sprite's colour, 0 is
 see-through. That's the chapter's fourth idea, the **bit as an on/off
 switch**. Three bytes a row, 21 rows: **63 bytes**. And here's a lovely
 consequence: because each bit is a pixel, we can write the picture so
-you can *see* it. Zig has binary literals (`0b00111100` is `$3C`), so lay
-three of those per line and the 1s draw him.
+you can *see* it. Zig has binary literals (`0b00111100` is `$3C`), so if
+we write three of them per line, one line per row, the 1s draw him.
 
 **`src/player.zig`** (new file)
 
@@ -584,14 +582,14 @@ Squint at `picture` and you can see him: a brimmed hat, two eyes (the 0s in row 
 
 - **`m.load`** copies a `const` table into sprite block 0 at `$C000`.
   `&picture` passes the table's address rather than a copy: in front of
-  a name, `&` means "address of". (Between two numbers it means
-  something else, as you'll see.) Blocks are 64 bytes, 63 plus a spare,
+  a name, `&` means "address of". (Between two values it means bitwise
+  AND, which we'll need for the joystick.) Blocks are 64 bytes, 63 plus a spare,
   so block *N* starts at `$C000 + N × 64`.
 - **The sprite pointer** at `$CFF8` says which block sprite 0 shows.
   Swapping that byte is how sprites animate.
 - **`$D015` turns sprites on**, one bit per sprite. `0b0000_0001` sets
   bit 0: sprite 0 on, the rest off. Eight sprites, eight bits, one byte:
-  a pattern all over the VIDEO chip. (Zig ignores `_` inside a number;
+  many of the VIDEO chip's registers work this way. (Zig ignores `_` inside a number;
   it's there so you can read the bits.)
 - Then the player's four bytes, including `player_last_stick`, which
   we'll come to.
@@ -631,23 +629,25 @@ copy it into the chip.
 
 ## Racing the beam
 
-The copying happens every frame, and there's one rule about *when*. And it's
-a wonderful thing once you see it: the picture isn't a photo, it's being
-painted while you watch.
+The copying happens every frame, and there's one rule about *when* it
+happens. The reason is one of my favourite things about these machines:
+the picture on the screen isn't a photo. It's painted while you watch.
 
 It's drawn by a beam sweeping down the tube a line at a time,
 and the VIDEO chip draws each line from memory **as it is when the beam
 passes**. Your `frame` starts with the beam up in the top border, and
-the more work your code does, the further down it gets. It spends a
-little while crossing the border before it reaches the display, and
-that head start is yours.
+the more work your code does, the further down it gets. It takes a
+little while to cross the top border before it reaches the display, so
+your code gets a head start: anything it writes in that time is in place
+before the beam draws it.
 
 So: **write hardware registers at the start of `frame`.** Write a
 sprite's registers while the beam is halfway down it, and the top half
 is drawn the old way and the bottom half the new. That's a **tear**: the
 figure you've seen split in two for a frame as it moves, like a magic
-trick gone wrong. The habit that prevents it is three words long:
-hardware first, then think.
+trick gone wrong. The habit that prevents it fits in four words:
+hardware first, then think. Write the registers first, then do the
+game's thinking.
 
 **`src/player.zig`** (add below `start`)
 
@@ -679,8 +679,7 @@ Chapter 2 shows how to read numbers like that.
 
 Build and reload, and there he is: white, standing on the grey floor.
 
-**It's alive!** Well, it's standing there. Close enough for one more
-section.
+**It's alive!** Well, it's standing there. Walking comes next.
 
 :::inside-the-disk The shadow registers
 The 1984 disk follows the same rule, and goes one better. Its game
@@ -726,8 +725,8 @@ set, and every other bit is forced to 0:
 ```
 
 The machine names the five masks: `machine.joy.up`, `.down`, `.left`,
-`.right` and `.fire`. A tiny function keeps the active-low twist written
-down in exactly one place.
+`.right` and `.fire`. We'll put the active-low test in one tiny
+function, so the twist is handled in exactly one place.
 
 **`src/player.zig`** (add at the end of the file)
 
@@ -791,8 +790,7 @@ works out the next one. The picture is a fiftieth of a second behind the
 stick, and no player alive can feel it.
 
 Build, reload, click the screen and push the arrow keys. **He moves!**
-Take a minute and walk him around. Up, down, diagonally, back to the
-floor. That's a stick you pushed and a figure that answered, and you
+Walk him around: up, down, diagonally, back to the floor. That's a stick you pushed and a figure that answered, and you
 wrote every byte in between.
 
 Now walk him right. He stops three quarters of the way across, in the
@@ -809,7 +807,7 @@ colour on fire should be one line: "if fire is held, pick the next
 colour". Right?
 
 Think it through frame by frame. A quick tap lasts about a tenth of a
-second: five frames, five colours per tap. Hold the button and he strobes
+second, which is five frames, so he'd change colour five times per tap. Hold the button and he strobes
 through the palette fifty times a second, a one-man disco. The port tells
 you whether the button *is down*; we want to know whether it *went
 down*.
@@ -856,8 +854,8 @@ pub fn steer(m: *Machine) void {
 }
 ```
 
-After 15 the colour wraps to 1, skipping 0, black, which would make him
-vanish. In Zig `if` is an expression, so `if (c == 15) 1 else c + 1` is
+After 15 the colour wraps around to 1. It skips 0, black, which would
+make him vanish against the black background. In Zig `if` is an expression, so `if (c == 15) 1 else c + 1` is
 JavaScript's `c === 15 ? 1 : c + 1`.
 
 Remember that `start` set `player_last_stick` to `$FF`? Memory powers on
@@ -874,7 +872,7 @@ tap, however long you hold it. The disco is closed.
 Now that he moves and changes colour, you can break him on purpose.
 In `frame`, put `m.work(6000);` before
 `player.show(m);`. That tells the meter the game did a big pile of work
-first, so the registers get written with the beam well down the
+first, so the registers get written late, with the beam well down the
 screen. The tear lasts only the frame his colour changes, so let the
 headless runner catch it:
 
@@ -882,15 +880,15 @@ headless runner catch it:
 zig build run -- --frames 152 --press 0:u:134 --press 150:f:5
 ```
 
-That walks him up until his hat is in the beam's way and presses fire on
-frame 150. `show` writes the new colour on frame 151, after the beam has
+That walks him up near the top of the display, where the late beam
+reaches him partway down his body, then presses fire on frame 150. `show` writes the new colour on frame 151, after the beam has
 drawn the top of him, so `frames/frame_00151.ppm` looks like this:
 
 ![The explorer torn across the middle: a white hat and face, and a red body below them](images/01-tear.png)
 
 His hat and face are still white; the rest of him is already red. In a
-game whose sprites move every frame and whose logic runs long, that's a
-constant shimmer. Move the `m.work(6000);` below `player.show(m);` and
+game where sprites move every frame and the logic runs long, tears like
+this happen all the time, and the screen shimmers. Move the `m.work(6000);` below `player.show(m);` and
 frame 151 is clean, with exactly the same work. Take the line out when you're done; the
 checkpoint doesn't have it.
 :::
@@ -938,10 +936,10 @@ test "the stick steers the sprite and fire changes its colour" {
 
 The test powers on a whole Comet 64, holds left and fire (`m.input`
 takes the same `joy` masks), and checks the player's bytes. A second
-frame checks the colour *didn't* change again and that `show` caught the
-chip up. Because all the state lives in `m.ram`, a test reads it
-straight out of memory, with no special hooks. That strict rule from the
-memory map has paid its first dividend.
+frame checks the colour *didn't* change again, and that `show` copied
+the new position into the chip. Because all the state lives in `m.ram`, a test reads it
+straight out of memory, with no special hooks. That's the first payoff
+of the all-state-in-`m.ram` rule.
 
 :::pro-tip Three Zig things in that test
 - **`@This()`** is the type of the file you're in. Every Zig file is a
@@ -1020,8 +1018,8 @@ room while it lasts.
   is backwards: with nothing pressed every bit is 1, so he runs left on
   his own the moment the game starts and stops when you *press* left.
   Keep the test in `held` and use it everywhere.
-- **Writing registers late.** `player.show(m)` after the game logic works
-  today, because the logic is tiny. As the game grows it gets pushed past
+- **Writing registers late.** Calling `player.show(m)` after the game
+  logic works today, because the logic is tiny. As the game grows it gets pushed past
   the moment the beam reaches the display, and the tearing starts. Hardware first, always.
 - **Fire strobes through the colours.** The `!held(before, joy.fire)`
   check, or the poke of `player_last_stick` at the end of `steer`, is
