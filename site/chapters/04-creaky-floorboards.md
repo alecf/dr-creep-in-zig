@@ -691,8 +691,10 @@ grid, it's a hole:
 The grid is invisible, which makes it hard to trust. So let's give the
 game a switch that draws it. Press **G** and the room is drawn again with
 the grid over it. Drawing a room puts the explorer back in its doorway,
-so look first, then walk. A second switch, **S**, waits for the end of
-the chapter.
+so look first, then walk. A second switch, **Q**, waits for the end of
+the chapter. (The switches stay off the joystick keys: in the browser W A
+S D are joystick 1 and I J K L joystick 2, so S would flip every time you
+climbed down.)
 
 **`src/map.zig`** (add below the `room` region)
 
@@ -700,7 +702,7 @@ the chapter.
 /// Two switches for looking inside the game (debug.zig): 0 off, 1 on.
 pub const debug = Region{ .name = "debug", .first = 0x020A, .last = 0x020B };
 pub const debug_grid = debug.first + 0; // G: draw the navigation grid over the room
-pub const debug_search = debug.first + 1; // S: search the castle instead of reading the grid
+pub const debug_search = debug.first + 1; // Q: search the castle instead of reading the grid
 ```
 
 **`src/map.zig`** (in `regions`, add after `room,`)
@@ -713,7 +715,7 @@ pub const debug_search = debug.first + 1; // S: search the castle instead of rea
 
 ```zig
 //! Two switches for looking inside the game. G draws the navigation grid
-//! over the room; S makes the explorer search the castle for his way
+//! over the room; Q makes the explorer search the castle for his way
 //! instead of reading the grid, so the meter can show what that costs.
 
 const machine = @import("machine");
@@ -723,13 +725,13 @@ const hw = machine.hw;
 const map = @import("map.zig");
 const grid = @import("grid.zig");
 
-/// G or S on the keyboard flips its switch. True if the room needs drawing
+/// G or Q on the keyboard flips its switch. True if the room needs drawing
 /// again (the grid view does; the search doesn't).
 pub fn keys(m: *Machine) bool {
     const key = m.peek(hw.key);
     const flag = switch (key) {
         'G' => map.debug_grid,
-        'S' => map.debug_search,
+        'Q' => map.debug_search,
         else => return false, // N, P and the rest are room.flip's
     };
     m.poke(hw.key, 0); // seen it
@@ -766,7 +768,7 @@ pub fn overlay(m: *Machine) void {
 }
 ```
 
-`keys` handles G and S and leaves every other key for `room.flip`.
+`keys` handles G and Q and leaves every other key for `room.flip`.
 `overlay` walks the grid cell by cell, counting `n` as it goes, which
 works because the grid, the screen plane and colour RAM number their
 cells the same way. Each open cell is redrawn as a little map of its
@@ -1271,13 +1273,13 @@ pub fn search(m: *Machine, objects: u16, x: u8, y: u8) u8 {
 For a walkway, the piece covering the cell is `col + 4 − x / 4 + 1`
 (counting from 1, as `add` does); for a ladder or pole it's
 `row − y / 8 + 1`. Then `piece` gives the same ways that `add` wrote into
-the grid. Now let the S switch choose:
+the grid. Now let the Q switch choose:
 
 **`src/player.zig`** (replace `waysAt`)
 
 ```zig
 /// The ways out of the cell under castle point (x, y): one byte from the
-/// grid, or, with the S switch on, the slow way, from the castle itself.
+/// grid, or, with the Q switch on, the slow way, from the castle itself.
 fn waysAt(m: *Machine, x: u8, y: u8) u8 {
     if (m.peek(map.debug_search) != 0)
         return grid.search(m, room.objects(m, m.peek(map.room_number)), x, y);
@@ -1286,14 +1288,14 @@ fn waysAt(m: *Machine, x: u8, y: u8) u8 {
 ```
 
 :::widget toggle
-Navigation grid on/off: the S switch, live, with the sprite bucket of the
+Navigation grid on/off: the Q switch, live, with the sprite bucket of the
 budget meter beside it.
 :::
 
 Build, run, go to the Ladders room and walk. The meter's sprite bucket,
-bucket 2, is where `steer` charges its cycles. Press S and walk again:
+bucket 2, is where `steer` charges its cycles. Press Q and walk again:
 
-| Each step, in the Ladders room | Grid | Search (S) |
+| Each step, in the Ladders room | Grid | Search (Q) |
 |---|---|---|
 | finding the way out of one cell | 20 cycles | about 1,440 |
 | a walking step | 204 | 1,626 |
@@ -1574,7 +1576,7 @@ python3 -m http.server -d web
 ```
 
 Open <http://localhost:8000>, press Space, and explore: arrows to walk
-and climb, N and P for rooms, G for the grid, S for the slow way.
+and climb, N and P for rooms, G for the grid, Q for the slow way.
 
 **He knows the castle!** Every floor, ladder and pole in the Training
 Castle works, read from 1,000 bytes that the room wrote down as it was

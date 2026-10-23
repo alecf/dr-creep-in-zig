@@ -64,7 +64,7 @@ RUNS = {
     'B': ['--frames', '200', '--press', '20:f:5', '--key', '60:N', '--key', '100:N', '--key', '140:G', '--dump-every', '20'],
     'C': LADDERS,
     'D': LADDERS,
-    'E': ['--frames', '520', '--press', '20:f:5', '--key', '60:N', '--key', '100:N', '--key', '115:S', '--press', '120:r:176', '--press', '300:u:80', '--press', '390:r:130', '--dump-every', '20'],
+    'E': ['--frames', '520', '--press', '20:f:5', '--key', '60:N', '--key', '100:N', '--key', '115:Q', '--press', '120:r:176', '--press', '300:u:80', '--press', '390:r:130', '--dump-every', '20'],
     'F': BOSS,
 }
 outputs = {}

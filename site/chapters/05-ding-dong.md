@@ -14,7 +14,7 @@ Castle room to room, through every door its bells open, and the doors
 stay open behind you. He can also die now: he flickers away, loses a
 life, and starts again at the castle's front door.
 
-![The Gatehouse: the explorer at the doorbell, and the door beside it half open, its lower half already gone to show the orange of the room beyond](images/05-bell.png)
+![The Gatehouse: the explorer at the doorbell, and the door beside it half open, its lower half already wiped away to black](images/05-bell.png)
 
 Behind the doors is the engine every later chapter runs on: a table of
 **actors**, the things that move, and a table of **objects**, the things
@@ -29,13 +29,13 @@ promised the last one.
 ## A castle full of things
 
 Think about a busy room late in a castle. Two explorers are working a
-switch together while a mummy shuffles after one of them. A ray gun slides
-up and down its track and fires a laser. Lightning crackles between two
-machines, and Frankenstein's monster is waking up in his alcove. That's
-eight things that move, and every one of them is a sprite: the Comet has
-exactly eight. Around them stand the things they use: doors, doorbells,
-switches, keys, locks, control panels. Twenty or thirty of those is a
-normal room.
+switch together while a mummy shuffles after one of them. A ray gun's
+laser streaks across the room. Frankenstein's monster is waking up in his
+alcove, and lightning crackles under three machines, a sprite for each
+bolt. That's eight things that move, and every one is a sprite: the Comet
+has exactly eight. Around them stand the things they use: doors,
+doorbells, switches, keys, locks, control panels. A busy room can have a
+couple of dozen.
 
 Every frame the game has to visit all of them. It moves the movers, finds
 out who is touching what, and lets each thing that has something to do do
@@ -245,7 +245,18 @@ the program image, and a function pointer is the address where a
 function's code starts. `player.turn`, written without the brackets that
 would call it, *is* that address. `Behaviour` is a struct holding one, so
 `kinds[k].turn(m, n)` reads an address out of the table and calls the code
-it points to.
+it points to:
+
+```
+  slot 0:  kind = 0 ──► kinds[0] = .{ .turn = ──┐ }
+                                                 └──► player.turn's code, in the program image
+```
+
+In JavaScript you'd write `const kinds = { player: { turn: playerTurn } }`
+and call `kinds[a.kind].turn(m, n)`. It's the same idea, looked up by
+name in a hash table while the game runs, and a missing entry is
+`undefined is not a function` in the middle of play. Ours is looked up by
+number in an array, and a missing entry stops the build.
 
 `kinds` is built by `std.enums.directEnumArray`, from the standard
 library's enum helpers. You hand it a struct with a field for every tag of
@@ -261,6 +272,15 @@ a field it reads straight out of memory (reference card, section 9),
 because a byte in RAM can hold anything. If a bug ever puts a kind with no
 entry in a slot, indexing `kinds` with it stops the game with an
 out-of-bounds panic, instead of jumping somewhere strange.
+
+:::pro-tip `fn` or `*const fn`?
+`fn (m: *Machine, n: u3) void` on its own is a function *type*, something
+only the compiler deals in; you can't keep one in a table that exists
+while the game runs. `*const fn (m: *Machine, n: u3) void` is a pointer to
+a function of that type: an address, which you can store, copy and call
+through. Tables hold the second. Write a bare `fn` type in a struct field
+and Zig makes the whole struct compile-time only.
+:::
 
 :::power-up The Jump Table Power-Up
 When a value picks which code runs, keep the code's addresses in a table
@@ -516,8 +536,8 @@ pub fn turn(m: *Machine, n: u3) void {
     steer(m, n);
 }
 
-/// Read joystick 1, once a turn: its direction, and whether fire was
-/// pressed since his last turn. The port byte is kept for next time here
+/// Read joystick 1, once a turn: its direction, and whether fire is down
+/// now and wasn't at his last turn. The port byte is kept for next time here
 /// and nowhere else in a room, so a fire button held down is never a
 /// fresh press, however far he carries it.
 fn read(m: *Machine, a: *align(1) actors.Actor) void {
@@ -536,7 +556,9 @@ button held all the way across the room would look like a fresh press
 when he arrived. So `read` runs on every turn, wherever he is, keeps the
 port byte in `player_last_stick` once and only once, and records what it
 found in his slot: the stick's direction, and whether fire was pressed
-this turn. Anything that wants to know asks his slot.
+this turn. Anything that wants to know asks his slot. (A turn is every
+other frame, so a tap shorter than that can slip between two looks; no
+thumb is that quick.)
 
 `steer` itself hardly changes: his position and his last direction come
 from his box and his `way` byte, the stick's direction from `read`, and
@@ -661,8 +683,10 @@ const bucket_actors = 3;
             }
 ```
 
-The tests still poke at the old `player` bytes. In `main.zig`'s tests,
-replace each of these, everywhere it appears:
+The tests still poke at the old `player` bytes. With your editor's find
+and replace, replace each of these everywhere it appears in `main.zig`'s
+tests (any you miss won't compile, because `map.player_x` and the rest
+are gone):
 
 | Replace | With |
 |---|---|
@@ -749,13 +773,17 @@ noticed: a frame costs about twice what it did in Chapter 4, because
 price of an engine with room for seven more actors, and it's a fixed
 price: an empty slot costs one test.
 
+:::widget budget-meter
+The frame budget, bucket by bucket, in the Gatehouse: Chapter 4's frames
+beside this chapter's, then (as the chapter goes on) at the bell, while
+the door opens, and with C on.
+:::
+
 ## A promise from Chapter 3
 
-Chapter 3's `room.draw` hands each record to the code for its kind with a
-`switch`, and promised to bring back the 1984 way: a table of functions.
-You've built one now, so here's the second. Each kind of record gets a
-function that takes the record and prepares it: draws it, and from here
-on builds whatever else the room needs from it.
+Chapter 3's `room.draw` picks each record's code with a `switch`. Now it
+gets a table of functions too: one per kind of record, taking the record
+and preparing it.
 
 **`src/room.zig`** (add above the `machine` import)
 
@@ -1298,15 +1326,14 @@ the panel one row a step, from the bottom up, and when it reaches the top
 it draws the open door.
 
 The 1984 door does exactly this, but its panel is 15 rows tall and opens
-in 14 steps. Ours is 24 rows, tall enough for the explorer (Chapter 3), and
-it takes 23 steps: a little under a second, at 25 steps a second, and it
+in 15 steps, about 0.6 seconds. Ours is 24 rows, tall enough for the
+explorer (Chapter 3), and takes 24 steps: a little under a second, and it
 looks like a portcullis going up.
 
 `ring` measures from the explorer's feet, so `feet_x` becomes public.
-Then the room makes the objects. `room.zig` imports the two tables, and its
-`objects` function, which has meant "where the room's stream starts"
-since Chapter 4, would now clash with the `objects` import, so it becomes
-`stream`, which is what it always found:
+Then the room makes the objects, so `room.zig` imports the two tables.
+Its own `objects` function would now clash with the `objects` import. It
+finds where a room's stream starts, so it becomes `stream`:
 
 **`src/player.zig`** (replace the `feet_x` line)
 
@@ -1367,7 +1394,7 @@ pub fn stream(m: *Machine, n: u8) u16 {
 
 Preparing a room starts with an empty object table:
 
-**`src/room.zig`** (replace the first three lines of `draw`'s body, and the comment above it)
+**`src/room.zig`** (replace the comment above `draw` and its first three lines)
 
 ```zig
 /// Prepare the whole room: draw it, build its navigation grid and fill its
@@ -1518,7 +1545,7 @@ test "boxes overlap when any part of them does, edges included" {
     try std.testing.expect(overlap(m, at(250, 171), .{ .x = 245, .y = 170, .width = 12, .height = 4 })); // no wrapping
 }
 
-test "the table has a turn for every kind, and add stops at 32" {
+test "the table has handlers for every kind, and add stops at 32" {
     try std.testing.expectEqual(std.meta.fields(Kind).len, kinds.len);
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
@@ -1532,23 +1559,25 @@ test "the table has a turn for every kind, and add stops at 32" {
 :::
 
 Build and run. Walk left to the bell and press fire. **The door opens!**
-Its panel wipes away from the bottom up, and behind it is the orange of
-the Long Gallery, the room it leads to. Push into it and nothing happens
+Its panel wipes away from the bottom up, a row a step, and when it's gone
+the doorway shows the orange of the Long Gallery, the room it leads to. Push into it and nothing happens
 yet: he hasn't learned to walk through.
 
 ## Through the door
 
-How do you go through a door? The Gatehouse says "push up", and that's
-the one place this chapter disagrees with Chapter 3. The 1984 game wants
-the stick pushed **up and to the right**, direction 1, and no other. It's
-not a whim: the explorer's walk into a doorway goes up and to the right,
-five fat pixels across and three rows up, as if the door were set back
-into the wall. The stick points the way he's about to walk.
+How do you go through a door? Chapter 3's sign says "push up", and that
+sign was wrong. The 1984 game wants the stick pushed **up and to the
+right**, direction 1 on Chapter 4's compass, and nothing else: up alone
+does nothing, on either wall. It's easy to remember once you've seen the
+walk: he steps up and to the right into the doorway, five fat pixels
+across and three rows up, as if the door were set back into the wall.
 
 The walk is a table, one entry a turn: a step and a picture, or, at the
-end, what he does next. Walking out of a door is the same walk
-backwards, down and to the left. In and out, a turn is every third engine
-step, so the walk takes a little under a second each way.
+end, what he does next. He walks in seen from behind, in two new
+pictures drawn narrow enough to stay inside the door's panel, and walks
+out the same way, backwards, down and to the left, turning to face the
+room on the last step. In and out, a turn is every third engine step, so
+the walk takes a little under a second each way.
 
 The explorer needs a status. Add it at the top of `player.zig`, with the
 number of steps a room carries on after he's left it, and the walk:
@@ -1566,48 +1595,134 @@ pub const Status = enum(u8) {
 };
 ```
 
-**`src/player.zig`** (add below `door_y`)
+**`src/player.zig`** (add below `door_y`, after a blank line)
 
 ```zig
-
 /// How many engine steps the room runs on after he's gone or dead.
 const ending_steps = 30;
 ```
 
-**`src/player.zig`** (add below `step_y`)
+`Status` ends in `_` for the same reason `Kind` does: it's read back out of
+memory with `@enumFromInt`. The two back views go at the end of `Id`, as
+new shapes always do, and here they are:
+
+**`src/shapes.zig`** (in `Id`, add at the end, after `explorer_slide`)
 
 ```zig
+    explorer_back_0,
+    explorer_back_1,
+```
 
+**`src/art.zig`** (add above `// ---- pictures for the castle`)
+
+```zig
+/// Walking into a doorway, seen from behind: narrow, so that he fits
+/// inside the door's panel, one boot lifted and then the other.
+pub const explorer_back_0 = frame(.white, &.{
+    ".33.....",
+    ".33.....",
+    "33333...",
+    ".111....",
+    ".111....",
+    "..1.....",
+    "22222...",
+    "22222...",
+    "22222...",
+    "12221...",
+    "12221...",
+    "12221...",
+    "13331...",
+    ".222....",
+    ".222....",
+    ".2.2....",
+    ".2.2....",
+    ".2.3....",
+    ".2.33...",
+    ".3......",
+    "33......",
+});
+
+pub const explorer_back_1 = frame(.white, &.{
+    ".33.....",
+    ".33.....",
+    "33333...",
+    ".111....",
+    ".111....",
+    "..1.....",
+    "22222...",
+    "22222...",
+    "22222...",
+    "12221...",
+    "12221...",
+    "12221...",
+    "13331...",
+    ".222....",
+    ".222....",
+    ".2.2....",
+    ".2.2....",
+    ".3.2....",
+    "33.2....",
+    "...3....",
+    "...33...",
+});
+```
+
+Then the walk:
+
+**`src/player.zig`** (add below `step_y`, after a blank line)
+
+```zig
 /// Walking through a doorway, one entry a turn: a step and a picture, or,
 /// at the end, what he does next.
-const Walk = struct { dx: u8 = 0, dy: u8 = 0, frame: shapes.Id = .explorer_right_0, then: ?Status = null };
+const Walk = struct { dx: u8 = 0, dy: u8 = 0, frame: shapes.Id = .explorer_back_0, then: ?Status = null };
 const doorway = [_]Walk{
-    // In: five steps up and to the right, into the door.
-    .{ .frame = .explorer_right_0 },
-    .{ .dx = 1, .dy = 0xFF, .frame = .explorer_right_1 },
-    .{ .dx = 1, .dy = 0, .frame = .explorer_right_2 },
-    .{ .dx = 1, .dy = 0xFF, .frame = .explorer_right_3 },
-    .{ .dx = 1, .dy = 0, .frame = .explorer_right_0 },
-    .{ .dx = 1, .dy = 0xFF, .frame = .explorer_right_1 },
+    // In: five steps up and to the right, into the door, seen from behind.
+    .{ .frame = .explorer_back_0 },
+    .{ .dx = 1, .dy = 0xFF, .frame = .explorer_back_1 },
+    .{ .dx = 1, .dy = 0, .frame = .explorer_back_0 },
+    .{ .dx = 1, .dy = 0xFF, .frame = .explorer_back_1 },
+    .{ .dx = 1, .dy = 0, .frame = .explorer_back_0 },
+    .{ .dx = 1, .dy = 0xFF, .frame = .explorer_back_1 },
     .{ .then = .gone },
-    // Out: the same five steps backwards, down and to the left.
-    .{ .frame = .explorer_left_1 },
-    .{ .dx = 0xFF, .dy = 1, .frame = .explorer_left_0 },
-    .{ .dx = 0xFF, .dy = 0, .frame = .explorer_left_3 },
-    .{ .dx = 0xFF, .dy = 1, .frame = .explorer_left_2 },
-    .{ .dx = 0xFF, .dy = 0, .frame = .explorer_left_1 },
+    // Out: the same five steps backwards, down and to the left, turning
+    // to face the room on the last one.
+    .{ .frame = .explorer_back_1 },
+    .{ .dx = 0xFF, .dy = 1, .frame = .explorer_back_0 },
+    .{ .dx = 0xFF, .dy = 0, .frame = .explorer_back_1 },
+    .{ .dx = 0xFF, .dy = 1, .frame = .explorer_back_0 },
+    .{ .dx = 0xFF, .dy = 0, .frame = .explorer_back_1 },
     .{ .dx = 0xFF, .dy = 1, .frame = .explorer_left_0 },
     .{ .then = .playing },
 };
 const walk_in = 0;
 const walk_out = 7;
+
+/// How far the walk in takes him: across and up. He arrives in a room
+/// where a walk in ends, and the compiler checks the table agrees.
+const walk_across = 5;
+const walk_up = 3;
+comptime {
+    var x: u8 = 0;
+    var y: u8 = 0;
+    for (doorway[walk_in..walk_out]) |w| {
+        x +%= w.dx;
+        y +%= w.dy;
+    }
+    if (x != walk_across or y != 0 -% @as(u8, walk_up))
+        @compileError("the doorway walk must go 5 across and 3 up");
+}
+
+/// The middle of the screen, in castle X.
+const middle = castle.left_edge + 80;
 ```
 
 `Walk`'s fields have defaults, so an entry names only what it needs, and
 `then: ?Status = null` means "keep walking". The table is a `const`, part
 of the program image, and it holds `shapes.Id`s and `Status`es, since
 nothing but the compiled code ever reads it. (Only data in the Comet's
-memory has to be all whole bytes.)
+memory has to be all whole bytes.) The `comptime` block adds up the walk
+in and checks it against `walk_across` and `walk_up`, which say where a
+walk in ends; arriving through an open door starts him there.
 
 A game starts in the castle's start room, by its start door:
 
@@ -1637,7 +1752,7 @@ pub fn add(m: *Machine) void {
     m.poke(map.player_status, @intFromEnum(Status.playing));
     m.poke(map.engine_ending, 0);
     const a = actors.slot(m, n);
-    a.box.x = castle.left_edge + 80;
+    a.box.x = middle;
     a.box.y = room.floor_top - feet_y;
     a.way = still;
     if (room.doorAt(m, m.peek(map.room_number), m.peek(map.player_door))) |at| {
@@ -1646,15 +1761,15 @@ pub fn add(m: *Machine) void {
         a.box.y = d.y + door_y;
         if (d.side & castle.door_open != 0) {
             // Inside it, where a walk in ends, and on his way out.
-            a.box.x += 5;
-            a.box.y -= 3;
+            a.box.x += walk_across;
+            a.box.y -= walk_up;
             a.walk = walk_out;
             a.pace = 3;
             m.poke(map.player_status, @intFromEnum(Status.doorway));
         }
     }
     m.work(40); // the sums and the stores
-    actors.setFrame(m, n, if (a.box.x < castle.left_edge + 80) .explorer_right_0 else .explorer_left_0);
+    actors.setFrame(m, n, if (a.box.x < middle) .explorer_right_0 else .explorer_left_0);
 }
 ```
 
@@ -1764,10 +1879,9 @@ room.
 The door gets its `in_front`, which checks it's open, that this is the
 explorer, and that the stick says up and to the right:
 
-**`src/doors.zig`** (add below `bell_reach`)
+**`src/doors.zig`** (add below `bell_reach`, after a blank line)
 
 ```zig
-
 /// The stick's direction for walking into a door: up and to the right,
 /// the way the walk goes.
 const into_door = 1;
@@ -1914,7 +2028,7 @@ through a door that's still open.
 Build and run. Ring the bell, walk back to the door, and push up and to
 the right:
 
-![The Gatehouse: the explorer halfway through the open doorway, walking up and to the right into the orange beyond](images/05-doorway.png)
+![The Gatehouse: the explorer seen from behind, stepping up into the open doorway, with the orange of the next room around him](images/05-doorway.png)
 
 He walks into the doorway and is gone, and a moment later the Long
 Gallery appears with him walking out of its door. **You're in the next
@@ -1942,12 +2056,13 @@ the lightning, the trapdoors and the rest. But dying is the actor table's
 business, not the lightning's, so the engine learns it now.
 
 The 1984 game has a key that kills you on purpose, for when you've
-trapped yourself: you lose a life and start again. Ours is **K**. Here's
-the whole lifecycle, and every step of it is a flag in the actor's state
-byte:
+trapped yourself: you lose a life and start again. Ours is **X**, for
+crossing out a life (not K: that's joystick 2's down, and none of the
+switches use a joystick key). Here's the whole lifecycle, and every step
+after the first is a flag in the actor's state byte:
 
 ```
-  playing ──K──► flash ──► dying: 8 flashes, white / black ──► destroy ──► free ──► unused
+  (alive) ──X──► flash ──► dying: 8 flashes, white / black ──► destroy ──► free ──► unused
                                                               (last turn)  (end of step)
 ```
 
@@ -2044,8 +2159,8 @@ fn flicker(m: *Machine, n: u3) void {
 `flicker` runs in place of a turn for as long as the actor is dying.
 `show` leaves out an actor marked `destroy`, so the explorer doesn't
 reappear in full colour for the step between his last flash and his
-slot's emptying. (An actor that something it touched has set flashing, which
-Chapter 6's trapdoors will do, doesn't take its turn that step either.)
+slot's emptying. (If touching an object sets an actor's `flash`, as Chapter 6's trapdoors
+will, it skips its turn that step and starts to flicker on the next.)
 
 Now the explorer: lives at the start of a game, a way to die, and the
 decision after the room.
@@ -2064,7 +2179,7 @@ pub fn newGame(m: *Machine) void {
 **`src/player.zig`** (add below `walk`)
 
 ```zig
-/// Give up this life (the K key): he flickers away, and the castle starts
+/// Give up this life (the X key): he flickers away, and the castle starts
 /// him again at its start door.
 pub fn kill(m: *Machine) void {
     if (!playing(m)) return;
@@ -2102,7 +2217,7 @@ doors you opened are still open in the next game).
                 if (player.roomOver(m)) setMode(m, if (player.nextRoom(m)) .draw_room else .draw_title);
 ```
 
-The K key goes in `debug.keys` with the others:
+The X key goes in `debug.keys` with the others:
 
 **`src/debug.zig`** (add below the `grid` import)
 
@@ -2113,14 +2228,14 @@ const player = @import("player.zig");
 **`src/debug.zig`** (replace `keys`)
 
 ```zig
-/// G or S on the keyboard flips its switch, and K kills the explorer. True
+/// G or Q on the keyboard flips its switch, and X kills the explorer. True
 /// if the room needs drawing again (the grid view does; the others don't).
 pub fn keys(m: *Machine) bool {
     const key = m.peek(hw.key);
     const flag = switch (key) {
         'G' => map.debug_grid,
-        'S' => map.debug_search,
-        'K' => {
+        'Q' => map.debug_search,
+        'X' => {
             m.poke(hw.key, 0); // seen it
             player.kill(m);
             return false;
@@ -2138,12 +2253,12 @@ pub fn keys(m: *Machine) bool {
 **`src/main.zig`** (add above `explorer`)
 
 ```zig
-test "K: a flicker, a life lost, back to the start; no lives left, the title" {
+test "X: a flicker, a life lost, back to the start; no lives left, the title" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
     inRoom(m, 2); // the Ladders room
     try std.testing.expectEqual(3, m.ram[map.player_lives]);
-    m.input = .{ .key = 'K' };
+    m.input = .{ .key = 'X' };
     _ = m.runFrame(@This());
     m.input = .{};
     hold(m, 0, 8);
@@ -2154,7 +2269,7 @@ test "K: a flicker, a life lost, back to the start; no lives left, the title" {
     try std.testing.expectEqual(0, m.ram[map.room_number]); // the castle's start
     try std.testing.expectEqual(156 + 6, explorer(m).box.x);
     for (0..2) |_| {
-        m.input = .{ .key = 'K' };
+        m.input = .{ .key = 'X' };
         _ = m.runFrame(@This());
         m.input = .{};
         hold(m, 0, 100);
@@ -2165,12 +2280,12 @@ test "K: a flicker, a life lost, back to the start; no lives left, the title" {
 ```
 :::
 
-Build and run, go a few rooms in, and press K:
+Build and run, go a few rooms in, and press X:
 
 ![The Lightning room: the explorer at the door he came in by, flashing white, flat and in one colour, partway through flickering away](images/05-flicker.png)
 
 He flickers and is gone, and a moment later he walks out of the
-Gatehouse door. Three Ks in a row and it's the title screen.
+Gatehouse door. Three Xs in a row and it's the title screen.
 
 ## What the first pass saves
 
@@ -2184,7 +2299,7 @@ object on every turn, touching or not:
 /// Three switches for looking inside the game (debug.zig): 0 off, 1 on.
 pub const debug = Region{ .name = "debug", .first = 0x020A, .last = 0x020C };
 pub const debug_grid = debug.first + 0; // G: draw the navigation grid over the room
-pub const debug_search = debug.first + 1; // S: search the castle instead of reading the grid
+pub const debug_search = debug.first + 1; // Q: search the castle instead of reading the grid
 pub const debug_scan = debug.first + 2; // C: check every object for every actor, every turn
 ```
 
@@ -2192,24 +2307,24 @@ pub const debug_scan = debug.first + 2; // C: check every object for every actor
 
 ```zig
 //! Switches for looking inside the game. G draws the navigation grid over
-//! the room; S makes the explorer search the castle for his way instead
+//! the room; Q makes the explorer search the castle for his way instead
 //! of reading the grid, and C makes every actor check every object on
-//! every turn, so the meter can show what those cost. K gives up a life.
+//! every turn, so the meter can show what those cost. X gives up a life.
 ```
 
 **`src/debug.zig`** (replace `keys`)
 
 ```zig
-/// G, S or C on the keyboard flips its switch, and K kills the explorer.
+/// G, Q or C on the keyboard flips its switch, and X kills the explorer.
 /// True if the room needs drawing again (the grid view does; the others
 /// don't).
 pub fn keys(m: *Machine) bool {
     const key = m.peek(hw.key);
     const flag = switch (key) {
         'G' => map.debug_grid,
-        'S' => map.debug_search,
+        'Q' => map.debug_search,
         'C' => map.debug_scan,
-        'K' => {
+        'X' => {
             m.poke(hw.key, 0); // seen it
             player.kill(m);
             return false;
@@ -2234,14 +2349,15 @@ The C switch, live, with buckets 3 (actors) and 4 (objects) of the budget
 meter beside it.
 :::
 
-Stand the explorer on a bare stretch of the Gatehouse floor and watch
-bucket 3. An engine step costs 246 cycles; press C and it's 374. The
-Gatehouse has two objects, the door and the bell, so that's 64 cycles an
+Stand the explorer on a bare stretch of the Gatehouse floor, away from
+the door and the bell, and watch
+bucket 3. An engine step costs 246 cycles; press C and it's 354. The
+Gatehouse has two objects, the door and the bell, so that's 54 cycles an
 object, for an explorer who isn't touching either. It doesn't sound like
 much, and in this room it isn't. Now fill the room the way a real castle
 does: 8 actors and 32 objects, every actor testing every object, every
-step. That's 8 × 32 × 64 = 16,384 cycles, more than four fifths of the
-frame, spent finding out that nobody is standing in front of anything.
+step. That's 8 × 32 × 54 = 13,824 cycles, seven tenths of the frame,
+spent finding out that nobody is standing in front of anything.
 With the first pass, an actor on open floor doesn't look at the objects
 at all. Only an actor touching the room's foreground pays for the box
 tests, and only on the steps it's touching.
@@ -2253,11 +2369,6 @@ table of 32 would cost about 390. If every object were called every step
 to decide for itself whether it had anything to do, the room would pay
 for a call and a look at its state for every door that's been standing
 still since the castle was built.
-
-:::widget budget-meter
-The frame budget, bucket by bucket, in the Gatehouse: standing, at the
-bell, while the door opens, and with C on.
-:::
 
 :::power-up The Only-If-Asked Power-Up
 Don't visit everything to find the few things that need you. Let the
@@ -2273,12 +2384,14 @@ object table **512 bytes** at `$BE00–$BFFF`, both fixed for good. The
 one, and the engine region is two. The handler tables and the doorway
 walk live in the program image: the two `kinds` tables hold a few function
 pointers, the preparers' table 18. The Training Castle grew by 10 bytes,
-to 4,333, for the Gatehouse's longer last line.
+to 4,333, for the Gatehouse's longer last line, and the shape table by
+94 bytes, to 2,045, for the two back views.
 
 **Time.** Preparing a room now also fills the object table: the rooms
-take 143,106 to 236,478 cycles to prepare, still 12 frame slots at worst.
-In play, a frame with no engine step costs 170 cycles, and one with a
-step 448 standing still, about 1,100 with a change of picture. A door
+take 143,106 to 236,478 cycles to prepare. That's 13 frame slots at
+worst, one more than Chapter 4: the Gatehouse's longer sign tipped it
+over. In play, a frame with no engine step costs 170 cycles, and one with
+a step 448 standing still, about 1,200 with a change of picture. A door
 opening costs about 75 cycles a step to wipe a row (400 on the first
 step, which opens both doors in the castle) and 2,100 on the step it's
 drawn open.
@@ -2291,8 +2404,8 @@ drawn open.
 - **The bell rings as he walks up to it.** Something other than `read`
   writes `player_last_stick`, or `read` isn't called on every turn. Keep
   the stick byte's one store in `read`.
-- **He walks to the door and stands there.** Up alone doesn't open it:
-  push up and to the right. If it still won't, check the door's
+- **He walks to the door and stands there.** Up alone doesn't take him
+  through it: push up and to the right. If it still won't, check the door's
   `in_front` entry in `objects.kinds` is `doors.enter`, not `null`.
 - **Nothing in the room reacts to him.** `actors.step` reads the
   collision registers, and they're only set while the display is on and
@@ -2313,22 +2426,22 @@ From your project folder:
 ```
 zig build
 zig build test
-zig build run -- --frames 2300 --press 20:f:5 --press 60:l:34 --press 100:f:5 --press 160:r:20 --press 200:ur:10 --press 350:r:180 --press 540:f:5 --press 600:r:40 --press 650:ur:10 --press 840:r:176 --press 1020:u:80 --press 1100:r:60 --press 1165:f:5 --press 1220:r:30 --press 1255:ur:10 --press 1500:r:96 --press 1600:d:70 --press 1675:r:140 --press 1820:f:5 --press 1880:r:30 --press 1915:ur:10 --key 2150:K --dump-every 10
+zig build run -- --frames 2300 --press 20:f:5 --press 60:l:34 --press 100:f:5 --press 160:r:20 --press 200:ur:10 --press 350:r:180 --press 540:f:5 --press 600:r:40 --press 650:ur:10 --press 840:r:176 --press 1020:u:80 --press 1100:r:60 --press 1165:f:5 --press 1220:r:30 --press 1255:ur:10 --press 1500:r:96 --press 1600:d:70 --press 1675:r:140 --press 1820:f:5 --press 1880:r:30 --press 1915:ur:10 --key 2150:X --dump-every 10
 ```
 
 The run presses fire on the title and rings the Gatehouse bell, walks
 through its door into the Long Gallery, rings that bell and goes through
 to the Ladders room, climbs to the upper door and goes through to Sliding
 Poles, slides down and goes on into the Lightning room, and there presses
-K. It prints:
+X. It prints:
 
 ```
 ran 2300 frames (2227 calls to frame)
-cycles: max 236824 (1204%), avg 1126 (5%) of 19656
+cycles: max 236824 (1204%), avg 1125 (5%) of 19656
   bucket 0: max 78, avg 27
   bucket 1: max 235548, avg 702
   bucket 2: max 1260, avg 141
-  bucket 3: max 1074, avg 228
+  bucket 3: max 1074, avg 227
   bucket 4: max 2124, avg 26
 overruns: 0, loading pauses: 7
 last frame: frames/frame_02299.ppm
@@ -2348,8 +2461,8 @@ python3 -m http.server -d web
 ```
 
 Open <http://localhost:8000>, press Space, and explore: arrows to walk
-and climb, Space to ring a bell, up and right at an open door, K to give
-up a life, C to switch off the first pass, and N, P, G and S as before.
+and climb, Space to ring a bell, up and right at an open door, X to give
+up a life, C to switch off the first pass, and N, P, G and Q as before.
 
 **The castle is open!** Every door in the Training Castle opens with its
 bell, and every room is a walk away from the last. The rooms in the
@@ -2372,13 +2485,13 @@ rm -rf my-creep/.zig-cache my-creep/zig-out my-creep/web
 :::
 
 :::bonus-stage
-- **Seen from behind.** He walks into a doorway in his walking frames.
-  Draw two pictures of him from the back, and give the `doorway` table
-  those instead.
-- **A room of doors.** Add a room with three doors and one bell for each,
-  and see which ones a single bell opens.
+- **Further in.** 1984 walks the explorer into a doorway in six
+  pictures. Draw four more back views, smaller and smaller, and give the
+  `doorway` table one per step.
+- **A room of doors.** Add a room with three doors, two of them leading to
+  each other inside the room, and a bell for each. Walk in circles.
 - **A meter of your own.** Count, in a spare byte, how many box tests ran
   in the last step, and draw it on the screen. Watch it with C on and off.
-- **Faster doors.** Wipe two rows a step, and decide whether 1984's
-  slower door was more fun.
+- **Faster doors.** Wipe two rows a step, which is about 1984's speed,
+  and decide which you like better.
 :::

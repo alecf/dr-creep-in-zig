@@ -136,7 +136,7 @@ test "boxes overlap when any part of them does, edges included" {
     try std.testing.expect(overlap(m, at(250, 171), .{ .x = 245, .y = 170, .width = 12, .height = 4 })); // no wrapping
 }
 
-test "the table has a turn for every kind, and add stops at 32" {
+test "the table has handlers for every kind, and add stops at 32" {
     try std.testing.expectEqual(std.meta.fields(Kind).len, kinds.len);
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);

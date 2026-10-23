@@ -1,7 +1,7 @@
 //! Switches for looking inside the game. G draws the navigation grid over
-//! the room; S makes the explorer search the castle for his way instead
+//! the room; Q makes the explorer search the castle for his way instead
 //! of reading the grid, and C makes every actor check every object on
-//! every turn, so the meter can show what those cost. K gives up a life.
+//! every turn, so the meter can show what those cost. X gives up a life.
 
 const machine = @import("machine");
 const Machine = machine.Machine;
@@ -11,16 +11,16 @@ const map = @import("map.zig");
 const grid = @import("grid.zig");
 const player = @import("player.zig");
 
-/// G, S or C on the keyboard flips its switch, and K kills the explorer.
+/// G, Q or C on the keyboard flips its switch, and X kills the explorer.
 /// True if the room needs drawing again (the grid view does; the others
 /// don't).
 pub fn keys(m: *Machine) bool {
     const key = m.peek(hw.key);
     const flag = switch (key) {
         'G' => map.debug_grid,
-        'S' => map.debug_search,
+        'Q' => map.debug_search,
         'C' => map.debug_scan,
-        'K' => {
+        'X' => {
             m.poke(hw.key, 0); // seen it
             player.kill(m);
             return false;

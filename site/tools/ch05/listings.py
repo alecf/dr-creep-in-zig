@@ -252,7 +252,7 @@ step('C1', '**`src/map.zig`** (add below the `actors` region)', 'after_line',
 step('C2', '**`src/map.zig`** (in `regions`, add after `actors,`)', 'after_line', '    objects,\n', arg='    actors,')
 step('C3', '**`src/map.zig`** (add below the `debug` region)', 'after_line',
      between('src/map.zig', '/// The room at work', '/// Text: a lookup table').rstrip('\n') + '\n',
-     arg='pub const debug_search = debug.first + 1; // S: search the castle instead of reading the grid', pad='\n')
+     arg='pub const debug_search = debug.first + 1; // Q: search the castle instead of reading the grid', pad='\n')
 step('C4', '**`src/map.zig`** (in `regions`, add after `debug,`)', 'after_line', '    engine,\n', arg='    debug,')
 OBJ = f5('src/objects.zig')
 OBJ_BODY = OBJ[:OBJ.index('// ---- tests')].rstrip('\n') + '\n'
@@ -304,7 +304,7 @@ step('C12', '**`src/player.zig`** (in `waysAt`, replace `room.objects`)', 'repla
 step('C13', '**`src/main.zig`** (in the test that searches the castle, replace the `objects` line and the lines down to the one that uses it)', 'replace_text',
      lines_of('src/main.zig', '        const stream = room.stream', '                try std.testing.expectEqual(grid.at(m, x, y), grid.search'),
      arg=lines_of('src/main.zig', '        const objects = room.objects', '                try std.testing.expectEqual(grid.at(m, x, y), grid.search', root=OLD))
-step('C14', '**`src/room.zig`** (replace the first three lines of `draw`\'s body, and the comment above it)', 'replace_text',
+step('C14', '**`src/room.zig`** (replace the comment above `draw` and its first three lines)', 'replace_text',
      lines_of('src/room.zig', '/// Prepare the whole room', '    objects.clear(m);'),
      arg=lines_of('src/room.zig', '/// Prepare the whole room', '    grid.clear(m);').replace(
         '''/// Prepare the whole room: draw it, build its navigation grid and fill its
@@ -331,9 +331,15 @@ step('C24', '**`src/objects.zig`** (add at the end of the file)', 'append', tail
 step('D1', '**`src/player.zig`** (add above `feet_x`)', 'before_text',
      between('src/player.zig', '/// What he\'s doing, as far as the room', '/// His feet') + '\n',
      arg='/// His feet: the point the grid is read at')
-step('D2', '**`src/player.zig`** (add below `door_y`)', 'after_line',
+step('D2', '**`src/player.zig`** (add below `door_y`, after a blank line)', 'after_line',
      '\n/// How many engine steps the room runs on after he\'s gone or dead.\nconst ending_steps = 30;\n', arg='const door_y = 11;')
-step('D3', '**`src/player.zig`** (add below `step_y`)', 'after_line',
+step('D2b', '**`src/shapes.zig`** (in `Id`, add at the end, after `explorer_slide`)', 'after_line',
+     '    explorer_back_0,\n    explorer_back_1,\n', arg='    explorer_slide,')
+ART = f5('src/art.zig')
+step('D2c', '**`src/art.zig`** (add above `// ---- pictures for the castle`)', 'before_text',
+     ART[ART.index('/// Walking into a doorway, seen from behind'):ART.index('// ---- pictures for the castle')],
+     arg='// ---- pictures for the castle')
+step('D3', '**`src/player.zig`** (add below `step_y`, after a blank line)', 'after_line',
      '\n' + between('src/player.zig', '/// Walking through a doorway', '/// Once, at power-on.').rstrip('\n') + '\n',
      arg='const step_y = [8]u8{ 0xFE, 0xFE, 0, 2, 2, 2, 0, 0xFE };')
 NEWGAME_D = rep(fn('src/player.zig', 'newGame'),
@@ -346,7 +352,7 @@ step('D7', '**`src/player.zig`** (replace `turn`)', 'replace_fn', TURN, arg='tur
 ROOMOVER = fn('src/player.zig', 'roomOver')
 step('D8', '**`src/player.zig`** (add below `waysAt`)', 'insert_after_fn',
      fn('src/player.zig', 'walkIn') + '\n' + fn('src/player.zig', 'walk') + '\n' + ROOMOVER, arg='waysAt')
-step('D9', '**`src/doors.zig`** (add below `bell_reach`)', 'after_line',
+step('D9', '**`src/doors.zig`** (add below `bell_reach`, after a blank line)', 'after_line',
      '''
 /// The stick's direction for walking into a door: up and to the right,
 /// the way the walk goes.
@@ -370,7 +376,7 @@ step('D16', "**`src/main.zig`** (in the `.room` branch, add below `objects.step(
 step('D17', '**`src/training.zig`** (in the `gatehouse` room, replace the last line of its text)', 'replace_text',
      '                "PUSH UP AND RIGHT.",\n', arg='                "PUSH UP.",\n')
 TESTS = tail('src/main.zig', 'test "a doorbell opens its door')
-TESTS_D = TESTS[:TESTS.index('test "K: a flicker')]
+TESTS_D = TESTS[:TESTS.index('test "X: a flicker')]
 step('D18', '**`src/main.zig`** (add above `explorer`, near the end of the file)', 'before_text', TESTS_D,
      arg=fn('src/main.zig', 'explorer'), run='D')
 
@@ -421,14 +427,14 @@ step('E9', '**`src/main.zig`** (in the `.room` branch, replace the `roomOver` li
 DBG = f5('src/debug.zig')
 KEYS = fn('src/debug.zig', 'keys')
 KEYS_E = rep(KEYS,
-    ('''/// G, S or C on the keyboard flips its switch, and K kills the explorer.
+    ('''/// G, Q or C on the keyboard flips its switch, and X kills the explorer.
 /// True if the room needs drawing again (the grid view does; the others
-/// don't).''', '''/// G or S on the keyboard flips its switch, and K kills the explorer. True
+/// don't).''', '''/// G or Q on the keyboard flips its switch, and X kills the explorer. True
 /// if the room needs drawing again (the grid view does; the others don't).'''),
     ("        'C' => map.debug_scan,\n", ''))
 step('E10', '**`src/debug.zig`** (add below the `grid` import)', 'after_line', 'const player = @import("player.zig");\n', arg='const grid = @import("grid.zig");')
 step('E11', '**`src/debug.zig`** (replace `keys`)', 'replace_fn', KEYS_E, arg='keys')
-TEST_K = TESTS[TESTS.index('test "K: a flicker'):TESTS.index('/// The explorer\'s actor slot.')]
+TEST_K = TESTS[TESTS.index('test "X: a flicker'):TESTS.index('/// The explorer\'s actor slot.')]
 step('E12', '**`src/main.zig`** (add above `explorer`)', 'before_text', TEST_K, arg=fn('src/main.zig', 'explorer'), run='E')
 
 # ============================================================================

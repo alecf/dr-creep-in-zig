@@ -1,5 +1,5 @@
 //! Two switches for looking inside the game. G draws the navigation grid
-//! over the room; S makes the explorer search the castle for his way
+//! over the room; Q makes the explorer search the castle for his way
 //! instead of reading the grid, so the meter can show what that costs.
 
 const machine = @import("machine");
@@ -9,13 +9,13 @@ const hw = machine.hw;
 const map = @import("map.zig");
 const grid = @import("grid.zig");
 
-/// G or S on the keyboard flips its switch. True if the room needs drawing
+/// G or Q on the keyboard flips its switch. True if the room needs drawing
 /// again (the grid view does; the search doesn't).
 pub fn keys(m: *Machine) bool {
     const key = m.peek(hw.key);
     const flag = switch (key) {
         'G' => map.debug_grid,
-        'S' => map.debug_search,
+        'Q' => map.debug_search,
         else => return false, // N, P and the rest are room.flip's
     };
     m.poke(hw.key, 0); // seen it

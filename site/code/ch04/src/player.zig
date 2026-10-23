@@ -161,7 +161,7 @@ fn bit(way: u8) u8 {
 }
 
 /// The ways out of the cell under castle point (x, y): one byte from the
-/// grid, or, with the S switch on, the slow way, from the castle itself.
+/// grid, or, with the Q switch on, the slow way, from the castle itself.
 fn waysAt(m: *Machine, x: u8, y: u8) u8 {
     if (m.peek(map.debug_search) != 0)
         return grid.search(m, room.objects(m, m.peek(map.room_number)), x, y);

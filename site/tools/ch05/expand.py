@@ -15,7 +15,7 @@ def sub(m):
     kind, name = m.group(1), m.group(2)
     if kind == 'L':
         st = steps[name]; st['used'] = True
-        return st['label'] + '\n\n```zig\n' + st['text'].rstrip('\n') + '\n```'
+        return st['label'] + '\n\n```zig\n' + st['text'].strip('\n') + '\n```'
     if kind == 'S':
         return '```zig snippet\n' + SNIPS[name]() + '\n```'
     if kind == 'X':

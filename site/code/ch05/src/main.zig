@@ -351,12 +351,12 @@ test "through the door and out of the one it leads to, and back again" {
     try std.testing.expectEqual(156 + 6, explorer(m).box.x);
 }
 
-test "K: a flicker, a life lost, back to the start; no lives left, the title" {
+test "X: a flicker, a life lost, back to the start; no lives left, the title" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
     inRoom(m, 2); // the Ladders room
     try std.testing.expectEqual(3, m.ram[map.player_lives]);
-    m.input = .{ .key = 'K' };
+    m.input = .{ .key = 'X' };
     _ = m.runFrame(@This());
     m.input = .{};
     hold(m, 0, 8);
@@ -367,7 +367,7 @@ test "K: a flicker, a life lost, back to the start; no lives left, the title" {
     try std.testing.expectEqual(0, m.ram[map.room_number]); // the castle's start
     try std.testing.expectEqual(156 + 6, explorer(m).box.x);
     for (0..2) |_| {
-        m.input = .{ .key = 'K' };
+        m.input = .{ .key = 'X' };
         _ = m.runFrame(@This());
         m.input = .{};
         hold(m, 0, 100);

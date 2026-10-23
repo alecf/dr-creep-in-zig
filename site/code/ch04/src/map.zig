@@ -33,7 +33,7 @@ pub const room_number = room.first + 0; // its place in the castle's room direct
 /// Two switches for looking inside the game (debug.zig): 0 off, 1 on.
 pub const debug = Region{ .name = "debug", .first = 0x020A, .last = 0x020B };
 pub const debug_grid = debug.first + 0; // G: draw the navigation grid over the room
-pub const debug_search = debug.first + 1; // S: search the castle instead of reading the grid
+pub const debug_search = debug.first + 1; // Q: search the castle instead of reading the grid
 
 /// Text: a lookup table, the shape each letter is built in, and a string.
 pub const text = Region{ .name = "text", .first = 0x0300, .last = 0x037F };

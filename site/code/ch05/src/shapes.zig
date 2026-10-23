@@ -51,6 +51,8 @@ pub const Id = enum(u8) {
     explorer_climb_2,
     explorer_climb_3,
     explorer_slide,
+    explorer_back_0,
+    explorer_back_1,
 };
 
 /// A picture as art.zig draws it: one string per row, one character per

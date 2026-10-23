@@ -1338,3 +1338,42 @@ Castle rooms (ch03)".
   and sprite–sprite collision, and real deaths; ch7 transient actors (lasers)
   and keys (`picked`); ch9 the escape, game over words, clean castle per
   game, the map; ch10 sound.
+- **Reserved keys (rule, from the ch05 review).** Debug and game keys must
+  never be joystick keys: **W A S D, I J K L, the arrows, Space, Return**
+  (the browser shell drives the sticks with them, and they also reach
+  `$DC02`). Keys in use: N, P (room flip), G (grid view), **Q** (search
+  instead of the grid; was S in ch04, renamed in ch04's code, chapter and
+  tools), C (scan every object), **X** (give up a life; was K in the ch05
+  draft). Chapter 9's second player and Chapter 11's menus must keep to
+  this too.
+- **Search-and-replace table (convention, from the ch05 review).** A
+  listing may be replaced by a table of `| Replace | With |` pairs only for
+  a purely mechanical rename inside one named file, applied to every
+  occurrence, with no other edits on those lines, and where a missed
+  occurrence fails to compile. The prose says "with your editor's find and
+  replace" and names the compile-error safety net. Never for a change that
+  needs judgement. `rebuild.py`'s `replace_all` op implements it (used once,
+  ch05 stage A, `m.ram[map.player_*]` → `explorer(m).*`).
+- **ch05 review fixes (supersede the numbers above where they differ).**
+  C switch on bare floor: 246 → **354** cycles (54 an object; full room 8 ×
+  32 × 54 = 13,824, ≈ 70 %). Room preparation peaks at 236,478 = **13
+  slots** (the Gatehouse's longer sign). Walking step with a picture change
+  ≈ 1,216. Door opening is **24 steps** (rows 23..0 wiped, drawn open on the
+  24th; 1984 15 steps, ≈ 0.6 s). **Shape IDs 31 `explorer_back_0`, 32
+  `explorer_back_1`** (back views drawn in the left 5 fat-pixel columns, so
+  at door x + 6..11 he stays inside the panel's +4..+15 and never over the
+  pillar): the doorway walk uses them both ways, the walk out's last step
+  turns to `explorer_left_0`. Shape table 2,045 bytes. `player.walk_across =
+  5`, `walk_up = 3` (comptime-checked against the `doorway` table) and
+  `player.middle` replace magic numbers. The chapter now owns the push-up
+  mistake ("Chapter 3's sign … was wrong"); ch3's text and screenshot stay.
+  Listing blank-line padding is hidden in the shown fence; labels say
+  "after a blank line".
+- **Note for ch7 (ladder row 7).** Ch05 already taught free-slot reuse (the
+  Slot Table Power-Up, `actors.add` finding the first `unused` slot, a test
+  that frees slot 3 and reuses it) and a lifecycle state machine in one flag
+  byte (`actors.State`: created → flash → dying → destroy → free → unused).
+  Ch7's lasers must refer back to both and build on them (a transient actor
+  that spawns into a free slot and frees itself), not re-teach them; its new
+  material is the ray gun's own flag byte (`RAYGUN_*`) and spawning under
+  the 8-sprite cap.

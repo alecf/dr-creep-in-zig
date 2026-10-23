@@ -8,7 +8,7 @@ byte of it. He moves on the castle's own coordinates (X = fat pixel + 16),
 converted for the VIDEO chip with the ninth X bit in `$D010`, so he reaches
 the right-hand edge of the screen. He appears in each room's first doorway.
 
-Keys: N and P flip rooms; G draws the grid over the room; S makes the
+Keys: N and P flip rooms; G draws the grid over the room; Q makes the
 explorer search the castle for his way instead of reading the grid (watch
 the meter).
 
@@ -18,7 +18,7 @@ src/map.zig       the game's memory map, checked at compile time
 src/grid.zig      the navigation grid: building it, reading it, and the slow search
 src/player.zig    the explorer: joystick, steps, ladders, poles and pictures
 src/sprites.zig   unpacking sprite frames; castle coordinates to sprite registers
-src/debug.zig     the G and S switches: the grid view and the search
+src/debug.zig     the G and Q switches: the grid view and the search
 src/castle.zig    the castle format: header, room directory, tags, records, the stream walker
 src/author.zig    the castle-authoring kit: declarations in, checked castle bytes out
 src/hall.zig      Chapter 3's hand-typed one-room castle, and the test that the kit matches it
