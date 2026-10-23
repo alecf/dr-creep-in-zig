@@ -56,7 +56,7 @@ pub fn entry(m: *Machine, n: u8) u16 {
 /// How many rooms the directory lists.
 pub fn roomCount(m: *Machine) u8 {
     var n: u8 = 0;
-    while (m.peek(entry(m, n)) & end_flag == 0) n += 1;
+    while (m.peek(entry(m, n)) & end_flag == 0) : (n += 1) m.work(2);
     return n;
 }
 
@@ -149,8 +149,8 @@ pub const Frankenstein = extern struct { state: u8, x: u8, y: u8, runtime: [4]u8
 pub const Framing = union(enum) {
     /// A count byte, then that many records of this size.
     counted: u8,
-    /// Records of this size until one starts with the end marker,
-    /// which is a byte of 0 (`end` = 0) or a byte with bit `end` set.
+    /// Records of this size until one starts with the end marker: a byte
+    /// of 0 when `end` is 0, otherwise a byte with any of `end`'s bits set.
     marked: struct { size: u8, end: u8 },
     /// Like `marked`, ended by a 0, but each record ends with a string.
     text,
@@ -255,14 +255,14 @@ pub const Walker = struct {
 /// The address after a string whose last letter has bit 7 set.
 fn stringEnd(m: *Machine, at: u16) u16 {
     var a = at;
-    while (m.peek(a) & 0x80 == 0) a += 1;
+    while (m.peek(a) & 0x80 == 0) : (a += 1) m.work(2);
     return a + 1;
 }
 
 /// The address after a list of (x, y) pairs ended by a 0.
 fn placesEnd(m: *Machine, at: u16) u16 {
     var a = at;
-    while (m.peek(a) != 0) a += 2;
+    while (m.peek(a) != 0) : (a += 2) m.work(2);
     return a + 1;
 }
 
@@ -274,12 +274,9 @@ pub fn shapeSize(m: *Machine, at: u16) u16 {
     return 3 + m.mul8(width, height) + 2 * m.mul8(width, (height + 7) / 8);
 }
 
-/// Object X counts fat pixels from 16, so that things can start a
-/// little way off the left edge of the screen. The fat pixel the blitter
-/// wants, or null for anything that starts off the left edge.
-pub fn screenX(x: u8) ?u8 {
-    return if (x < 16) null else x - 16;
-}
+/// Object X counts fat pixels from 16 to the left of the screen, so that
+/// things can start a little way off its left edge: X = 16 is the edge.
+pub const left_edge: u8 = 16;
 
 // ---- tests ----------------------------------------------------------------
 

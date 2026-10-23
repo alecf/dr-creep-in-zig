@@ -52,7 +52,7 @@ fn says(comptime title: []const u8, comptime lines: []const []const u8) []const 
         const x = 16 + (160 - 8 * title.len) / 2 / 4 * 4; // centred, on a byte
         var out: []const Line = &.{.{ .x = x, .y = 8, .color = .yellow, .height = 2, .words = title }};
         for (lines, 0..) |words, i| {
-            out = out ++ [_]Line{.{ .x = 16, .y = 32 + 10 * i, .color = .light_grey, .words = words }};
+            out = out ++ [_]Line{.{ .x = 20, .y = 32 + 10 * i, .color = .light_grey, .words = words }};
         }
         const done = out[0..out.len].*;
         return &done;
@@ -71,13 +71,14 @@ pub const plan: author.Castle(Room) = .{
             .bell = &.{.{ .x = 140, .y = 168, .door = 0 }},
             .text = says("THE GATEHOUSE", &.{
                 "WELCOME, EXPLORER!",
-                "EVERY ROOM HAS DOORS",
-                "AND MOST ARE SHUT.",
-                "STAND AT THE BELL",
-                "BESIDE A DOOR AND",
-                "PRESS FIRE. WHEN IT",
-                "OPENS, STAND IN THE",
-                "DOORWAY AND PUSH UP.",
+                "MOST DOORS IN THE",
+                "CASTLE ARE SHUT.",
+                "TO OPEN ONE, STAND",
+                "AT THE BELL BESIDE",
+                "IT AND PRESS FIRE.",
+                "THEN STAND IN THE",
+                "OPEN DOORWAY AND",
+                "PUSH UP.",
             }),
         },
         .gallery = .{
@@ -85,19 +86,19 @@ pub const plan: author.Castle(Room) = .{
             .map = spot(1),
             .door = &.{
                 .{ .x = 16, .y = 160, .to = .gatehouse },
-                .{ .x = 156, .y = 160, .to = .ladders },
+                .{ .x = 132, .y = 160, .to = .ladders },
             },
-            .walkway = &.{floor},
-            .bell = &.{.{ .x = 140, .y = 168, .door = 1 }},
+            .walkway = &.{.{ .length = 35, .x = 16, .y = 192 }}, // it stops short of the wall
+            .bell = &.{.{ .x = 112, .y = 168, .door = 1 }},
             .text = says("THE LONG GALLERY", &.{
                 "WALKWAYS ARE THE",
                 "CASTLE'S FLOORS.",
                 "PUSH THE STICK LEFT",
                 "OR RIGHT TO WALK.",
-                "THE END OF A WALKWAY",
-                "IS AS FAR AS YOU GO.",
-                "THE DOOR AT THE FAR",
-                "END LEADS ON.",
+                "A WALKWAY'S END IS",
+                "AS FAR AS YOU GO.",
+                "THE DOOR NEAR THE",
+                "FAR END LEADS ON.",
             }),
         },
         .ladders = .{
@@ -131,11 +132,11 @@ pub const plan: author.Castle(Room) = .{
             .bell = &.{.{ .x = 140, .y = 168, .door = 1 }},
             .text = says("SLIDING POLES", &.{
                 "A SLIDING POLE IS A",
-                "QUICK WAY DOWN. WALK",
-                "ONTO IT AND PUSH",
-                "DOWN. THERE'S NO",
-                "CLIMBING BACK UP A",
-                "POLE, SO LOOK FIRST.",
+                "QUICK WAY DOWN.",
+                "WALK ONTO IT AND",
+                "PUSH DOWN. THERE'S",
+                "NO CLIMBING BACK UP",
+                "A POLE: LOOK FIRST.",
             }),
         },
         .lightning = .{
@@ -188,9 +189,9 @@ pub const plan: author.Castle(Room) = .{
                 "THIS FLOOR HAS A",
                 "TRAPDOOR IN IT. A",
                 "SWITCH OPENS IT AND",
-                "SHUTS IT AGAIN. FALL",
-                "THROUGH AND YOU LOSE",
-                "A LIFE.",
+                "SHUTS IT AGAIN.",
+                "FALL THROUGH AND",
+                "YOU LOSE A LIFE.",
             }),
         },
         .conveyors = .{
@@ -222,12 +223,12 @@ pub const plan: author.Castle(Room) = .{
             .ladder = &.{ladder_left},
             .bell = &.{.{ .x = 44, .y = 104, .door = 1 }},
             .text = says("THE TRANSMITTER", &.{
-                "STEP INTO THE MATTER",
-                "TRANSMITTER BOOTH,",
-                "PRESS FIRE TO PICK A",
-                "PAD BY ITS COLOUR,",
-                "THEN PUSH UP. YOU'RE",
-                "THERE IN A BLINK.",
+                "STEP INTO THE",
+                "MATTER TRANSMITTER",
+                "AND PRESS FIRE TO",
+                "PICK A PAD BY ITS",
+                "COLOUR. PUSH UP AND",
+                "YOU'RE THERE.",
             }),
         },
         .keys = .{
@@ -244,9 +245,10 @@ pub const plan: author.Castle(Room) = .{
                 "SOME DOORS HAVE NO",
                 "BELL, ONLY A LOCK.",
                 "FIND THE KEY OF THE",
-                "SAME COLOUR AND WALK",
-                "OVER IT TO PICK IT",
-                "UP. THEN TRY A LOCK.",
+                "SAME COLOUR, STAND",
+                "AT IT AND PRESS",
+                "FIRE. THEN DO THE",
+                "SAME AT THE LOCK.",
             }),
         },
         .ray_guns = .{
@@ -282,9 +284,10 @@ pub const plan: author.Castle(Room) = .{
                 "HIS TOMB. WALK PAST",
                 "THE ANKH AND HE",
                 "WAKES, AND COMES",
-                "AFTER YOU. YOU CAN'T",
-                "FIGHT HIM, SO DON'T",
-                "LET HIM CATCH YOU.",
+                "AFTER YOU. YOU",
+                "CAN'T FIGHT HIM, SO",
+                "DON'T LET HIM CATCH",
+                "YOU.",
             }),
         },
         .frankenstein = .{
@@ -300,10 +303,10 @@ pub const plan: author.Castle(Room) = .{
             .text = says("FRANKENSTEIN", &.{
                 "THE MONSTER STANDS",
                 "IN HIS ALCOVE UNTIL",
-                "YOU SHARE HIS FLOOR.",
-                "THEN HE COMES FOR",
-                "YOU, AND HE DOESN'T",
-                "GIVE UP.",
+                "YOU SHARE HIS",
+                "FLOOR. THEN HE",
+                "COMES FOR YOU, AND",
+                "HE DOESN'T GIVE UP.",
             }),
         },
         .frank_trap = .{
@@ -411,9 +414,10 @@ pub const plan: author.Castle(Room) = .{
             .text = says("TWO'S COMPANY", &.{
                 "THIS ROOM NEEDS TWO",
                 "EXPLORERS. ONE OF",
-                "YOU WORKS THE SWITCH",
-                "WHILE THE OTHER",
-                "MAKES A RUN FOR IT.",
+                "YOU WORKS THE",
+                "SWITCH WHILE THE",
+                "OTHER MAKES A RUN",
+                "FOR IT.",
             }),
         },
         .way_out = .{

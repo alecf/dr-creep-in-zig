@@ -12,7 +12,7 @@ const shapes = @import("shapes.zig");
 const text = @import("text.zig");
 
 /// Display row (0-199) of the top of the floor the explorer walks on.
-pub const floor_top = 192; // every Training Castle room has a floor here
+pub const floor_top = 192; // the bottom row of cells, as in Chapter 1
 
 /// The final room isn't in the directory, so it has no colour byte.
 const final_color = Color.yellow;
@@ -75,15 +75,28 @@ fn both(color: u8) u8 {
     return color << 4 | color;
 }
 
+/// Draw shape `id` with its top-left corner at castle coordinates
+/// (x, y), cut off where it hangs over the left edge of the screen. This
+/// is the one place an object's X becomes the blitter's fat pixel.
+fn place(m: *Machine, id: shapes.Id, x: u8, y: u8) void {
+    m.work(8); // the test and the sums
+    if (x >= castle.left_edge) {
+        screen.drawShape(m, id, x - castle.left_edge, y);
+    } else {
+        // Four fat pixels to a byte column: leave out the columns left of the edge.
+        screen.drawPart(m, id, 0, y, (castle.left_edge - x + 3) / 4);
+    }
+}
+
 /// A walkway: `length` pieces 4 fat pixels wide, a left end, middles and
 /// a right end.
 fn walkway(m: *Machine, at: u16) void {
     const w = m.view(castle.Run, at);
-    var x = castle.screenX(w.x) orelse return;
+    var x = w.x;
     var i: u8 = 1;
-    while (i <= w.length and x < 160) : (i += 1) {
+    while (i <= w.length and x < castle.left_edge + 160) : (i += 1) {
         const piece: shapes.Id = if (i == 1) .walkway_left else if (i == w.length) .walkway_right else .walkway;
-        screen.drawShape(m, piece, x, w.y);
+        place(m, piece, x, w.y);
         x += 4;
         m.work(12); // the tests and the loop
     }
@@ -92,47 +105,60 @@ fn walkway(m: *Machine, at: u16) void {
 /// A ladder or a pole: `length` pieces stacked 8 rows apart, top first.
 fn column(m: *Machine, id: shapes.Id, at: u16) void {
     const c = m.view(castle.Run, at);
-    const x = castle.screenX(c.x) orelse return;
     var y = c.y;
     var i: u8 = 0;
     while (i < c.length and y < 200) : (i += 1) {
-        screen.drawShape(m, id, x, y);
+        place(m, id, c.x, y);
         y += 8;
         m.work(8); // the tests and the loop
     }
 }
 
+/// Where the door itself sits inside its arch. Ours is taller than the
+/// 1984 game's (12 x 15, 16 rows down), so that the explorer fits through.
+pub const door_panel_dx: u8 = 4;
+pub const door_panel_dy: u8 = 8;
+
 /// A door: the arch (or the way out's), and in it the door itself, shut
 /// or open onto the colour of the room beyond.
 fn door(m: *Machine, at: u16) void {
     const d = m.view(castle.Door, at);
-    const x = castle.screenX(d.x) orelse return;
     m.work(8); // the two tests
-    screen.drawShape(m, if (d.exit != 0) .exit_frame else .door_frame, x, d.y);
+    place(m, if (d.exit != 0) .exit_frame else .door_frame, d.x, d.y);
+    const x = d.x +| door_panel_dx;
+    const y = d.y +| door_panel_dy;
     if (d.side & castle.door_open != 0) {
         shapes.recolor(m, .door_open, roomColors(m, d.to_room));
-        screen.drawShape(m, .door_open, x + 4, d.y + 8);
+        place(m, .door_open, x, y);
     } else {
-        screen.drawShape(m, .door_shut, x + 4, d.y + 8);
+        place(m, .door_shut, x, y);
     }
 }
 
 /// A doorbell, in the colour of the room its door leads to.
 fn bell(m: *Machine, at: u16, doors: u16) void {
     const b = m.view(castle.Bell, at);
-    const x = castle.screenX(b.x) orelse return;
     const d = m.view(castle.Door, doors + @as(u16, b.door) * @sizeOf(castle.Door));
     m.work(10); // the multiply by 8 is three shifts
     shapes.recolor(m, .bell, roomColors(m, d.to_room));
-    screen.drawShape(m, .bell, x, b.y);
+    place(m, .bell, b.x, b.y);
 }
 
-/// A line of text: x, y, colour and style, then the letters.
+/// A line of text: x, y, colour and style, then the letters. Letters that
+/// would start left of the screen are left out, as they are at the right.
 fn line(m: *Machine, at: u16) void {
     const t = m.view(castle.Text, at);
-    const x = castle.screenX(t.x) orelse return;
     const color: Color = @enumFromInt(@as(u4, @truncate(t.color)));
-    _ = text.draw(m, x, t.y, color, t.style, at + @sizeOf(castle.Text));
+    var x = t.x;
+    var letters = at + @sizeOf(castle.Text);
+    while (x < castle.left_edge) : ({
+        x += 8;
+        letters += 1;
+    }) {
+        if (m.peek(letters) & 0x80 != 0) return; // the whole line is off the edge
+        m.work(4);
+    }
+    _ = text.draw(m, x - castle.left_edge, t.y, color, t.style, letters);
 }
 
 /// An image is a shape that lives in the castle. Point the shape
@@ -140,10 +166,10 @@ fn line(m: *Machine, at: u16) void {
 /// after it.
 fn image(m: *Machine, at: u16) void {
     shapes.point(m, .image, at);
-    var place = at + castle.shapeSize(m, at);
-    while (m.peek(place) != 0) : (place += 2) {
-        const x = castle.screenX(m.peek(place)) orelse continue;
-        screen.drawShape(m, .image, x, m.peek(place + 1));
+    var spot = at + castle.shapeSize(m, at);
+    while (m.peek(spot) != 0) : (spot += 2) {
+        place(m, .image, m.peek(spot), m.peek(spot + 1));
+        m.work(2); // the loop
     }
 }
 

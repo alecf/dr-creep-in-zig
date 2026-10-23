@@ -69,6 +69,13 @@ pub fn clear(m: *Machine) void {
 /// rounded down to a multiple of 4, because shapes sit on whole bitmap
 /// bytes. Anything past the right or bottom edge of the screen is cut off.
 pub fn drawShape(m: *Machine, id: shapes.Id, x: u8, y: u8) void {
+    drawPart(m, id, x, y, 0);
+}
+
+/// `drawShape`, leaving out the shape's first `skip` byte columns, so that
+/// what's left starts at x. That's how a shape hanging off the left edge
+/// of the screen gets drawn.
+pub fn drawPart(m: *Machine, id: shapes.Id, x: u8, y: u8, skip: u8) void {
     var src = shapes.address(m, id);
     const width = m.peek(src);
     const height = m.peek(src + 1);
@@ -81,8 +88,8 @@ pub fn drawShape(m: *Machine, id: shapes.Id, x: u8, y: u8) void {
         const line = y + row;
         if (line < 200) {
             var dst = rowAddress(m, @intCast(line)) + @as(u16, column) * 8;
-            var i: u16 = 0;
-            while (i < width and column + i < 40) : (i += 1) {
+            var i: u16 = skip;
+            while (i < width and column + i - skip < 40) : (i += 1) {
                 m.poke(dst, m.peek(dst) | m.peek(src + i));
                 dst += 8; // the same line of the next cell along
                 m.work(4);
@@ -104,10 +111,10 @@ pub fn drawShape(m: *Machine, id: shapes.Id, x: u8, y: u8) void {
     var r: u16 = 0;
     while (r < reach and y / 8 + r < 25) : (r += 1) {
         const from = @min(r, cell_rows - 1) * width;
-        var i: u16 = 0;
-        while (i < width and column + i < 40) : (i += 1) {
-            m.poke(hw.screen + cell + i, m.peek(screen_src + from + i));
-            m.poke(hw.color_ram + cell + i, m.peek(color_src + from + i));
+        var i: u16 = skip;
+        while (i < width and column + i - skip < 40) : (i += 1) {
+            m.poke(hw.screen + cell + i - skip, m.peek(screen_src + from + i));
+            m.poke(hw.color_ram + cell + i - skip, m.peek(color_src + from + i));
             m.work(4);
         }
         cell += 40;

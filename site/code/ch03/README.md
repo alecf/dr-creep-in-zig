@@ -12,6 +12,7 @@ src/main.zig      boot(), frame(), the game's modes, whole-game tests
 src/map.zig       the game's memory map, checked at compile time
 src/castle.zig    the castle format: header, room directory, tags, records, the stream walker
 src/author.zig    the castle-authoring kit: declarations in, checked castle bytes out
+src/hall.zig      the chapter's hand-typed one-room castle, and the test that the kit matches it
 src/training.zig  the Training Castle, written with the kit (bulk data)
 src/room.zig      drawing a room from its object stream; N and P
 src/screen.zig    the row table, one fat pixel, and the shape blitter

@@ -13,6 +13,7 @@ const text = @import("text.zig");
 const title = @import("title.zig");
 const room = @import("room.zig");
 const player = @import("player.zig");
+const hall = @import("hall.zig");
 const castle = @import("castle.zig");
 const author = @import("author.zig");
 const training = @import("training.zig");
@@ -112,6 +113,11 @@ test "fire on the title screen opens the room, and the explorer walks" {
     try std.testing.expectEqual(@intFromEnum(shapes.Id.explorer_right_1), m.ram[map.player_frame]);
 }
 
+// hall.zig is no longer loaded, so nothing compiles it unless a test asks.
+test {
+    _ = hall;
+}
+
 test "N and P flip through the castle's rooms, with a loading pause" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
@@ -138,7 +144,7 @@ test "N and P flip through the castle's rooms, with a loading pause" {
         m.input = .{};
         _ = m.runFrame(@This());
     }
-    try std.testing.expectEqual(@typeInfo(training.Room).@"enum".fields.len, m.ram[map.room_number]);
+    try std.testing.expectEqual(std.enums.values(training.Room).len, m.ram[map.room_number]);
 }
 
 test "the Training Castle reads back: every room walks to its end tag" {

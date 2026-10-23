@@ -6,21 +6,20 @@ checkpoint: ch03
 
 :::mission-briefing
 By the end of this chapter the Comet 64 holds a whole castle: the
-**Training Castle**, twenty rooms and a prize room in 4,324 bytes. Press
+**Training Castle**, twenty rooms and a prize room in 4,323 bytes. Press
 fire on the title screen and you're standing in its Gatehouse, with a
 door, a doorbell and a word of welcome on the wall. Press **N** on the
 keyboard and the screen goes dark for a moment and comes back as the next
 room; **P** takes you back.
 
-![The Gatehouse: the title THE GATEHOUSE in tall yellow letters, eight lines of instructions, a red brick floor, an orange doorbell and a stone arch with a wooden door on the right](images/03-gatehouse.png)
+![The Gatehouse: the title THE GATEHOUSE in tall yellow letters, nine lines of instructions, a red brick floor, an orange doorbell and a stone arch with a wooden door on the right](images/03-gatehouse.png)
 
 Nothing in those rooms is placed by code. Every walkway, ladder, pole,
-door, bell and line of text is read out of the castle file, in the same
-format the 1984 disk uses, down to the last byte. You'll design that
-file, write the loader that walks it, and then build a small language
-for writing castles: Zig declarations that the compiler turns into castle
-bytes, and refuses to build if a door leads nowhere or a line of text
-runs off the screen.
+door, bell and line of text is read out of the castle file, in the 1984
+disk's format, down to the last byte. You'll design that file, write the
+loader that walks it, and build a small language for writing castles:
+Zig declarations that the compiler turns into castle bytes, and refuses
+to build if a door leads nowhere.
 
 New under the hood: **structs and how their fields sit in memory**,
 **two-byte values, low byte first**, **variable-length data ended by
@@ -37,11 +36,10 @@ few thousand bytes of description: *a red room; a walkway along the
 bottom, forty pieces long; a door on the right that leads to room 1.*
 
 That's the big idea of this chapter, and maybe of the whole game: **data
-is the program**. The engine knows how to draw a ladder. The castle says
-where the ladders go. Change the bytes and you have a different game,
-without touching a line of code. Chapter 2 drew the Entrance Hall with a
-list of `drawShape` calls. By the end of this one, `room.zig` won't know
-a single room by heart.
+is the program**. The engine knows how to draw a ladder; the castle says
+where the ladders go. Chapter 2 drew the Entrance Hall with a list of
+`drawShape` calls. By the end of this one, `room.zig` won't know a single
+room by heart.
 
 :::under-the-hood A level in JSON
 In a JavaScript game you'd keep the castle in a file like this:
@@ -59,80 +57,16 @@ has been parsed. Parsing it builds a tree of objects, each its own heap
 allocation with a hidden header, and every name in it (`"color"`,
 `"doors"`) is spelled out again in every room.
 
-The castle file says the same things in 4,324 bytes and contains no names
-at all: where a byte sits says what it means. The game never parses it.
-It reads the bytes where they lie, and each record is already in the
-shape the drawing code wants.
+The castle file says the same things in 4,323 bytes and contains no names
+at all: where a byte sits says what it means. The game never parses it;
+it reads the bytes where they lie.
 :::
-
-## Room for a castle
-
-The castle lives in its own 8 KB region from `$7800`, the start of the
-free memory above the program image. The game also has to remember which
-room is on screen, one byte. And the text region grows: castle text can be
-two or three times the usual height (you'll see why later), so the scratch
-shape each letter is built in grows from 23 bytes to 63, and the string
-buffer moves up to make room.
-
-**`src/map.zig`** (add below the `game` region)
-
-```zig
-/// The room on screen.
-pub const room = Region{ .name = "room", .first = 0x0208, .last = 0x0208 };
-pub const room_number = room.first + 0; // its place in the castle's room directory
-```
-
-**`src/map.zig`** (replace the `text` region's comment and first four lines)
-
-```zig
-/// Text: a lookup table, the shape each letter is built in, and a string.
-pub const text = Region{ .name = "text", .first = 0x0300, .last = 0x037F };
-pub const text_widen = text.first + 0x00; // 16 bytes: 4 glyph bits -> 4 fat pixels
-pub const text_glyph = text.first + 0x10; // one letter, up to 2x24: 63 bytes
-pub const text_buffer = text.first + 0x50; // a string to print
-```
-
-**`src/map.zig`** (add above the row table)
-
-```zig
-/// The castle: its header, its room directory and every room's objects,
-/// exactly as the castle file holds them.
-pub const castle = Region{ .name = "castle", .first = 0x7800, .last = 0x97FF };
-```
-
-**`src/map.zig`** (replace `regions`)
-
-```zig
-/// The whole map, in address order.
-pub const regions = [_]Region{
-    stack,
-    player,
-    game,
-    room,
-    text,
-    program,
-    stars,
-    shape_table,
-    castle,
-    row_table,
-    sprite_frames,
-    screen_plane,
-    sprite_pointers,
-    video_chip,
-    color_ram,
-    input_ports,
-    bitmap,
-};
-```
-
-The overlap check now guards seventeen regions. `zig build` still gives
-you Chapter 2's game, since nothing it used has moved except the text
-buffer, and `text.zig` finds that through its name.
 
 ## The header: 256 bytes and a magic number
 
-A castle file starts with a **header**, 256 bytes at `$7800`, and most of
-it is empty on the disk. Only a few fields are set:
+A castle file starts with a **header**, 256 bytes, and it lives at
+`$7800`, the first byte of free memory above the program image. Most of
+the header is empty on the disk. Only a few fields are set:
 
 | Offset | Bytes | What |
 |---|---|---|
@@ -160,17 +94,18 @@ why." A castle of `$0154` bytes stores its size like this:
               low     high
 ```
 
-This is called **little-endian**: the little end goes first. It looks
-backwards to a human, who writes the big digits on the left. It's the
-natural order for the Comet's processor, though, which handles one byte
-at a time. Think about how you add two long numbers on paper: you start
-from the right-hand column and carry leftwards. The processor does the
-same thing with addresses. When it works out "this address plus 3", it
-adds 3 to the low byte first, then carries into the high byte. If the
-low byte arrives first, it can start adding while the high byte is still
-on its way. So every two-byte value in this machine, every address in
-every table and every castle, goes low byte first, and `m.peek16` puts
-the two halves back together for you: `peek(a) | peek(a + 1) << 8`.
+This is called **little-endian**: the little end goes first. If you've
+used a `DataView` in JavaScript, it's the `true` in
+`view.getUint16(0, true)`. It looks backwards, but it's the natural order
+for the Comet's processor, which handles one byte at a time. Think about how you add two long
+numbers on paper: you start from the right-hand column and carry
+leftwards. The processor does the same with addresses. When it works out
+"this address plus 3", it adds 3 to the low byte first, then carries into
+the high byte. If the low byte arrives first, it can start adding while
+the high byte is still on its way. So every two-byte value in this
+machine, every address in every table and every castle, goes low byte
+first, and `m.peek16` puts the two halves back together for you:
+`peek(a) | peek(a + 1) << 8`.
 
 ## The room directory
 
@@ -191,11 +126,9 @@ for each room, room 0 first, so room *n*'s entry is at `$7900 + n × 8`.
   numbers at once, packed the way Chapter 2 packed two colours into a
   screen-plane byte: bits 3–5 are the width and bits 0–2 the height, in
   map cells.
-- **Skip.** Two bytes nothing reads. (There's a story in them; see the
-  end of the chapter.)
-- **Objects.** The address of this room's objects, two bytes, low byte
-  first. This is the field that matters most: everything in the room
-  hangs off it.
+- **Skip.** Two bytes nothing reads (see the end of the chapter).
+- **Objects.** The address of the room's objects, low byte first: the
+  field everything in the room hangs off.
 
 How does the game know how many rooms there are? There's no count
 anywhere. Instead, the byte after the last entry has **bit 6 set**, and
@@ -215,49 +148,73 @@ might write
 const entry = { color: 2, mapX: 56, mapY: 48, size: 0x23, objects: 0x7909 };
 ```
 
-and that object lives wherever the engine puts it, with a hidden header
-in front, its fields in whatever order the engine likes, and each number
-taking 8 bytes. You can't lay it over a run of memory and read the bytes
-underneath, because it isn't bytes; it's a pointer to a heap allocation
-(Chapter 2's "a JavaScript reference vs. an address").
+and that object lives wherever the engine puts it, with a hidden header,
+laid out however the engine likes, each number 8 bytes. You can't lay it
+over memory and read the bytes underneath: it's a pointer to a heap
+allocation (Chapter 2's "a JavaScript reference vs. an address").
 
-A Zig **`extern struct`** is the other thing: its fields, in the order you
-wrote them, with nothing in front and nothing in between. Declare the
-entry as one, and `@sizeOf(Entry)` is 8, `@offsetOf(Entry, "objects")` is
-6, and the struct *is* the format. Then `m.view(Entry, address)`, from the
-reference card's section 9, hands you a typed pointer straight into
-memory: Chapter 2's pointer, an address, with a type attached so that
-`entry.color` means "the byte at that address" and `entry.map_y` "the
-byte two after it".
+A Zig **`extern struct`** is the other thing: a promise about bytes. Its
+fields sit in the order you wrote them, nothing in front, laid out by
+rules every compiler on every computer agrees on. Declare the entry as
+one, and `@sizeOf(Entry)` is 8, `@offsetOf(Entry, "objects")` is 6, and
+the struct *is* the format. (A plain `struct`, like the `Walker` you'll
+write soon, makes no such promise. Zig may shuffle its fields, which
+makes it Zig's JS object: fine for working values, useless for a file.)
 
-For the size byte, Zig can do Chapter 2's shifting and masking for us. A
-**`packed struct(u8)`** is a byte cut into bit fields, listed from bit 0
-up, so `size.width` reads bits 3–5 and `size.height` bits 0–2.
+Those agreed rules have one catch. A `u16` likes to start on an even
+address (its **alignment**), so look at what happens to the natural first
+try at a record whose two-byte word follows a single byte:
 
-:::game-over Why not `objects: u16`?
-The obvious way to write a two-byte field is a `u16`. Try it on a record
-whose word follows a single byte:
-
-```zig snippet
-const Squeezed = extern struct { color: u8, objects: u16 };
-// ... m.view(Squeezed, at) ...
 ```
+  extern struct { color: u8, objects: u16 }
+
+  byte:      0         1          2          3
+          ┌───────┬───────────┬──────────┬──────────┐
+  Zig:    │ color │ (padding) │ objects  │ objects  │   4 bytes
+          │       │           │   low    │   high   │
+          ├───────┼───────────┼──────────┼──────────┘
+  castle: │ color │  objects  │ objects  │              3 bytes
+          │       │    low    │   high   │
+          └───────┴───────────┴──────────┘
+```
+
+Zig slips in a byte you never asked for, and every field after it reads
+one byte late. The Comet's processor doesn't care where a word starts,
+and the castle format packs its bytes tight wherever they fall: the
+header's final-room word sits at `$5F`, an odd offset. So castle words are
+`[2]u8` in our structs, read with `m.peek16`. And `m.view`, the reference
+card's typed pointer into memory (section 9), refuses any type with
+padding, at compile time, with this:
 
 ```
 error: m.view(room.Squeezed): field room.Squeezed.objects would start at byte 2, but the fields before it only fill 1: Zig inserts padding to align a u16. Use [2]u8 for it (and m.peek16), or move it
 ```
 
-Zig keeps every `u16` on an even byte (its **alignment**), so it slips a
-hidden padding byte in after `color`, and the struct no longer matches the
-bytes in memory. The Comet's processor doesn't care where a two-byte value
-starts, but Zig's `u16` does, and the castle format packs its bytes in
-tight, wherever they fall: the header's final-room word sits at `$5F`, an
-odd offset. The machine refuses any view type whose bytes don't line up,
-with that explanation, so you find out at compile time instead of reading
-garbage. Castle words are `[2]u8` in our structs, read with `m.peek16`.
-:::
+When the layout does line up, `m.view(Entry, address)` hands you Chapter
+2's pointer, an address, with a type attached, so `entry.color` means
+"the byte at that address" and `entry.map_y` "the byte two after it". For
+the size byte, Zig can do Chapter 2's shifting and masking for us: a
+**`packed struct(u8)`** is a byte cut into bit fields, listed from bit 0
+up, so `size.width` reads bits 3–5 and `size.height` bits 0–2.
 
-Here's the start of the castle module: the header, and the directory.
+Now the castle module. The castle needs somewhere to land first: an 8 KB
+region from `$7800`, room for any castle on the 1984 disk.
+
+**`src/map.zig`** (add above the row table)
+
+```zig
+/// The castle: its header, its room directory and every room's objects,
+/// exactly as the castle file holds them.
+pub const castle = Region{ .name = "castle", .first = 0x7800, .last = 0x97FF };
+```
+
+**`src/map.zig`** (in `regions`, add after `shape_table,`)
+
+```zig
+    castle,
+```
+
+Then the header and the directory:
 
 **`src/castle.zig`** (new file)
 
@@ -320,16 +277,16 @@ pub fn entry(m: *Machine, n: u8) u16 {
 /// How many rooms the directory lists.
 pub fn roomCount(m: *Machine) u8 {
     var n: u8 = 0;
-    while (m.peek(entry(m, n)) & end_flag == 0) n += 1;
+    while (m.peek(entry(m, n)) & end_flag == 0) : (n += 1) m.work(2);
     return n;
 }
 ```
 
 `entry` is the multiply-free sum from the diagram (`n × 8` is three
 shifts), and `roomCount` walks the directory until it finds the bit-6
-sentinel. `max_rooms` is our own limit, not the 1984 game's: 31 rooms and the end
-byte fit in the page from `$7900`, so room *n*'s entry is always `$7900`
-plus a single byte.
+sentinel. `max_rooms` is our own limit, not the 1984 game's: 31 rooms and
+the end byte fit in the page from `$7900`, so room *n*'s entry is always
+`$7900` plus a single byte.
 
 :::widget hex-inspector
 The Training Castle's header and directory as hex. Hover over a byte to
@@ -341,17 +298,16 @@ to.
 ## A castle typed by hand
 
 Before we write any tools, let's make a castle the hard way, so you know
-exactly what the tools are saving you. Here's Chapter 2's Entrance Hall
-as a castle file. The header and directory are as above; the room's
-objects (`hall`) are the next section's subject, so for now trust that
-they describe the hall's doors, walkways, ladder, pole, a doorbell and its
+what the tools save you. Here's Chapter 2's Entrance Hall as a castle
+file. The room's objects (`hall`) are the next section's subject; for now,
+trust that they describe its doors, walkways, ladder, pole, doorbell and
 title.
 
-**`src/training.zig`** (new file)
+**`src/hall.zig`** (new file)
 
 ```zig
-//! The Training Castle, typed in by hand: one room, the Entrance Hall
-//! from Chapter 2, as castle bytes.
+//! The Entrance Hall from Chapter 2 as a one-room castle, typed in by
+//! hand, byte by byte.
 
 /// The whole castle file, ready to load at $7800.
 pub const bytes = &(header ++ directory ++ hall);
@@ -377,8 +333,8 @@ const directory = [_]u8{
 /// The Entrance Hall's objects.
 const hall = [_]u8{
     0x03, 0x08, 2, // doors: two of them
-    32, 40, 3, 0, 1, 0, 16, 0, // upper left, leading to door 1
-    152, 96, 1, 0, 0, 0, 16, 0, // middle right, leading to door 0
+    32, 40, 3, 0, 1, 0, 6, 0, // upper left, leading to door 1
+    152, 96, 1, 0, 0, 14, 13, 0, // middle right, leading to door 0
     0x06, 0x08, // walkways
     15, 24, 72, // upper left
     17, 108, 128, // middle right
@@ -398,22 +354,23 @@ const hall = [_]u8{
 Count along with the comments. The directory has one entry and then the
 end byte, so it covers `$7900` to `$7908`, and the hall's objects start
 at `$7909`, written `09 79`. The hall is 75 bytes, so the castle is
-256 + 9 + 75 = 340 bytes, `$0154`, written `54 01`. Change the hall by a
-single byte and that size is wrong, and nothing tells you. Hold that
-thought.
+256 + 9 + 75 = 340 bytes, `$0154`, written `54 01`. (Bytes 5 and 6 of each
+door, `0, 6` and `14, 13`, say where the door shows on the castle map;
+they wait for Chapter 9.) Change the hall by a single byte and that size
+is wrong, and nothing tells you. Hold that thought.
 
 Boot copies the castle into its region:
 
 **`src/main.zig`** (add below the `player` import)
 
 ```zig
-const training = @import("training.zig");
+const hall = @import("hall.zig");
 ```
 
 **`src/main.zig`** (in `boot`, add after the star map's `m.load`)
 
 ```zig
-    m.load(map.castle.first, training.bytes);
+    m.load(map.castle.first, hall.bytes);
 ```
 
 The floor pieces get new pictures this chapter (and there are doors,
@@ -444,17 +401,16 @@ That's because of how a room gets its colour, which is our next trick.
 ### One colour per room
 
 The directory gives each room one colour byte, and every walkway, ladder
-and pole in the room takes that colour. The castle doesn't store a colour
-per walkway, and the drawing code doesn't take a colour parameter. Instead,
-right before a room is drawn, the game **repaints the floor pieces in the
-shape table itself**. A walkway piece's screen-plane bytes say what colour
-codes 01 and 10 are (Chapter 2's shape format); write the room's colour
-into both halves of those bytes, and every walkway drawn afterwards comes
-out in that colour. Ladders and poles get the same paint, so where one
-crosses a walkway, its cells still agree with the bricks. This is exactly
-how the 1984 game does it: the shape table is memory like everything
-else, so the room changes the pictures instead of the pictures taking
-orders.
+and pole in the room takes that colour, with no colour per walkway
+anywhere. Right before a room is drawn, the game **repaints the floor
+pieces in the shape table itself**. A walkway piece's screen-plane bytes
+say what colour codes 01 and 10 are (Chapter 2's shape format); write the
+room's colour into both halves of those bytes, and every walkway drawn
+afterwards comes out in that colour. Ladders and poles get the same
+paint, so where one crosses a walkway, its cells still agree with the
+bricks. This is exactly how the 1984 game does it: the shape table is
+memory like everything else, so the room changes the pictures instead of
+the pictures taking orders.
 
 **`src/shapes.zig`** (add below `address`)
 
@@ -472,9 +428,8 @@ pub fn recolor(m: *Machine, id: Id, colors: u8) void {
 ```
 
 `recolor` finds the shape's screen-plane bytes (past the 3-byte header
-and `width × height` pixel bytes) and fills them. It uses `m.mul8` twice,
-honestly charged at 120 cycles each, because it runs once per piece per
-room, not per frame.
+and `width × height` pixel bytes) and fills them. Two `m.mul8`s are fine
+here: it runs once per piece per room, not per frame.
 
 Now `room.zig` reads room 0's colour from the directory and paints with
 it before drawing the hall it already knows:
@@ -518,26 +473,24 @@ fn both(color: u8) u8 {
 }
 ```
 
-`both` puts a colour in both halves of a byte, high nibble for code 01
-and low for code 10, so either code paints in the room's colour. Build,
-press fire, and the hall's bricks are red: the castle file said so.
-Everything else in the room is still Chapter 2's hand-placed code. Time
-to read the rest.
+`both` puts a colour in both halves of a byte, for codes 01 and 10.
+Build, press fire, and the hall's bricks are red: the castle file said
+so. Everything else is still Chapter 2's hand-placed code.
 
 ## Streams of tagged objects
 
 A room's objects are a **stream**: groups of records, one group per kind
 of object, each introduced by a two-byte **tag** that says what kind
-follows. Here's the hall from `training.zig`, as the bytes sit in memory
-from `$7909`:
+follows. Here's the hall from `hall.zig`, as the bytes sit in memory from
+`$7909`:
 
 ```
-  03 08  02  20 28 03 00 01 00 10 00  98 60 01 00 00 00 10 00   doors: a count, then 8 bytes each
+  03 08  02  20 28 03 00 01 00 06 00  98 60 01 00 00 0E 0D 00   doors: a count, then 8 bytes each
   06 08  0F 18 48  11 6C 80  28 10 C0  00                        walkways: 3 bytes each, then a 0
   09 08  10 40 48  00                                            one sliding pole
   0C 08  09 78 80  00                                            one ladder
   0F 08  01  88 68 01                                            doorbells: a count, then 3 bytes each
-  33 08  1C 08 0F 21  54 48 45 20 ... 48 41 CC  00               text: x, y, colour, style, letters; a 0
+  33 08  1C 08 0F 21  54 48 45 20 ... 48 41 4C CC  00            text: x, y, colour, style, letters; a 0
   00 00                                                          the end of the room
 ```
 
@@ -545,10 +498,8 @@ Read the tags low byte first and they're `$0803` (doors), `$0806`
 (walkways), `$0809` (poles), `$080C` (ladders), `$080F` (doorbells),
 `$0833` (text), and `$0000`, the end of the room. They're three apart.
 There are eighteen of them, from `$0803` to `$0836`, one for each kind of
-object the castle can hold: doors, walkways, poles, ladders, doorbells,
-lightning machines, forcefields, mummies, keys, locks, ray guns, matter
-transmitters, trapdoors, conveyors, Frankenstein's monsters, text and
-pictures, plus one the castles never use.
+object a castle can hold, from doors to Frankenstein's monsters, plus one
+the castles never use.
 
 :::inside-the-disk The tag is the address
 Why `$0803`, and why three apart? Because the tags are **addresses in the
@@ -560,13 +511,15 @@ straight to it, and the jump lands in the code that understands doors.
 There's no lookup and no comparison: **the data carries the address of
 the code that reads it.**
 
-One entry, `$0821`, stamps a shape several times in a row. The engine's
-own title screens use it; no castle does.
+One entry, `$0821`, stamps a shape several times in a row, and no castle
+uses it. The title screens, which do, don't even bother with the table:
+their tags are the routines' own addresses, `$160A` and `$2A6D`. Proof, if
+you wanted it, that a tag is nothing but an address.
 :::
 
-Our tags can't be addresses in our own program, because Zig decides where
-our code goes, and it isn't at `$0803`. So we turn the tag back into a
-kind instead, with one
+Every castle ever written depends on that table never moving, so the
+1984 engine pinned it at `$0803`. Our functions live wherever the compiler
+puts them, so we turn the tag back into a kind instead, with one
 subtraction and a lookup: take away `$0803`, and look the difference up in
 a 54-entry table where every third entry is a kind and the other two are
 `null`. It's Chapter 2's Lookup Table Power-Up, aimed at a different
@@ -666,7 +619,15 @@ pub const Bell = extern struct { x: u8, y: u8, door: u8 };
 
 /// A line of text; its letters follow, the last one with bit 7 set.
 pub const Text = extern struct { x: u8, y: u8, color: u8, style: u8 };
+```
 
+The fourteen later kinds are one line each. Their field names are what
+the later chapters will use; for now only their sizes matter.
+
+:::type-in The machines and monsters
+**`src/castle.zig`** (add at the end of the file)
+
+```zig
 // The machines and monsters later chapters bring to life. For now the
 // loader only needs their sizes, and the authoring kit their fields.
 pub const Lightning = extern struct { state: u8, x: u8, y: u8, length: u8, machines: [4]u8 };
@@ -680,6 +641,7 @@ pub const Trapdoor = extern struct { state: u8, x: u8, y: u8, switch_x: u8, swit
 pub const Conveyor = extern struct { state: u8, x: u8, y: u8, control_x: u8, control_y: u8 };
 pub const Frankenstein = extern struct { state: u8, x: u8, y: u8, runtime: [4]u8 };
 ```
+:::
 
 ### Three ways to end a list
 
@@ -692,11 +654,12 @@ that's deliberate. The castle uses three framing schemes:
   next record's first byte is an end marker, which is then skipped. For
   walkways, ladders and poles the marker is a 0 where the next length
   would be (a walkway of no pieces would be pointless anyway). Text ends
-  on a 0 where the next x would be. The machines need other markers,
-  because their first byte is a state that can be 0: a lightning group
-  ends on a byte with bit 5 set, and ray guns, trapdoors, conveyors and
-  Frankensteins on a byte with bit 7 set, the bits their state bytes never
-  use.
+  on a 0 where the next x would be. Most of the machines need other
+  markers, because their state byte can be 0: a lightning group ends on a
+  byte with bit 5 set, and ray guns, trapdoors, conveyors and
+  Frankensteins on a byte with bit 7 set, the bits their state bytes
+  never use. (A mummy's state is never 0, so mummies end on 0 like the
+  rest.)
 - **One tag per thing.** A picture is a whole shape, then a list of places
   to draw it, up to a 0, and each picture gets its own tag. A matter
   transmitter is one booth and a list of pads, up to a 0, once per room.
@@ -704,14 +667,17 @@ that's deliberate. The castle uses three framing schemes:
 :::power-up The Sentinel Power-Up
 Mark the end of a list *inside* the data instead of storing its length:
 a 0 where the next length would be, a bit the data never sets, bit 7 on
-a string's last letter. It costs a byte or nothing at all, and lists can
-grow and shrink without anyone updating a count. The price is that you
-can't jump to the 20th entry; you walk to it. For data you read from
-start to finish every time, like a room being drawn, that's no price at
-all.
+a string's last letter. A JavaScript array carries its `.length`; a C
+string doesn't, it ends on a 0 byte. The castle is the C kind. It costs a
+byte or nothing at all, and lists can grow and shrink without anyone
+updating a count. The price is that you can't jump to the 20th entry; you
+walk to it. For data you read from start to finish every time, like a
+room being drawn, that's no price at all.
 :::
 
-In Zig, "one of these, and which one it is" is a **tagged union**:
+In Zig, "one of these, and which one it is" is a **tagged union**, like a
+TypeScript discriminated union, and a `switch` on one can capture the
+case's data (`.counted => |size|`):
 
 **`src/castle.zig`** (add at the end of the file)
 
@@ -720,8 +686,8 @@ In Zig, "one of these, and which one it is" is a **tagged union**:
 pub const Framing = union(enum) {
     /// A count byte, then that many records of this size.
     counted: u8,
-    /// Records of this size until one starts with the end marker,
-    /// which is a byte of 0 (`end` = 0) or a byte with bit `end` set.
+    /// Records of this size until one starts with the end marker: a byte
+    /// of 0 when `end` is 0, otherwise a byte with any of `end`'s bits set.
     marked: struct { size: u8, end: u8 },
     /// Like `marked`, ended by a 0, but each record ends with a string.
     text,
@@ -758,24 +724,20 @@ pub fn isEnd(byte: u8, end: u8) bool {
 }
 ```
 
-`union(enum)` is like a TypeScript discriminated union. A `Framing` is
-exactly one of its five cases, and a `switch` on it can capture the
-case's data: `.counted => |size|` gets the record size,
-`.marked => |f|` gets the size and the marker.
-
 :::pro-tip `switch` must cover everything
-`framing` switches on a `Kind` with no `else`, so if you ever added a
-nineteenth kind and forgot to give it a framing, the build would
-stop right here: `switch must handle all possibilities`. The same goes for
-every `switch` on a `Framing`. Leave out `else` when you can, and the
-compiler keeps your lists in step.
+`framing` switches on a `Kind` with no `else`, so a nineteenth kind
+without a framing would stop the build right here: `switch must handle
+all possibilities`. Leave out `else` when you can, and the compiler keeps
+your lists in step.
 :::
 
 ### The walker
 
 Now the part that reads a stream. `Walker` is an **iterator**: a little
 struct that remembers where it is, with a `next` that hands you one
-record at a time, or `null` at the end of the room.
+record at a time. It's a Python iterator's `__next__`, handing back
+`null` instead of raising `StopIteration`, and `while (walk.next(m)) |r|`
+is Zig's `for r in walker`.
 
 **`src/castle.zig`** (add at the end of the file)
 
@@ -849,14 +811,14 @@ pub const Walker = struct {
 /// The address after a string whose last letter has bit 7 set.
 fn stringEnd(m: *Machine, at: u16) u16 {
     var a = at;
-    while (m.peek(a) & 0x80 == 0) a += 1;
+    while (m.peek(a) & 0x80 == 0) : (a += 1) m.work(2);
     return a + 1;
 }
 
 /// The address after a list of (x, y) pairs ended by a 0.
 fn placesEnd(m: *Machine, at: u16) u16 {
     var a = at;
-    while (m.peek(a) != 0) a += 2;
+    while (m.peek(a) != 0) : (a += 2) m.work(2);
     return a + 1;
 }
 
@@ -868,31 +830,37 @@ pub fn shapeSize(m: *Machine, at: u16) u16 {
     return 3 + m.mul8(width, height) + 2 * m.mul8(width, (height + 7) / 8);
 }
 
-/// Object X counts fat pixels from 16, so that things can start a
-/// little way off the left edge of the screen. The fat pixel the blitter
-/// wants, or null for anything that starts off the left edge.
-pub fn screenX(x: u8) ?u8 {
-    return if (x < 16) null else x - 16;
-}
+/// Object X counts fat pixels from 16 to the left of the screen, so that
+/// things can start a little way off its left edge: X = 16 is the edge.
+pub const left_edge: u8 = 16;
 ```
 
-`next` reads a tag when it isn't in the middle of a group, looks it up,
-and (for a counted group) reads the count. Then it steps over one record
-according to the framing, and returns it. When a group ends, `continue`
-goes round the loop to read the next tag: each pass either moves on to
-the next group or returns a record.
-`orelse @panic(...)` unwraps the optional kind, and stops the game with a
-message if a castle hands it a tag that isn't one.
+Here's `next` walking the hall you typed:
 
-The helpers at the bottom step over a string to its bit-7 letter, over a
-list of places to its 0, and over a whole shape, using Chapter 2's shape
-format: three header bytes, `width × height` pixels and two colour bytes
-per cell. `screenX` we'll come to in a moment.
+| `at` | reads | does |
+|---|---|---|
+| `$7909` | `03 08` | a tag: doors, counted |
+| `$790B` | `02` | the count: two |
+| `$790C` | 8 bytes | returns door 1 of 2 |
+| `$7914` | 8 bytes | returns door 2 of 2 |
+| `$791C` | | the count is used up: `continue` to the next tag |
+| `$791C` | `06 08` | a tag: walkways, ended by a 0 |
+| `$791E` | 3 bytes | returns a walkway (and twice more) |
+| `$7927` | `00` | the end marker: skip it, `continue` |
+| ... | ... | the pole, the ladder, the bell, the text |
+| `$7952` | `00 00` | the end tag: `null` |
 
-Time to check it against bytes nobody generated: a room written out by
-hand with one of nearly everything, including a lightning machine and its
-switch, a ray gun, a matter transmitter and a picture.
+Each pass round the loop either moves on to the next group or returns a
+record. `orelse @panic(...)` unwraps the optional kind, and stops the game
+with a message if a castle hands it a tag that isn't one. The helpers at
+the bottom step over a string to its bit-7 letter, over a list of places
+to its 0, and over a whole shape in Chapter 2's format: three header
+bytes, `width × height` pixels and two colour bytes per cell.
 
+Now check it against bytes nobody generated: a room typed by hand with
+one of nearly everything.
+
+:::type-in The walker's tests
 **`src/castle.zig`** (add at the end of the file)
 
 ```zig
@@ -940,32 +908,102 @@ test "the walker finds every record in a stream written by hand" {
     try std.testing.expectEqual(at + room.len, walk.at);
 }
 ```
+:::
 
 `zig build test` runs the two new tests along with the others (they're
-inside `castle.zig`, which `room.zig` imports, so they count). If you change the lightning group's end byte
-from `0x20` to `0x00`, the walker reads the end marker as a record and
-everything after it goes wrong. Try it, then put it back.
+inside `castle.zig`, which `room.zig` imports, so they count). If you
+change the lightning group's end byte from `0x20` to `0x00`, the walker
+reads the end marker as a record and everything after it goes wrong. Try
+it, then put it back.
 
 ## Drawing from the stream
 
-Here's the new `room.zig`. It forgets the Entrance Hall entirely: it
-walks room 0's stream and draws each record it knows.
+An object's X in the castle isn't the fat pixel Chapter 2's blitter
+takes. It's the fat pixel **plus 16**, so X = 16 is the left edge of the
+screen. That lets something start a little off the left of the screen
+with a positive X (X = 4 is twelve fat pixels off the edge).
+Chapter 4 puts the explorer on the same scale, and that's how he'll get
+past the wall made of arithmetic. Y is plain: the pixel row.
 
-**`src/room.zig`** (replace the whole file)
+Something that starts off the left edge should be cut off there, not
+vanish, so the blitter learns to leave out a shape's first few byte
+columns. It's Chapter 2's `drawShape` with every column counted from
+`skip`:
+
+**`src/screen.zig`** (replace `drawShape`)
+
+```zig
+/// Draw room shape (or glyph) `id` with its top-left corner at fat pixel
+/// (x, y); sprite frames have no colours, so they don't belong here. x is
+/// rounded down to a multiple of 4, because shapes sit on whole bitmap
+/// bytes. Anything past the right or bottom edge of the screen is cut off.
+pub fn drawShape(m: *Machine, id: shapes.Id, x: u8, y: u8) void {
+    drawPart(m, id, x, y, 0);
+}
+
+/// `drawShape`, leaving out the shape's first `skip` byte columns, so that
+/// what's left starts at x. That's how a shape hanging off the left edge
+/// of the screen gets drawn.
+pub fn drawPart(m: *Machine, id: shapes.Id, x: u8, y: u8, skip: u8) void {
+    var src = shapes.address(m, id);
+    const width = m.peek(src);
+    const height = m.peek(src + 1);
+    src += 3; // past width, height and flags
+    const column = x / 4;
+
+    // The pixels, a row at a time, ORed over whatever is already there.
+    var row: u16 = 0;
+    while (row < height) : (row += 1) {
+        const line = y + row;
+        if (line < 200) {
+            var dst = rowAddress(m, @intCast(line)) + @as(u16, column) * 8;
+            var i: u16 = skip;
+            while (i < width and column + i - skip < 40) : (i += 1) {
+                m.poke(dst, m.peek(dst) | m.peek(src + i));
+                dst += 8; // the same line of the next cell along
+                m.work(4);
+            }
+        }
+        src += width;
+    }
+
+    // The colours: rows of cells, one screen-plane byte and one colour-RAM
+    // byte per cell. A shape that doesn't start on a cell's top line
+    // reaches one more row of cells, which gets the last row's colours.
+    const cell_rows = (height + 7) / 8;
+    const reach = cell_rows + @intFromBool(y % 8 != 0);
+    const screen_src = src;
+    const color_src = src + cell_rows * width;
+    // The top line of a cell row is bitmap + row * 320; one eighth of
+    // the distance from the bitmap's start is row * 40, the cell number.
+    var cell = (rowAddress(m, y & 0b1111_1000) - hw.bitmap) / 8 + column;
+    var r: u16 = 0;
+    while (r < reach and y / 8 + r < 25) : (r += 1) {
+        const from = @min(r, cell_rows - 1) * width;
+        var i: u16 = skip;
+        while (i < width and column + i - skip < 40) : (i += 1) {
+            m.poke(hw.screen + cell + i - skip, m.peek(screen_src + from + i));
+            m.poke(hw.color_ram + cell + i - skip, m.peek(color_src + from + i));
+            m.work(4);
+        }
+        cell += 40;
+    }
+}
+```
+
+Now `room.zig` forgets the Entrance Hall. Give it a new description, and
+a `draw` that walks room 0's stream:
+
+**`src/room.zig`** (replace the comment at the top)
 
 ```zig
 //! The room on screen, drawn from the castle: walk the room's object
 //! stream and draw everything in it that stands still.
+```
 
-const machine = @import("machine");
-const Machine = machine.Machine;
-const castle = @import("castle.zig");
-const screen = @import("screen.zig");
-const shapes = @import("shapes.zig");
+**`src/room.zig`** (replace `draw`)
 
-/// Display row (0-199) of the top of the floor the explorer walks on.
-pub const floor_top = 192; // every Training Castle room has a floor here
-
+```zig
 /// Draw the whole room. Far too big for one frame: call it with the
 /// display blanked.
 pub fn draw(m: *Machine) void {
@@ -980,41 +1018,51 @@ pub fn draw(m: *Machine) void {
         }
     }
 }
+```
 
+Delete the three hand-placed helpers at the bottom of the file
+(`walkway`, `ladder` and `pole`). Then add `prepare`, which picks the
+room's colour and its first object out of the directory:
+
+**`src/room.zig`** (add below `draw`)
+
+```zig
 /// Get room `n` ready to draw: paint the floor pieces its colour, and
 /// return a walker at the start of its objects.
 fn prepare(m: *Machine, n: u8) castle.Walker {
     paint(m, roomColors(m, n));
     return .{ .at = m.peek16(castle.entry(m, n) + @offsetOf(castle.Entry, "objects")) };
 }
+```
 
-/// One colour per room, not per walkway: before drawing, repaint the
-/// floor pieces in the shape table itself.
-fn paint(m: *Machine, colors: u8) void {
-    for ([_]shapes.Id{ .walkway, .walkway_left, .walkway_right, .ladder, .pole }) |id| {
-        shapes.recolor(m, id, colors);
+`@offsetOf(castle.Entry, "objects")` is the struct telling us the field
+is 6 bytes in, instead of a 6 typed by hand. Last, the pieces:
+
+**`src/room.zig`** (add at the end of the file)
+
+```zig
+/// Draw shape `id` with its top-left corner at castle coordinates
+/// (x, y), cut off where it hangs over the left edge of the screen. This
+/// is the one place an object's X becomes the blitter's fat pixel.
+fn place(m: *Machine, id: shapes.Id, x: u8, y: u8) void {
+    m.work(8); // the test and the sums
+    if (x >= castle.left_edge) {
+        screen.drawShape(m, id, x - castle.left_edge, y);
+    } else {
+        // Four fat pixels to a byte column: leave out the columns left of the edge.
+        screen.drawPart(m, id, 0, y, (castle.left_edge - x + 3) / 4);
     }
-}
-
-/// Room `n`'s colour from its directory entry, for both codes 01 and 10.
-fn roomColors(m: *Machine, n: u8) u8 {
-    return both(m.peek(castle.entry(m, n)) & 0x0F);
-}
-
-/// One colour in both halves of a screen-plane byte.
-fn both(color: u8) u8 {
-    return color << 4 | color;
 }
 
 /// A walkway: `length` pieces 4 fat pixels wide, a left end, middles and
 /// a right end.
 fn walkway(m: *Machine, at: u16) void {
     const w = m.view(castle.Run, at);
-    var x = castle.screenX(w.x) orelse return;
+    var x = w.x;
     var i: u8 = 1;
-    while (i <= w.length and x < 160) : (i += 1) {
+    while (i <= w.length and x < castle.left_edge + 160) : (i += 1) {
         const piece: shapes.Id = if (i == 1) .walkway_left else if (i == w.length) .walkway_right else .walkway;
-        screen.drawShape(m, piece, x, w.y);
+        place(m, piece, x, w.y);
         x += 4;
         m.work(12); // the tests and the loop
     }
@@ -1023,62 +1071,43 @@ fn walkway(m: *Machine, at: u16) void {
 /// A ladder or a pole: `length` pieces stacked 8 rows apart, top first.
 fn column(m: *Machine, id: shapes.Id, at: u16) void {
     const c = m.view(castle.Run, at);
-    const x = castle.screenX(c.x) orelse return;
     var y = c.y;
     var i: u8 = 0;
     while (i < c.length and y < 200) : (i += 1) {
-        screen.drawShape(m, id, x, y);
+        place(m, id, c.x, y);
         y += 8;
         m.work(8); // the tests and the loop
     }
 }
 ```
 
-Three things to look at.
-
-**The coordinates.** An object's X in the castle isn't the fat pixel
-Chapter 2's blitter takes. It's the fat pixel **plus 16**, so X = 16 is
-the left edge of the screen and X = 175 the right. Why the offset? So
-that something can start a little off the left of the screen with a
-positive X (X = 4 is twelve fat pixels off the left edge), and a byte
-still runs to 255, long past the right edge. Chapter 4
-puts the explorer on the same scale, and that's how he'll get past the
-wall made of arithmetic. `castle.screenX` is the one place the offset is
-written down; it hands back `null` for anything that starts off the left
-edge, and those we don't draw. Y is plain: the pixel row.
-
-**The pieces.** A walkway is `length` pieces 4 fat pixels wide: a left
-end, middles and a right end (a walkway of one piece is a left end). A
-ladder or pole is `length` pieces stacked 8 rows apart, from the top
-down, and in the Training Castle each one starts on a walkway and ends on
-the one below, its top and bottom pieces drawn over the bricks. That's
-how the 1984 game reads these records, so a real castle's ladders will
-line up with its floors.
+`place` is the one place an object's X becomes a fat pixel. **The
+pieces** follow the 1984 game's reading of these records, so a real
+castle's ladders will line up with its floors. A walkway is `length`
+pieces 4 fat pixels wide: a left end, middles and a right end (a walkway
+of one piece is a left end). A ladder or pole is `length` pieces stacked
+8 rows apart, from the top down; in the Training Castle each one starts
+on a walkway and ends on the one below, its top and bottom pieces drawn
+over the bricks.
 
 **The views.** `m.view(castle.Run, at)` is a `*align(1) castle.Run`
-pointing at the record in memory. `align(1)` says it may sit at any
-address, odd or even (which is why the machine only allows views of
-types without padding). `w.length` is then a read of the byte at `at`.
-The view itself is free; what we do with it we charge with `m.work`, as
-the card asks.
-
-`prepare` picks the room's colour and its first object out of the
-directory, and `@offsetOf(castle.Entry, "objects")` is the struct telling
-us the field is 6 bytes in, instead of a 6 typed by hand.
+pointing at the record. `align(1)` says it may sit at any address, odd or
+even. (Padding is a separate question: the machine refuses any type with
+padding, because the hidden bytes wouldn't match memory.) The view is
+free; what we do with it we charge with `m.work`.
 
 Build, press fire, and the hall is back, floors, ladder and pole, read
-from 75 bytes of castle. The windows and torches are gone: the castle
-format has no torches. The doors and the title are in the stream, and
-the walker steps over them, because it knows how long they are even
-though nothing draws them yet. Let's draw them.
+from 75 bytes of castle. (The windows and torches are gone: the castle
+format has no torches.) The walker steps over the doors and the title,
+because it knows how long they are even though nothing draws them yet.
 
 ## Doors, bells and words
 
 Five new pictures go at the end of the shape IDs, where Chapter 2 asked
-us to put new shapes (castles store shape IDs, so existing IDs mustn't
-move): an arched doorway, the way out's doorway, a shut door, an open
-one, and a doorbell. And one ID with no picture at all: `image`. Hold
-that thought too.
+us to put new shapes (IDs end up stored in data, so existing ones
+mustn't move): an arched doorway, the way out's doorway, a shut door, an
+open one, and a doorbell. And one ID with no picture at all: `image`.
+Hold that thought too.
 
 **`src/shapes.zig`** (replace `Id` and the comment above it)
 
@@ -1156,18 +1185,30 @@ packed byte:
 ```
 
 The low two bits say how tall the letters are: 1, 2 or 3 times the usual
-8 rows, with 0 counting as 1. Each row of the glyph is drawn that many
-times, which is why the glyph's scratch shape grew.
+8 rows (and a style of 0 counts as plain). Each row of the glyph is drawn
+that many times, which is why the glyph's scratch shape has to grow from
+23 bytes to 63, and the string buffer moves up to make room:
+
+**`src/map.zig`** (replace the `text` region's comment and first four lines)
+
+```zig
+/// Text: a lookup table, the shape each letter is built in, and a string.
+pub const text = Region{ .name = "text", .first = 0x0300, .last = 0x037F };
+pub const text_widen = text.first + 0x00; // 16 bytes: 4 glyph bits -> 4 fat pixels
+pub const text_glyph = text.first + 0x10; // one letter, up to 2x24: 63 bytes
+pub const text_buffer = text.first + 0x50; // a string to print
+```
+
 Bit 4 draws the letters reversed, cut out of a solid block. Bit 5 asks
 for the letters character set rather than a set of pictures; the castles
 always set it, and the Comet's ROM has only the one set. So a heading is
-`$22` (letters, twice as tall) and an ordinary line `$21`, the styles the
-1984 castles use for headings and for everything else.
+`$22` (letters, twice as tall) and an ordinary line `$21`, as in the 1984
+castles.
 
 `draw` gets a style, and one more change: it returns the address after
-the string. Letters off the right edge are still left out, but the
-loop now walks on to the last letter regardless, so whoever called it
-knows where the string ended.
+the string. Letters off the right edge are still left out, but the loop
+now walks on to the last letter regardless, so whoever called it knows
+where the string ended.
 
 **`src/text.zig`** (replace `glyph_pixels` and the two lines below it)
 
@@ -1254,15 +1295,10 @@ so the title is unchanged, byte for byte.
 
 Now the room draws everything that stands still:
 
-**`src/room.zig`** (replace the imports below `machine`, adding two)
+**`src/room.zig`** (add an import below `Machine`)
 
 ```zig
-const Machine = machine.Machine;
 const Color = machine.Color;
-const castle = @import("castle.zig");
-const screen = @import("screen.zig");
-const shapes = @import("shapes.zig");
-const text = @import("text.zig");
 ```
 
 **`src/room.zig`** (replace `draw`)
@@ -1295,37 +1331,51 @@ pub fn draw(m: *Machine) void {
 **`src/room.zig`** (add at the end of the file)
 
 ```zig
+/// Where the door itself sits inside its arch. Ours is taller than the
+/// 1984 game's (12 x 15, 16 rows down), so that the explorer fits through.
+pub const door_panel_dx: u8 = 4;
+pub const door_panel_dy: u8 = 8;
+
 /// A door: the arch (or the way out's), and in it the door itself, shut
 /// or open onto the colour of the room beyond.
 fn door(m: *Machine, at: u16) void {
     const d = m.view(castle.Door, at);
-    const x = castle.screenX(d.x) orelse return;
     m.work(8); // the two tests
-    screen.drawShape(m, if (d.exit != 0) .exit_frame else .door_frame, x, d.y);
+    place(m, if (d.exit != 0) .exit_frame else .door_frame, d.x, d.y);
+    const x = d.x +| door_panel_dx;
+    const y = d.y +| door_panel_dy;
     if (d.side & castle.door_open != 0) {
         shapes.recolor(m, .door_open, roomColors(m, d.to_room));
-        screen.drawShape(m, .door_open, x + 4, d.y + 8);
+        place(m, .door_open, x, y);
     } else {
-        screen.drawShape(m, .door_shut, x + 4, d.y + 8);
+        place(m, .door_shut, x, y);
     }
 }
 
 /// A doorbell, in the colour of the room its door leads to.
 fn bell(m: *Machine, at: u16, doors: u16) void {
     const b = m.view(castle.Bell, at);
-    const x = castle.screenX(b.x) orelse return;
     const d = m.view(castle.Door, doors + @as(u16, b.door) * @sizeOf(castle.Door));
     m.work(10); // the multiply by 8 is three shifts
     shapes.recolor(m, .bell, roomColors(m, d.to_room));
-    screen.drawShape(m, .bell, x, b.y);
+    place(m, .bell, b.x, b.y);
 }
 
-/// A line of text: x, y, colour and style, then the letters.
+/// A line of text: x, y, colour and style, then the letters. Letters that
+/// would start left of the screen are left out, as they are at the right.
 fn line(m: *Machine, at: u16) void {
     const t = m.view(castle.Text, at);
-    const x = castle.screenX(t.x) orelse return;
     const color: Color = @enumFromInt(@as(u4, @truncate(t.color)));
-    _ = text.draw(m, x, t.y, color, t.style, at + @sizeOf(castle.Text));
+    var x = t.x;
+    var letters = at + @sizeOf(castle.Text);
+    while (x < castle.left_edge) : ({
+        x += 8;
+        letters += 1;
+    }) {
+        if (m.peek(letters) & 0x80 != 0) return; // the whole line is off the edge
+        m.work(4);
+    }
+    _ = text.draw(m, x - castle.left_edge, t.y, color, t.style, letters);
 }
 
 /// An image is a shape that lives in the castle. Point the shape
@@ -1333,21 +1383,21 @@ fn line(m: *Machine, at: u16) void {
 /// after it.
 fn image(m: *Machine, at: u16) void {
     shapes.point(m, .image, at);
-    var place = at + castle.shapeSize(m, at);
-    while (m.peek(place) != 0) : (place += 2) {
-        const x = castle.screenX(m.peek(place)) orelse continue;
-        screen.drawShape(m, .image, x, m.peek(place + 1));
+    var spot = at + castle.shapeSize(m, at);
+    while (m.peek(spot) != 0) : (spot += 2) {
+        place(m, .image, m.peek(spot), m.peek(spot + 1));
+        m.work(2); // the loop
     }
 }
 ```
 
-**Doors.** A door record says where the doorway goes and which room and
-door it leads to. Its last byte picks the arch: 1 for the way out of the
-castle, 0 for the rest. Inside the arch, 4 fat pixels in and 8 rows down,
-goes the door itself, shut, or open if bit 7 of the third byte is set,
-and an open door shows **the colour of the room beyond**: `recolor` again,
-with the destination's colour from its directory entry. (Chapter 5 opens
-doors; this is what they'll look like.)
+**Doors.** A door's last byte picks the arch: 1 for the way out of the
+castle, 0 for the rest. Inside the arch goes the door itself, shut, or
+open if bit 7 of the third byte is set, and an open door shows **the
+colour of the room beyond**: `recolor` again, with the destination's
+colour from its directory entry. (Chapter 5 opens doors; this is what
+they'll look like.) `+|` is an add that stops at 255 instead of
+overflowing, so a door far off the right edge stays there.
 
 **Bells.** A doorbell names a door by its place in the room's door group,
 0 for the first. `draw` remembers where that group starts (`doors`), so
@@ -1356,16 +1406,17 @@ the colour of the room the door leads to. A bell tells you where it goes
 before you ring it, and so did the 1984 game's.
 
 **Text** is a view of the record's first four bytes and a `draw` of the
-letters after them.
+letters after them. Letters that would start left of the screen are left
+out, the same as at the right.
 
 **Pictures** use the trick the `image` ID was waiting for. A picture in
-the castle is stored in exactly Chapter 2's shape format (width, height,
-flags, pixels, colours; Chapter 2 promised that one drawing routine would
-serve both), so `image` points the spare directory entry *into the
-castle*, at the picture, and calls `drawShape` for each place listed
-after it. The blitter has no idea the shape isn't in its table. **A
-pointer doesn't care what it points at**, and neither does the 1984 game,
-which does the same thing with one of its own shape entries.
+the castle is stored in exactly Chapter 2's shape format (Chapter 2
+promised one drawing routine would serve both), so `image` points the
+spare directory entry *into the castle*, at the picture, and draws it at
+each place listed after it. The blitter has no idea the shape isn't in
+its table. **A pointer
+doesn't care what it points at**, and neither does the 1984 game, which
+does the same thing with one of its own shape entries.
 
 ![The Entrance Hall drawn from the hand-typed castle: two stone arches with wooden doors on the upper-left and middle-right walkways, a red doorbell, the ladder and sliding pole, red brick floors and the title THE ENTRANCE HALL](images/03-hall.png)
 
@@ -1393,18 +1444,16 @@ What we want is to write a room like this:
 },
 ```
 
-and have the compiler work out every byte, every pointer and the size,
-and refuse to build if a door leads to a room that doesn't lead back. The
-tool for that is `comptime`. Chapter 2 used it to pack the shape table;
-here's the full story.
+and have the compiler work out every byte, every pointer and the size.
+The tool for that is `comptime`. Chapter 2 used it to pack the shape
+table; here's the full story.
 
 **It's the same language, earlier.** There's no separate macro language
 in Zig. Code whose inputs are all known while compiling can run while
 compiling: loops, `if`s, function calls, building arrays with `++`. The
 star map and the shape table were ordinary Zig run inside the compiler,
-their answers frozen into the program image. The castle builder is the
-same, only bigger. What can't happen at compile time is anything that
-needs the running machine: no `m.peek`, no frames.
+their answers frozen into the program image. What can't run then is
+anything that needs the running machine: no `m.peek`, no frames.
 
 **Types are values.** At compile time a type is a value like any other,
 so a function can take one and return one. `Door(Name)` below is a
@@ -1415,23 +1464,25 @@ in the compiler. The payoff is that `.to = .gallery` is checked: misspell
 it `.galery` and the compiler says `enum 'training.Room' has no member
 named 'galery'`, before a byte is written.
 
-**Loops that change type.** Chapter 2's `@field(art, @tagName(id))` found
-a declaration by name. The builder does the same over the eighteen
-`Kind`s, with `@field(room, @tagName(kind))`, so the room's field for
-each kind is named after the kind (`door`, `walkway`, ..., `image`). But
-`room.door` is a list of doors and `room.text` a list of lines, different
-types, and an ordinary loop body has one type per variable. An
-**`inline for`** unrolls the loop while compiling, one copy of the body
-per kind, so each copy can have its own types, and a `switch` on a kind
-known at compile time keeps only the branch for that kind.
+**Loops that change type.** In JavaScript you'd write
+`for (const kind of KINDS) writeGroup(room[kind])` and never think about
+it, because every value is "anything" until it runs. Zig has no
+"anything" at run time: `room.door` is a list of doors, `room.text` a list
+of lines, and an ordinary loop's body has one type per variable. So
+**`inline for`** asks the compiler to write the body out once per kind,
+eighteen copies, each with its own types. `@field(room, @tagName(kind))`
+(Chapter 2's trick for finding art by name) picks the room's list for
+that kind, and a `switch` on a kind the compiler already knows keeps only
+the branch for it. The loop vanishes before the program runs; what's left
+is eighteen straight-line blocks.
 
-There's one limit to know about. The compiler counts the steps of
-compile-time loops and gives up at 1,000 branches, in case you've written
-an infinite one; `@setEvalBranchQuota` raises the limit for one job. A
-castle is a big job.
+One limit: the compiler gives up after 1,000 branches of compile-time
+looping, in case you've written an infinite loop, and
+`@setEvalBranchQuota` raises that for one big job, like a castle.
 
-Let's build it, in four pieces. The builder packs the castle's pictures
-with Chapter 2's `pack`, so that has to be public:
+We'll build the kit the way you'd build anything: make it work, then make
+it strict. The builder packs the castle's pictures with Chapter 2's
+`pack`, so that has to be public:
 
 **`src/shapes.zig`** (make `pack` public)
 
@@ -1546,11 +1597,6 @@ pub fn build(comptime Name: type, comptime c: Castle(Name)) []const u8 {
     comptime {
         @setEvalBranchQuota(2_000_000);
         const names = std.enums.values(Name);
-        if (names.len > castle.max_rooms)
-            fail("a castle has at most {d} rooms, not {d}", .{ castle.max_rooms, names.len });
-        const start = @field(c.rooms, @tagName(c.start.room));
-        if (c.start.door >= start.door.len)
-            fail("the start room, {s}, has no door {d}", .{ @tagName(c.start.room), c.start.door });
 
         // The streams go after the directory and its end byte, one after
         // another, so each room's address is the sum of the ones before.
@@ -1559,10 +1605,6 @@ pub fn build(comptime Name: type, comptime c: Castle(Name)) []const u8 {
         var streams: []const u8 = &.{};
         for (names) |name| {
             const room = @field(c.rooms, @tagName(name));
-            if (room.map.width == 0 or room.map.height == 0)
-                fail("room {s}: give it a place and a size on the castle map", .{@tagName(name)});
-            if (room.color == .black)
-                fail("room {s}: a black room has black walkways", .{@tagName(name)});
             const entry = castle.Entry{
                 .color = @intFromEnum(room.color),
                 .map_x = room.map.x,
@@ -1572,13 +1614,13 @@ pub fn build(comptime Name: type, comptime c: Castle(Name)) []const u8 {
                 .objects = le(at),
             };
             directory = directory ++ std.mem.asBytes(&entry);
-            const objects = stream(Name, c, room, @tagName(name));
+            const objects = stream(Name, c, room);
             streams = streams ++ objects;
             at += objects.len;
         }
         directory = directory ++ [_]u8{if (c.final == null) castle.end_plain else castle.end_with_final};
         const final_at = if (c.final == null) 0 else at;
-        if (c.final) |room| streams = streams ++ stream(Name, c, room, "final");
+        if (c.final) |room| streams = streams ++ stream(Name, c, room);
 
         const total = castle.header_size + directory.len + streams.len;
         if (total > map.castle.last - map.castle.first + 1)
@@ -1597,69 +1639,47 @@ pub fn build(comptime Name: type, comptime c: Castle(Name)) []const u8 {
 }
 ```
 
-It walks the rooms in order, and each room's stream starts where the last
-one ended: `at` is the running total that you worked out by hand for the
-hall. `std.mem.asBytes(&entry)` is the struct read as its bytes; the same
-`castle.Entry` the loader reads is the one the builder writes, so the two
-can't disagree about the format. The header goes together last, now that
-the size is known. `fail` (in the last piece) turns any problem into a
-compile error that names the room.
+Each room's stream starts where the last one ended: `at` is the running
+total you worked out by hand for the hall. `std.mem.asBytes(&entry)` is
+the struct read as its bytes, so the `castle.Entry` the loader reads is
+the one the builder writes, and the two can't disagree about the format.
 
-Third, the streams. One branch per framing scheme, each also checking its
-records:
+Third, the streams: one branch per framing scheme, in tag order. It's
+the listing you could write yourself from the last section, so here it
+is as a type-in:
 
+:::type-in The stream encoders
 **`src/author.zig`** (add at the end of the file)
 
 ```zig
 /// One room's object stream: each kind's group in tag order (doors and
 /// floors first, text and pictures last, a good order to draw in), then
 /// the end tag.
-fn stream(comptime Name: type, comptime c: Castle(Name), comptime room: Room(Name), comptime name: []const u8) []const u8 {
+fn stream(comptime Name: type, comptime c: Castle(Name), comptime room: Room(Name)) []const u8 {
     var out: []const u8 = &.{};
-    var boxes: []const Box = &.{};
     inline for (comptime std.enums.values(castle.Kind)) |kind| {
         const list = @field(room, @tagName(kind));
         const tag = le(castle.code(kind));
         switch (kind) {
             // Counted: the tag, how many, then the records.
-            .door, .bell => if (list.len > 0) {
+            .door => if (list.len > 0) {
                 out = out ++ tag ++ [_]u8{list.len};
-                for (list, 0..) |thing, i| {
-                    const what = std.fmt.comptimePrint("{s} {d}", .{ @tagName(kind), i });
-                    const w, const h = if (kind == .door) .{ 20, 32 } else .{ 8, 16 };
-                    onScreen(name, what, thing.x, thing.y, w, h);
-                    boxes = boxes ++ [_]Box{.{ .what = what, .x = thing.x, .y = thing.y, .w = w, .h = h }};
-                    const record = if (kind == .door) door(Name, c, room, name, thing, i) else bell(room, name, thing, i);
-                    out = out ++ std.mem.asBytes(&record);
-                }
+                for (list) |d| out = out ++ std.mem.asBytes(&door(Name, c, room, d));
+            },
+            .bell => if (list.len > 0) {
+                out = out ++ tag ++ [_]u8{list.len};
+                for (list) |b| out = out ++ std.mem.asBytes(&b);
             },
             // Runs of pieces, ended by a length of 0.
             .walkway, .pole, .ladder => if (list.len > 0) {
                 out = out ++ tag;
-                for (list, 0..) |r, i| {
-                    const what = std.fmt.comptimePrint("{s} {d}", .{ @tagName(kind), i });
-                    if (r.length == 0) fail("room {s}: {s} has length 0, which is the end marker", .{ name, what });
-                    if (kind == .walkway) {
-                        onScreen(name, what, r.x, r.y, 4 * @as(u16, r.length), 7);
-                    } else {
-                        const bottom = r.y + 8 * (r.length - 1);
-                        onScreen(name, what, r.x, r.y, if (kind == .ladder) 8 else 4, bottom + 8 - r.y);
-                        if (!onWalkway(room, r.x, r.y) or !onWalkway(room, r.x, bottom))
-                            fail("room {s}: {s} must start and end on a walkway (rows {d} and {d})", .{ name, what, r.y, bottom });
-                    }
-                    out = out ++ std.mem.asBytes(&r);
-                }
+                for (list) |r| out = out ++ std.mem.asBytes(&r);
                 out = out ++ [_]u8{0};
             },
             // Lines of text, each ending on a letter with bit 7 set; a 0 ends them all.
             .text => if (list.len > 0) {
                 out = out ++ tag;
-                for (list, 0..) |line, i| {
-                    const what = std.fmt.comptimePrint("text {d} (\"{s}\")", .{ i, line.words });
-                    if (line.height == 0) fail("room {s}: {s} has height 0", .{ name, what });
-                    const w, const h = .{ 8 * line.words.len, 8 * @as(u16, line.height) };
-                    onScreen(name, what, line.x, line.y, w, h);
-                    boxes = boxes ++ [_]Box{.{ .what = what, .x = line.x, .y = line.y, .w = w, .h = h }};
+                for (list) |line| {
                     const record = castle.Text{ .x = line.x, .y = line.y, .color = @intFromEnum(line.color), .style = text.style_letters | line.height };
                     out = out ++ std.mem.asBytes(&record) ++ &text.terminated(line.words);
                 }
@@ -1672,109 +1692,62 @@ fn stream(comptime Name: type, comptime c: Castle(Name), comptime room: Room(Nam
                 out = out ++ [_]u8{0};
             },
             // A tag for every picture: the shape, then where it goes, up to a 0.
-            .image => for (list, 0..) |picture, i| {
-                const bytes = shapes.pack(std.fmt.comptimePrint("{s} image {d}", .{ name, i }), picture.art);
-                out = out ++ tag ++ bytes;
-                for (picture.at) |p| {
-                    const what = std.fmt.comptimePrint("image {d} at ({d}, {d})", .{ i, p.x, p.y });
-                    const w, const h = .{ 4 * @as(u16, bytes[0]), bytes[1] };
-                    onScreen(name, what, p.x, p.y, w, h);
-                    boxes = boxes ++ [_]Box{.{ .what = what, .x = p.x, .y = p.y, .w = w, .h = h }};
-                    out = out ++ [_]u8{ p.x, p.y };
-                }
+            .image => for (list) |picture| {
+                out = out ++ tag ++ shapes.pack("a castle image", picture.art);
+                for (picture.at) |p| out = out ++ [_]u8{ p.x, p.y };
                 out = out ++ [_]u8{0};
             },
             // The machines and monsters: records as written, then the end marker.
             else => if (list.len > 0) {
-                const end = castle.framing(kind).marked.end;
                 out = out ++ tag;
-                for (list) |r| {
-                    const bytes = std.mem.asBytes(&r);
-                    if (castle.isEnd(bytes[0], end))
-                        fail("room {s}: a {s} starting with {d} would read as the end marker", .{ name, @tagName(kind), bytes[0] });
-                    out = out ++ bytes;
-                }
-                out = out ++ [_]u8{end};
+                for (list) |r| out = out ++ std.mem.asBytes(&r);
+                out = out ++ [_]u8{castle.framing(kind).marked.end};
             },
-        }
-    }
-    for (boxes, 0..) |a, i| {
-        for (boxes[i + 1 ..]) |b| {
-            if (a.x < b.x + b.w and b.x < a.x + a.w and a.y < b.y + b.h and b.y < a.y + a.h)
-                fail("room {s}: {s} overlaps {s}", .{ name, a.what, b.what });
         }
     }
     return out ++ le(castle.end_code);
 }
 ```
+:::
 
-The `boxes` list collects the rectangle of every door, bell, line of text
-and picture, so the last loop can refuse a room where two of them
-overlap. `const w, const h = ...` gets two values out of one expression,
-Zig's destructuring.
-
-Last, the helpers and the checks:
+Last, the door records and two helpers:
 
 **`src/author.zig`** (add at the end of the file)
 
 ```zig
-/// Door `i`'s 8 bytes: check that it leads somewhere that leads back, and
-/// work out where it shows on the castle map, on the wall facing the
-/// room it leads to.
-fn door(comptime Name: type, comptime c: Castle(Name), comptime room: Room(Name), comptime name: []const u8, comptime d: Door(Name), comptime i: usize) castle.Door {
-    if (d.y % 8 != 0) fail("room {s}: door {d} has y {d}; doors sit on cell rows (multiples of 8)", .{ name, i, d.y });
-    const there = @field(c.rooms, @tagName(d.to));
-    if (!d.exit) {
-        if (d.to_door >= there.door.len)
-            fail("room {s}: door {d} leads to door {d} of {s}, which has {d}", .{ name, i, d.to_door, @tagName(d.to), there.door.len });
-        const back = there.door[d.to_door];
-        if (!std.mem.eql(u8, @tagName(back.to), name) or back.to_door != i)
-            fail("room {s}: door {d} leads to {s} door {d}, which doesn't lead back", .{ name, i, @tagName(d.to), d.to_door });
-    }
+/// A door's 8 bytes. Besides where it leads, it says where it shows on the
+/// castle map: which wall of the room (the one facing the room it leads
+/// to), where across the room from its corner, and where down.
+fn door(comptime Name: type, comptime c: Castle(Name), comptime room: Room(Name), comptime d: Door(Name)) castle.Door {
     const here = room.map;
+    const there = @field(c.rooms, @tagName(d.to)).map;
     const width = 4 * @as(u16, here.width);
     const height = 8 * @as(u16, here.height);
-    const side: u8 = if (there.map.x >= here.x + width) 1 // right
-        else if (there.map.x + 4 * @as(u16, there.map.width) <= here.x) 3 // left
-        else if (there.map.y + 8 * @as(u16, there.map.height) <= here.y) 0 // up
-        else if (there.map.y >= here.y + height) 2 // down
+    const side: u8 = if (there.x >= here.x + width) 1 // right
+        else if (there.x + 4 * @as(u16, there.width) <= here.x) 3 // left
+        else if (there.y + 8 * @as(u16, there.height) <= here.y) 0 // up
+        else if (there.y >= here.y + height) 2 // down
         else if (d.x < 96) 3 else 1; // the way out: whichever wall it's nearer
+    const along_x = @min(width - 4, (d.x - 16) * width / 160);
+    const along_y = @min(height - 3, (@as(u16, d.y) + 16) * height / 200);
     return .{
         .x = d.x,
         .y = d.y,
         .side = side | if (d.open) castle.door_open else 0,
         .to_room = @intFromEnum(d.to),
         .to_door = d.to_door,
-        .map_x = if (side % 2 == 0) @min(width - 4, (d.x - 16) * width / 160) else 0,
-        .map_y = if (side % 2 == 1) @min(height - 3, (d.y + 16) * height / 200) else 0,
+        .map_x = switch (side) {
+            1 => width - 2, // the right wall
+            3 => 0, // the left wall
+            else => along_x,
+        },
+        .map_y = switch (side) {
+            0 => 0, // the top wall
+            2 => height - 3, // the bottom wall
+            else => along_y,
+        },
         .exit = @intFromBool(d.exit),
     };
-}
-
-/// A doorbell's 3 bytes, once we know its door exists.
-fn bell(comptime room: anytype, comptime name: []const u8, comptime b: Bell, comptime i: usize) Bell {
-    if (b.door >= room.door.len) fail("room {s}: bell {d} rings door {d}, and the room has {d}", .{ name, i, b.door, room.door.len });
-    return b;
-}
-
-/// A rectangle something covers on the screen, for the overlap check.
-const Box = struct { what: []const u8, x: u16, y: u16, w: u16, h: u16 };
-
-/// Something `w` fat pixels by `h` rows at (x, y) must be on the screen
-/// and start on a whole byte.
-fn onScreen(comptime name: []const u8, comptime what: []const u8, comptime x: u16, comptime y: u16, comptime w: u16, comptime h: u16) void {
-    if (x < 16 or x + w > 16 + 160)
-        fail("room {s}: {s} runs off the screen (x {d} to {d}; the screen is 16 to 175)", .{ name, what, x, x + w - 1 });
-    if (x % 4 != 0) fail("room {s}: {s} has x {d}, which isn't on a byte; use a multiple of 4", .{ name, what, x });
-    if (y + h > 200) fail("room {s}: {s} runs off the bottom (rows {d} to {d})", .{ name, what, y, y + h - 1 });
-}
-
-/// Is there a walkway along row `y`, under `x`?
-fn onWalkway(comptime room: anytype, comptime x: u16, comptime y: u16) bool {
-    for (room.walkway) |w| {
-        if (w.y == y and x >= w.x and x < w.x + 4 * @as(u16, w.length)) return true;
-    }
-    return false;
 }
 
 /// A two-byte value as the Comet stores it: low byte first.
@@ -1787,11 +1760,196 @@ fn fail(comptime format: []const u8, args: anytype) noreturn {
 }
 ```
 
-`door` is the busiest. It checks that the door leads to a door that
-leads back (doors come in pairs, one in each room), then works out the
-bytes nobody wants to type: which wall of the room it's in on the castle
-map (the wall facing the room it leads to) and where along that wall
-Chapter 9 should draw it.
+`door` works out the bytes nobody wants to type: which wall of the room
+the door is in on the castle map (the wall facing the room it leads to),
+how far across the room from its corner it shows, and how far down. Those
+two put Chapter 9's "you are here" arrow on the right spot.
+
+Three small things in these listings. `anytype` means "whatever type the
+caller passes": Zig compiles a copy of the function for each type it's
+called with and checks every use, so it's TypeScript generics without
+writing the `<T>`, not `any`. `noreturn` is the type of a function that
+never comes back; `fail` ends the build, so Zig lets you call it where a
+value was expected. And `x[0..x.len].*` turns a compile-time slice into
+an array value, the thing you can freeze with `const` and point at
+(Chapter 2's `const done = ...; &done`).
+
+### The moment of truth
+
+Does it work? Write the hall again, this time with the kit, at the end of
+the file you typed it into by hand, and ask the compiler whether the two
+agree:
+
+**`src/hall.zig`** (add at the end of the file)
+
+```zig
+// ---- the same hall, written with the kit ------------------------------------
+
+const std = @import("std");
+const author = @import("author.zig");
+
+const Room = enum { hall };
+
+const plan: author.Castle(Room) = .{
+    .start = .{ .room = .hall },
+    .rooms = .{ .hall = .{
+        .color = .red,
+        .map = .{ .x = 56, .y = 48, .width = 4, .height = 3 },
+        .door = &.{
+            .{ .x = 32, .y = 40, .to = .hall, .to_door = 1 },
+            .{ .x = 152, .y = 96, .to = .hall, .to_door = 0 },
+        },
+        .walkway = &.{
+            .{ .length = 15, .x = 24, .y = 72 },
+            .{ .length = 17, .x = 108, .y = 128 },
+            .{ .length = 40, .x = 16, .y = 192 },
+        },
+        .pole = &.{.{ .length = 16, .x = 64, .y = 72 }},
+        .ladder = &.{.{ .length = 9, .x = 120, .y = 128 }},
+        .bell = &.{.{ .x = 136, .y = 104, .door = 1 }},
+        .text = &.{.{ .x = 28, .y = 8, .color = .light_grey, .words = "THE ENTRANCE HALL" }},
+    } },
+};
+
+test "the kit writes the castle you typed, byte for byte" {
+    try std.testing.expectEqualSlices(u8, bytes, comptime author.build(Room, plan));
+}
+```
+
+Run `zig build test`. It passes. **The compiler wrote the same 340
+bytes you typed by hand**, every pointer, every count, the size word and
+the end markers, from twenty lines you can read. (If it fails, the test
+prints the first byte that differs; your hand-typed one is the suspect.)
+The `comptime` in the test asks for the build to happen in the compiler,
+since `build` can't run on the machine.
+
+### Make it strict
+
+Now the checks. They go in a pass of their own, run before anything is
+laid out:
+
+**`src/author.zig`** (in `build`, add after the `@setEvalBranchQuota` line)
+
+```zig
+        check(Name, c);
+```
+
+:::type-in The castle's spell-checker
+**`src/author.zig`** (add at the end of the file)
+
+```zig
+// ---- checking it ----------------------------------------------------------
+
+/// Everything that would make a broken castle, refused while compiling.
+fn check(comptime Name: type, comptime c: Castle(Name)) void {
+    const names = std.enums.values(Name);
+    if (names.len > castle.max_rooms)
+        fail("a castle has at most {d} rooms, not {d}", .{ castle.max_rooms, names.len });
+    if (c.start.door >= @field(c.rooms, @tagName(c.start.room)).door.len)
+        fail("the start room, {s}, has no door {d}", .{ @tagName(c.start.room), c.start.door });
+    for (names) |name| {
+        const room = @field(c.rooms, @tagName(name));
+        if (room.map.width == 0 or room.map.height == 0)
+            fail("room {s}: give it a place and a size on the castle map", .{@tagName(name)});
+        if (room.color == .black)
+            fail("room {s}: a black room has black walkways", .{@tagName(name)});
+        checkRoom(Name, c, room, @tagName(name));
+    }
+    if (c.final) |room| checkRoom(Name, c, room, "final");
+}
+
+fn checkRoom(comptime Name: type, comptime c: Castle(Name), comptime room: Room(Name), comptime name: []const u8) void {
+    var boxes: []const Box = &.{};
+    for (room.door, 0..) |d, i| {
+        const what = std.fmt.comptimePrint("door {d}", .{i});
+        boxes = boxes ++ [_]Box{onScreen(name, what, d.x, d.y, 20, 32)};
+        if (d.y % 8 != 0) fail("room {s}: {s} has y {d}; doors sit on cell rows (multiples of 8)", .{ name, what, d.y });
+        if (d.exit) continue; // the way out leads nowhere
+        const there = @field(c.rooms, @tagName(d.to));
+        if (d.to_door >= there.door.len)
+            fail("room {s}: {s} leads to door {d} of {s}, which has {d}", .{ name, what, d.to_door, @tagName(d.to), there.door.len });
+        const back = there.door[d.to_door];
+        if (!std.mem.eql(u8, @tagName(back.to), name) or back.to_door != i)
+            fail("room {s}: {s} leads to {s} door {d}, which doesn't lead back", .{ name, what, @tagName(d.to), d.to_door });
+    }
+    for (room.bell, 0..) |b, i| {
+        const what = std.fmt.comptimePrint("bell {d}", .{i});
+        boxes = boxes ++ [_]Box{onScreen(name, what, b.x, b.y, 12, 19)};
+        if (b.door >= room.door.len) fail("room {s}: {s} rings door {d}, and the room has {d}", .{ name, what, b.door, room.door.len });
+    }
+    for (room.walkway, 0..) |r, i| {
+        const what = std.fmt.comptimePrint("walkway {d}", .{i});
+        if (r.length == 0) fail("room {s}: {s} has length 0, which is the end marker", .{ name, what });
+        _ = onScreen(name, what, r.x, r.y, 4 * @as(u16, r.length), 7);
+    }
+    for ([_][]const Run{ room.ladder, room.pole }, [_][]const u8{ "ladder", "pole" }) |runs, kind| {
+        for (runs, 0..) |r, i| {
+            const what = std.fmt.comptimePrint("{s} {d}", .{ kind, i });
+            if (r.length == 0) fail("room {s}: {s} has length 0, which is the end marker", .{ name, what });
+            const bottom = r.y + 8 * (r.length - 1);
+            _ = onScreen(name, what, r.x, r.y, 4, bottom + 8 - r.y);
+            if (!onWalkway(room, r.x, r.y) or !onWalkway(room, r.x, bottom))
+                fail("room {s}: {s} must start and end on a walkway (rows {d} and {d})", .{ name, what, r.y, bottom });
+        }
+    }
+    for (room.text, 0..) |line, i| {
+        const what = std.fmt.comptimePrint("text {d} (\"{s}\")", .{ i, line.words });
+        if (line.height == 0) fail("room {s}: {s} has height 0", .{ name, what });
+        boxes = boxes ++ [_]Box{onScreen(name, what, line.x, line.y, 8 * line.words.len, 8 * @as(u16, line.height))};
+    }
+    for (room.image, 0..) |picture, i| {
+        const bytes = shapes.pack("a castle image", picture.art);
+        for (picture.at) |p| {
+            const what = std.fmt.comptimePrint("image {d} at ({d}, {d})", .{ i, p.x, p.y });
+            boxes = boxes ++ [_]Box{onScreen(name, what, p.x, p.y, 4 * @as(u16, bytes[0]), bytes[1])};
+        }
+    }
+    inline for (comptime std.enums.values(castle.Kind)) |kind| {
+        if (castle.framing(kind) == .marked and kind != .walkway and kind != .pole and kind != .ladder) {
+            const end = castle.framing(kind).marked.end;
+            for (@field(room, @tagName(kind))) |r| {
+                const first = std.mem.asBytes(&r)[0];
+                if (castle.isEnd(first, end))
+                    fail("room {s}: a {s} starting with {d} would read as the end marker", .{ name, @tagName(kind), first });
+            }
+        }
+    }
+    for (boxes, 0..) |a, i| {
+        for (boxes[i + 1 ..]) |b| {
+            if (a.x < b.x + b.w and b.x < a.x + a.w and a.y < b.y + b.h and b.y < a.y + a.h)
+                fail("room {s}: {s} overlaps {s}", .{ name, a.what, b.what });
+        }
+    }
+}
+
+/// A rectangle something covers on the screen, for the overlap check.
+const Box = struct { what: []const u8, x: u16, y: u16, w: u16, h: u16 };
+
+/// Something `w` fat pixels by `h` rows at (x, y) must be on the screen
+/// and start on a whole byte. Returns the rectangle it covers.
+fn onScreen(comptime name: []const u8, comptime what: []const u8, comptime x: u16, comptime y: u16, comptime w: u16, comptime h: u16) Box {
+    if (x < 16 or x + w > 16 + 160)
+        fail("room {s}: {s} runs off the screen (x {d} to {d}; the screen is 16 to 175)", .{ name, what, x, x + w - 1 });
+    if (x % 4 != 0) fail("room {s}: {s} has x {d}, which isn't on a byte; use a multiple of 4", .{ name, what, x });
+    if (y + h > 200) fail("room {s}: {s} runs off the bottom (rows {d} to {d})", .{ name, what, y, y + h - 1 });
+    return .{ .what = what, .x = x, .y = y, .w = w, .h = h };
+}
+
+/// Is there a walkway along row `y`, under `x`?
+fn onWalkway(comptime room: anytype, comptime x: u16, comptime y: u16) bool {
+    for (room.walkway) |w| {
+        if (w.y == y and x >= w.x and x < w.x + 4 * @as(u16, w.length)) return true;
+    }
+    return false;
+}
+```
+:::
+
+Doors must come in pairs that lead to each other, bells must ring doors
+that exist, nothing may run off the screen or sit between bytes, ladders
+and poles must start and end on walkways, no record may look like its
+group's end marker, and no two doors, bells, lines or pictures may
+overlap.
 
 :::game-over The castle doesn't build
 Every one of these is a real message from the builder (each arrives as
@@ -1803,18 +1961,18 @@ castle: room gatehouse: door 0 leads to gallery door 0, which doesn't lead back
 castle: room ladders: ladder 0 must start and end on a walkway (rows 128 and 184)
 castle: room gatehouse: walkway 0 has length 0, which is the end marker
 castle: room gatehouse: door 0 overlaps bell 0
-castle: room keys: text 6 ("UP. THEN TRY THE LOCK.") runs off the screen (x 16 to 191; the screen is 16 to 175)
+castle: room keys: text 6 ("UP. THEN TRY THE LOCK.") runs off the screen (x 20 to 195; the screen is 16 to 175)
 ```
 
 The last one caught a line in the Training Castle while it was being
-written. A line holds 20 letters; that one had 22.
+written. A line holds 19 letters; that one had 22.
 :::
 
 ## The Training Castle
 
 Now the castle itself. Copy `training.zig` from the Warp Zone checkpoint
-(`code/ch03/src/training.zig`) over your hand-typed one. It starts with
-the room names and a few helpers:
+(`code/ch03/src/training.zig`) into your `src/`. It starts with the room
+names and a few helpers:
 
 ```zig snippet
 //! The Training Castle: one lesson per room, written with the authoring
@@ -1871,7 +2029,7 @@ fn says(comptime title: []const u8, comptime lines: []const []const u8) []const 
         const x = 16 + (160 - 8 * title.len) / 2 / 4 * 4; // centred, on a byte
         var out: []const Line = &.{.{ .x = x, .y = 8, .color = .yellow, .height = 2, .words = title }};
         for (lines, 0..) |words, i| {
-            out = out ++ [_]Line{.{ .x = 16, .y = 32 + 10 * i, .color = .light_grey, .words = words }};
+            out = out ++ [_]Line{.{ .x = 20, .y = 32 + 10 * i, .color = .light_grey, .words = words }};
         }
         const done = out[0..out.len].*;
         return &done;
@@ -1879,12 +2037,10 @@ fn says(comptime title: []const u8, comptime lines: []const []const u8) []const 
 }
 ```
 
-`spot` lays the rooms out on the castle map as a snake, five to a row,
-each row running the other way, so every door leads to a neighbour on the
-map. `says` is a comptime function of our own on top of the kit: give it
-a heading and the lesson's lines, and it centres the heading in tall
-yellow letters and stacks the lines under it. The plan follows, room by
-room:
+`spot` lays the rooms out on the map as a snake, five to a row, so every
+door leads to a neighbour. `says` is a comptime function of our own on
+top of the kit: a centred tall heading, then the lesson's lines. The plan
+follows, room by room:
 
 ```zig snippet
 /// The castle, as declarations.
@@ -1899,13 +2055,14 @@ pub const plan: author.Castle(Room) = .{
             .bell = &.{.{ .x = 140, .y = 168, .door = 0 }},
             .text = says("THE GATEHOUSE", &.{
                 "WELCOME, EXPLORER!",
-                "EVERY ROOM HAS DOORS",
-                "AND MOST ARE SHUT.",
-                "STAND AT THE BELL",
-                "BESIDE A DOOR AND",
-                "PRESS FIRE. WHEN IT",
-                "OPENS, STAND IN THE",
-                "DOORWAY AND PUSH UP.",
+                "MOST DOORS IN THE",
+                "CASTLE ARE SHUT.",
+                "TO OPEN ONE, STAND",
+                "AT THE BELL BESIDE",
+                "IT AND PRESS FIRE.",
+                "THEN STAND IN THE",
+                "OPEN DOORWAY AND",
+                "PUSH UP.",
             }),
         },
         .gallery = .{
@@ -1913,19 +2070,19 @@ pub const plan: author.Castle(Room) = .{
             .map = spot(1),
             .door = &.{
                 .{ .x = 16, .y = 160, .to = .gatehouse },
-                .{ .x = 156, .y = 160, .to = .ladders },
+                .{ .x = 132, .y = 160, .to = .ladders },
             },
-            .walkway = &.{floor},
-            .bell = &.{.{ .x = 140, .y = 168, .door = 1 }},
+            .walkway = &.{.{ .length = 35, .x = 16, .y = 192 }}, // it stops short of the wall
+            .bell = &.{.{ .x = 112, .y = 168, .door = 1 }},
             .text = says("THE LONG GALLERY", &.{
                 "WALKWAYS ARE THE",
                 "CASTLE'S FLOORS.",
                 "PUSH THE STICK LEFT",
                 "OR RIGHT TO WALK.",
-                "THE END OF A WALKWAY",
-                "IS AS FAR AS YOU GO.",
-                "THE DOOR AT THE FAR",
-                "END LEADS ON.",
+                "A WALKWAY'S END IS",
+                "AS FAR AS YOU GO.",
+                "THE DOOR NEAR THE",
+                "FAR END LEADS ON.",
             }),
         },
         // ... eighteen more rooms, and the final room ...
@@ -1936,6 +2093,31 @@ and at the end of the file, the one line that turns the plan into bytes:
 ```zig snippet
 /// The castle file's bytes, built from the plan while the game compiles.
 pub const bytes = author.build(Room, plan);
+```
+
+Boot loads it instead of the hall. The hall stays as the kit's test, and
+a file that nothing uses never gets compiled, so `main.zig` asks for its
+tests by name:
+
+**`src/main.zig`** (add below the `hall` import)
+
+```zig
+const training = @import("training.zig");
+```
+
+**`src/main.zig`** (in `boot`, replace the castle's `m.load`)
+
+```zig
+    m.load(map.castle.first, training.bytes);
+```
+
+**`src/main.zig`** (add at the end of the file)
+
+```zig
+// hall.zig is no longer loaded, so nothing compiles it unless a test asks.
+test {
+    _ = hall;
+}
 ```
 
 The Training Castle teaches one thing per room, then mixes them:
@@ -1964,16 +2146,30 @@ The Training Castle teaches one thing per room, then mixes them:
 | 19 | The Way Out | the exit door | Chapter 9 |
 | final | You Escaped! | the prize room | Chapter 9 |
 
-Today every room has its walkways, ladders, poles, doors, bells and
-words; the machines and monsters move in chapter by chapter, as records
-added to these same declarations. Build, press fire, and you're in the
+The machines and monsters move in chapter by chapter, as records added
+to these same declarations. Build, press fire, and you're in the
 Gatehouse, the picture at the top of the chapter.
 
 ## Flipping through the castle
 
 One more feature and you can tour the whole thing. The room on screen
-becomes a byte, `room_number`; fire on the title screen sets it from the
-castle header's start room; **N** and **P** step it on and back.
+becomes a byte in the memory map, `room_number`; fire on the title screen
+sets it from the castle header's start room; **N** and **P** step it on
+and back.
+
+**`src/map.zig`** (add below the `game` region)
+
+```zig
+/// The room on screen.
+pub const room = Region{ .name = "room", .first = 0x0208, .last = 0x0208 };
+pub const room_number = room.first + 0; // its place in the castle's room directory
+```
+
+**`src/map.zig`** (in `regions`, add after `game,`)
+
+```zig
+    room,
+```
 
 **`src/room.zig`** (add two imports below `Color`)
 
@@ -2061,11 +2257,8 @@ objects through the header. Last, `main.zig`:
             if (room.flip(m)) setMode(m, .draw_room);
 ```
 
-Press N and `frame` sets the mode to `draw_room`, and the next frame is a
-loading pause exactly like Chapter 2's: blank, draw, reveal on the frame
-after. The explorer still walks the bottom floor of every room, as
-Chapter 2 left him (every Training Castle room keeps a floor there), and
-he doesn't climb or open anything yet. Chapter 4 teaches him the castle.
+Each press is a loading pause like Chapter 2's. The explorer still walks the bottom floor of every room,
+as Chapter 2 left him; Chapter 4 teaches him the castle.
 
 ## Tests that read it back
 
@@ -2082,6 +2275,7 @@ const castle = @import("castle.zig");
 const author = @import("author.zig");
 ```
 
+:::type-in The whole-game tests
 **`src/main.zig`** (add at the end of the file)
 
 ```zig
@@ -2111,7 +2305,7 @@ test "N and P flip through the castle's rooms, with a loading pause" {
         m.input = .{};
         _ = m.runFrame(@This());
     }
-    try std.testing.expectEqual(@typeInfo(training.Room).@"enum".fields.len, m.ram[map.room_number]);
+    try std.testing.expectEqual(std.enums.values(training.Room).len, m.ram[map.room_number]);
 }
 
 test "the Training Castle reads back: every room walks to its end tag" {
@@ -2152,64 +2346,65 @@ fn walkRoom(m: *Machine, at: u16, plan: author.Room(training.Room)) !u16 {
     return walk.at;
 }
 ```
+:::
 
-`walkRoom` counts the records of each kind the walker finds and compares
-them with the plan's lists, using the same `inline for` over the kinds as
-the builder. If the writer and the reader ever disagreed about one byte
+`walkRoom` counts each kind of record the walker finds against the
+plan's lists. If the writer and the reader ever disagreed about one byte
 of the format, this test would be the first to say so.
 
 :::byte-budget Chapter 3
-**Memory.** The Training Castle is **4,324 bytes** of its 8 KB region:
+**Memory.** The Training Castle is **4,323 bytes** of its 8 KB region:
 the 256-byte header, a 161-byte directory (20 rooms and the end byte) and
-3,907 bytes of object streams. Two thirds of the whole castle, 2,876
-bytes, is text: 2,316 letters and four bytes of position, colour and
-style per line. The geometry of twenty rooms fits in about a kilobyte.
-The shape table grew to 1,691 bytes with the doorways, the doors and the
-bell. The game's own state grew by one byte, `room_number`, and the text
-region by 32.
+3,906 bytes of object streams. Two thirds of it, 2,991 bytes, is text:
+147 lines, 2,340 letters, and four bytes of position, colour and style
+per line. For now
+the castle is in memory twice: once in the program image, as the table
+`boot` copies from, and once at `$7800`. Chapter 11's disk drive removes
+the first. The shape table grew to 1,716 bytes with the doorways, the
+doors and the bell; the game's own state grew by one byte, `room_number`,
+and the text region by 32.
 
-**Time.** A room draws in **132,000 to 221,000 cycles**, 7 to 12 frame
-slots, a fifth of a second of blank screen at worst. `clear` is 80,000 of
-that, and nearly all the rest is letters: a plain letter costs about 670
-cycles to build and stamp, a tall one about 1,160. Walking the stream
-itself costs a few dozen cycles per record. Once a room is up, a frame costs
-108 cycles, four more than Chapter 2 for the look at the keyboard, and
-about 360 on the frame a key arrives.
+**Time.** A room draws in **133,000 to 219,000 cycles**, 7 to 12 frame
+slots: at worst about a quarter of a second of blank screen, nearly all
+of it `clear`'s 80,000 and the letters, at about 670 cycles a plain letter
+and 1,160 a tall one.
 :::
 
 :::inside-the-disk Castles by the kilobyte
 The fourteen castles on the 1984 disk run from about 2 KB to about 6 KB
 each; the disk's own tutorial castle is thirteen rooms in 4,145 bytes. A
-castle file is loaded straight to `$7800` and played where it lands, and
-the game writes into it as you play, in the header's spare bytes and
-in the rooms' own records: an open door is a door record with bit 7 set.
+castle file loads to `$9800` and stays there untouched (the title screen
+tours its rooms from that copy). Each time you start a game, the engine
+copies it down to `$7800` and plays the copy, because playing *writes* to
+it: the header's spare bytes fill with your notes, and an open door is a
+door record with bit 7 set. Start again and you get a fresh copy, every
+door shut. Ours loads straight to `$7800` for now; when Chapter 9 teaches
+the game to start over, it keeps a clean copy the same way.
 
-And the **skip** word, bytes 4 and 5 of every directory entry? On the
-disk it always holds the room's objects address plus 2, the address
-after the room's first tag, and nothing in the game ever reads it. Perhaps the castle
-editor needed it; the game never did. Our
-builder writes it the same way, so a castle we make looks like one of
-theirs, down to the bytes nobody uses.
+And the **skip** word in every directory entry? On the disk it always
+holds the room's objects address plus 2, and nothing in the game reads
+it. Perhaps the tools that built the castles needed it. Our builder
+writes it the same way, so our castles look like theirs, down to the
+bytes nobody uses.
 :::
 
 :::game-over Common mistakes
 - **`castle: that's not an object code`.** The walker found something it
   can't read as a tag: a hand-typed group with a record too many or too
   few, or a missing end marker. Count again, or let the builder do it.
-- **Walkways in the wrong colour, or in Chapter 2's colours.** `paint`
-  must run before anything is drawn, and the floor pieces must be the new
-  `art.zig`'s (bricks in code 01, mortar in code 00).
-- **Cells that change colour around a ladder.** The ladder or pole wasn't
-  repainted along with the walkways, so its cells carry their own
-  colours. All five floor pieces go through `paint`.
+- **Walkways in Chapter 2's colours, or cells that change colour around
+  a ladder.** `paint` must run before anything is drawn, on all five floor
+  pieces, and they must be the new `art.zig`'s.
 - **A doorbell in the wrong colour.** It found the wrong door: `doors`
   must be set at the room's first door record, and a bell's `door` is the
   door's place in the room's list, from 0.
-- **Text that runs on into garbage.** A string without a bit-7 letter
-  never ends. `text.terminated` (and the builder, which uses it) always
-  marks the last letter; hand-typed text has to remember to.
-- **N does nothing, or skips two rooms.** `flip` must write 0 to `$DC02`
-  once it has the key, or every frame sees the same key again.
+- **Text that runs on into garbage.** A hand-typed string without a
+  bit-7 letter never ends.
+- **N races through the rooms.** `flip` must write 0 to `$DC02` once it
+  has the key, or the key stays latched and every frame sees it again.
+- **A headless key that does nothing.** A `--key` that lands while a room
+  is being drawn arrives in a frame slot that's skipped, and is lost.
+  Leave a room time to draw before the next key.
 :::
 
 :::boss-battle Tour the castle
@@ -2222,14 +2417,15 @@ zig build run -- --frames 300 --press 20:f:5 --key 60:N --key 100:N --key 140:P 
 ```
 
 The run presses fire on the title, then N twice and P three times, which
-goes up to room 2, back to room 0, and round to the final room. It
+goes up to room 2, back to room 0, and round to the final room. The keys
+are 40 frames apart so each lands after the last room has drawn. It
 prints:
 
 ```
 ran 300 frames (233 calls to frame)
-cycles: max 221418 (1126%), avg 6300 (32%) of 19656
-  bucket 0: max 274, avg 26
-  bucket 1: max 220758, avg 6176
+cycles: max 219278 (1115%), avg 6281 (31%) of 19656
+  bucket 0: max 314, avg 27
+  bucket 1: max 218618, avg 6156
   bucket 2: max 644, avg 97
 overruns: 0, loading pauses: 7
 last frame: frames/frame_00299.ppm
@@ -2252,10 +2448,10 @@ python3 -m http.server -d web
 Open <http://localhost:8000>, press Space on the title, and use N and P
 to walk the whole castle, room by room.
 
-**You've built a castle!** It's 4,324 bytes, every one of them written
-by the compiler from declarations you can read, and the engine that draws
-it doesn't know a single room by heart. Next chapter, the explorer learns
-to use what you built.
+**You've built a castle!** It's 4,323 bytes, every one of them written by
+the compiler from declarations you can read, and the engine that draws it
+doesn't know a single room by heart. Next chapter, the explorer learns to
+use what you built.
 :::
 
 :::warp-zone
@@ -2279,16 +2475,12 @@ rm -rf my-creep/.zig-cache my-creep/zig-out my-creep/web
   room numbers you know don't move), a door pair to link it in, and a
   room in the plan. The builder will tell you everything you got wrong.
   Then try to break it on purpose and read the messages.
-- **A castle of your own.** Make a second plan in a new file, with its
-  own `Room` enum, and load its bytes instead of `training.bytes`. Five
-  rooms is a castle.
-- **Hex dump.** Write a test that prints the Training Castle's first 64
-  bytes with `std.debug.print("{x:0>2} ", ...)`, and find the header, the
-  directory and the Gatehouse's door in it.
+- **Bring the torches back.** The castle has no torches, but it can carry
+  pictures. Add Chapter 2's `torch` art to a room as an `image` with two
+  or three places, and decorate the castle with its own tools.
+- **A castle of your own.** A second plan in a new file, with its own
+  `Room` enum, loaded instead of `training.bytes`. Five rooms is a castle.
 - **Reversed text.** Set bit 4 of a line's style (you'll need to add a
   field to `Line`, and set the bit in the builder's text branch) and
   watch the letters cut out of a block.
-- **Room numbers on screen.** Print the room's number in a corner when
-  it's drawn. You'll need to turn a byte into digits, which Chapter 9
-  does properly.
 :::
