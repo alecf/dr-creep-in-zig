@@ -28,8 +28,8 @@ the comment said "four pixels, code 11". Time to find out what that
 meant, because every picture in the game depends on it.
 
 You know the look from the player's side: on machines like this one the
-pixels are wide, and a
-colour never quite ends where you'd like it to. That's the multicolour
+pixels are wide, and colour comes in small square patches that don't
+quite follow the edges of things. That's the multicolour
 bitmap (card section 3). The display is 320 × 200, but a pixel takes
 **two bits**, so each one is two dots wide: 160 **fat pixels** across.
 A byte holds **four fat pixels**, leftmost in the top two bits. The two
@@ -42,15 +42,16 @@ Byte `$6C` in a cell with the walkway's colours: screen plane `$9A`, colour RAM 
 A **cell** is 8 × 8 dots (4 fat pixels across, 8 rows down), 40 cells by
 25. Each cell owns one screen-plane byte and one colour-RAM byte, so a
 cell gets four colours: the shared background plus three of its own.
-That's the "4 colours per 8×8 cell" rule, and it squeezes a screen of
-colour into 8,000 + 1,000 + 1,000 bytes.
+That's the "4 colours per 8×8 cell" rule. It fits a whole screen of
+colour into 10,000 bytes: 8,000 of bitmap, 1,000 of screen plane and
+1,000 of colour RAM.
 
 So `$FF` is `11 11 11 11`, four pixels of "whatever colour RAM says".
 **One byte held four pixels; a second byte coloured the whole cell.** (A
 browser canvas spends four bytes on *each* pixel.)
 
-The screen-plane byte holds *two* colours: a palette number is 0–15,
-four bits, and a byte has room for two. That's the
+The screen-plane byte holds *two* colours. A palette number runs 0–15,
+which fits in four bits, so one byte has room for two of them. That's the
 chapter's first new idea, **packing several values into one byte**. Once
 you start looking for it, you'll see it everywhere on this machine.
 
@@ -83,7 +84,8 @@ in bold:
 | `$E000–$FF3F` | 8,000 | the bitmap |
 
 The star map and shape table are built into the program, like Chapter 1's
-explorer picture; boot copies them to the top of the program image.
+explorer picture. Boot copies them to `$6700` and `$6800`, just above
+the program image.
 
 **`src/map.zig`** (replace the whole file)
 
@@ -273,7 +275,8 @@ no multiply. Zig turns `/ 4` into a shift for you.
 
 `pixelShift` says where fat pixel `x`'s bits sit: the leftmost pixel of a
 byte is 6 places from the right, each one after it two places less. So
-`x = 6`, pixel 2 of its byte, is at shift 2.
+`x = 6`, the third pixel in its byte (pixels 4 to 7 share one), is at
+shift 2.
 
 ### Masks: changing two bits and no others
 
@@ -295,20 +298,22 @@ pixel's two bits. OR (`|`) sets a bit where *either* side has a 1, so it
 drops the new code in without disturbing anything else. **Clear with AND,
 set with OR**: that's how you change one value packed among others, on
 any machine, in any language. If you keep one line from this chapter,
-keep that one. `codeAt` goes the other way: shift the
-pixel's bits to the bottom and keep those two.
+keep that one. `codeAt` reads instead of writing: it
+shifts the pixel's two bits down to the bottom of the byte and keeps
+only those.
 
 :::pro-tip Zig sizes your shifts
 In Zig the shift *amount* has a type that depends on what you're
 shifting: a `u8` shifts by a `u3` (0 to 7), a `u2` only by a `u1`. Shift
 our `u2` code by a `u3` and the build stops with `expected type 'u1',
-found 'u3'`, so `plot` widens the code to a `u8` first. Colours bite the
-same way: `@intFromEnum(Color.dark_grey)` is a `u4`, so widen it before
-`<< 4`. `@truncate` in `codeAt` drops high bits on purpose.
+found 'u3'`, so `plot` widens the code to a `u8` first. Colours hit the
+same rule: `@intFromEnum(Color.dark_grey)` is a `u4`, so widen it before
+`<< 4`. Going the other way, `@truncate` in `codeAt` narrows a value on
+purpose: it keeps the low bits and throws the rest away.
 :::
 
 `clear` writes 10,000 bytes at 8 cycles each: **80,000 cycles**, four
-whole frames. Remember that price tag; it comes due in a few sections.
+whole frames. Remember that number; it matters a few sections from now.
 
 ## A sky full of stars
 
@@ -319,7 +324,8 @@ gets a night sky, and a night sky needs stars that twinkle.
 That gives `plot` something to do *every frame*: 128 stars, one fat pixel
 each. Every cell gets the same three colours (dark grey, light grey,
 white), and every eighth frame each star steps through codes 00, 01, 10,
-11 (off, dim, bright, brightest) one step behind the last.
+11 (off, dim, bright, brightest), each star one step behind the one
+before it.
 
 **`src/title.zig`** (new file)
 
@@ -385,10 +391,12 @@ pub fn twinkle(m: *Machine) void {
 
 Zig works out every top-level `const` while it compiles, so scattering
 128 stars (and throwing away any that land where the words or the moon
-will go) costs the Comet 64 nothing. The `blk:` label lets `break :blk
-out` hand back the answer. Boot copies the 256 bytes to `$6700`.
+will go) costs the Comet 64 nothing. The `blk:` label names the block,
+and `break :blk out` ends it with `out` as its value. Boot copies the
+256 bytes to `$6700`.
 
-`dark_grey << 4 | light_grey` is byte packing in code. In `twinkle`, `phase` is the clock divided by eight,
+In `draw`, `dark_grey << 4 | light_grey` packs two colours into one
+screen-plane byte. In `twinkle`, `phase` is the clock divided by eight,
 `phase +% i` gives each star its own place in the cycle (`+%` wraps past
 255 instead of stopping the game), and `@truncate` keeps a code from 0 to 3.
 
@@ -453,7 +461,7 @@ fn setMode(m: *Machine, new: Mode) void {
 }
 ```
 
-If memory ever held a 4, `@enumFromInt` would find no such `Mode` and
+If `game_mode` ever held a 4, `@enumFromInt` would find no such `Mode` and
 stop the game, where JavaScript would hand you `undefined` and carry on.
 
 ### Drawing a screen is a loading pause
@@ -463,14 +471,15 @@ something to say. It's about to say a lot. `title.draw` clears 10,000
 bytes and fills 2,000 more: 96,000 cycles, nearly five frames. So `draw_title`
 follows the card's advice (section 6): switch the display off first
 thing, while the beam is still above the display, and do the work. The
-meter shows a grey bar instead of a red one.
+meter then counts the frame as a loading pause (a grey bar), not an
+overrun (a red one).
 
 Then the satisfying part: **leave the display off**. A long frame ends
 partway through a sweep of the beam, and switching on there would show
 the picture appearing from the middle down. Instead the *next* frame
 switches it on first thing, before the beam reaches the display, and the
-player sees one clean cut from blank to finished. Four cycles a frame
-buys a perfect reveal, and every room change in the game will work this
+player sees one clean cut from blank to finished. It costs one extra
+write, four cycles, and every room change in the game will work this
 way.
 
 `m.bucket(id)` sends the cycles that follow to one of the meter's
@@ -489,16 +498,16 @@ overruns: 48, loading pauses: 1
 last frame: frames/frame_00099.ppm
 ```
 
-**48 overruns**, and only 49 calls to `frame` in 100 frames: each one
-spills into a second frame slot, so the sky twinkles at half speed. Open
-it in the browser and there are the stars, twinkling away over a **red**
+**48 overruns**, and only 49 calls to `frame` in 100 frames: each call
+runs past the end of its frame and uses up the next one too, so the sky
+twinkles at half speed. Open the game in the browser and there are the stars, twinkling away over a **red**
 meter and a red stripe across the border. That's not a title screen;
 that's a slideshow.
 
 So who's eating the frame? Add it up for one star: about 40 cycles of peeks, pokes, shifts and
 looping, then `rowAddress` charges **132**, 120 of it the multiply.
 172 cycles a star, 22,020 for 128, more than the whole frame's 19,656.
-Seven tenths of it is one `mul8` per star.
+Seventy percent of that is the one `mul8` call per star.
 
 ## The Lookup Table Power-Up
 
@@ -637,8 +646,10 @@ The directory, then each shape: a header, its pixels, and (room shapes only) a s
 :::
 
 Shapes are all different sizes, so you can't find shape 7 by
-multiplying, but the directory finds any of them in one read. The castle
-file's pictures use the same layout, so one drawing routine serves both.
+multiplying 7 by a fixed size. Instead the directory at the front holds
+each shape's address, so finding any shape is one read. The castle file
+that Chapter 3 loads stores its pictures the same way, so one drawing
+routine serves both.
 
 ### Drawing pictures as text
 
@@ -874,8 +885,8 @@ not a crash.
 into the string `"walkway"`, and `@field` finds the declaration of that
 name in `art.zig`, so a shape with no picture doesn't build. Each
 directory entry is a real Comet 64 address, worked out before the game
-ever runs. `glyph`'s entry points to a scratch shape at `$0310` where
-letters are built on the fly.
+ever runs. `glyph`'s entry points to `$0310`, a spare shape that the text code
+overwrites with each letter just before drawing it.
 
 `address`, the only part that runs at play time, follows one pointer.
 
@@ -883,10 +894,11 @@ letters are built on the fly.
 Chapter 3 takes `comptime` apart; for now: a `comptime` parameter, like
 `pack`'s `a`, must be known while compiling. `?[3]Color` is "three
 colours, or `null`", and `if (a.colors) |c|` runs only when there are
-some, with `c` the unwrapped value. `[_]u8{x} ** cells` repeats a byte,
-the way `++` joins. `undefined` means "filled in below". And
-`const done = flipped; ... &done` freezes a compile-time value so the
-finished table can point at it: every comptime builder uses that line.
+some, with `c` the unwrapped value. `**` repeats an array (`[_]u8{x} ** cells`
+is `cells` copies of `x`), the way `++` joins two. `undefined` means
+"filled in below". And `const done = flipped; ... &done` copies the
+compile-time `var` into a `const`, which the finished program is allowed
+to keep a pointer to. Every comptime builder ends with that line.
 :::
 
 :::game-over Bad art doesn't build
@@ -997,11 +1009,13 @@ walkway lands on the bricks instead of punching holes in them (which is
 why a room starts with `clear`). The colours that follow are *copied*: a
 cell can only have one set.
 
-Finding the first cell saves another multiply. `y & 0b1111_1000` clears
+The blitter also needs the shape's first cell, for its colours, and
+the row table finds that without a multiply too. `y & 0b1111_1000` clears
 the bottom three bits, rounding `y` down to the top row of its cell. The
 row table says that row starts at `$E000 + cell row × 320`. Subtract
-`$E000`, divide by 8, and you have `cell row × 40`, the first cell's
-number. **One table, two jobs.** A shape that starts partway down a cell
+`$E000`, divide by 8, and you have `cell row × 40`: the number of the
+leftmost cell in that row, counted the way the screen plane and colour
+RAM count them. **One table, two jobs.** A shape that starts partway down a cell
 spills into one more row of cells, and anything past the edges is cut off.
 
 ### What a pointer really is
@@ -1009,12 +1023,12 @@ spills into one more row of cells, and anything past the edges is cut off.
 Look at what that code did with addresses. It read one out of a table,
 added to it, and stepped along memory with it. An address you can store,
 pass around and do sums on: **that's a pointer.** That's the whole
-secret, and Chapter 1's promise is kept.
+secret, and it's what Chapter 1 promised this chapter would show you.
 
 Zig's pointers are the same idea, built into the language: `m: *Machine`
 is the address of the machine's state. A Zig pointer carries a type, so
 the compiler checks every use, and it won't let you add to a `*Machine`
-(one thing has no "next"). Our `u16` addresses are the kind you do sums
+(it points at one thing, so there's no "next" one to step to). Our `u16` addresses are the kind you do sums
 on, and the memory map's names say what they point at.
 
 :::under-the-hood A JavaScript reference vs. an address
@@ -1028,8 +1042,8 @@ same.x = 4;          // room.x is 4 now too
 
 But JavaScript never lets you *see* the address, because the engine
 moves objects around whenever it likes. On the Comet 64 nothing moves
-unless you move it, so an address is a plain number: data that knows
-where other data is.
+unless you move it, so an address is a plain number, and it stays right
+for as long as the data stays put.
 :::
 
 Now the castle:
@@ -1052,15 +1066,16 @@ Now the castle:
 
 Build and reload. A moon hangs over the stars, and a grey castle with lit
 windows stands along the bottom of the screen. Look closely at the wall:
-it leaves a gap for its door, and not only for looks. They have
-different colours, and a door drawn over wall would repaint the wall's
-pixels in its cells. It's the 4-colours-per-cell rule made visible, and
-it's why the room's walkways, ladders and poles all share one set of
-colours: they cross each other.
+it leaves a gap where the door goes, and not only for looks. The wall
+and the door have different colours, and a cell keeps only one set. Draw
+the door over the wall and the wall's pixels in those cells would turn
+the door's colours. That's the 4-colours-per-cell rule made visible.
+It's also why the room's walkways, ladders and poles all share one set
+of colours: they cross each other.
 
 ## Words in the bitmap
 
-The title needs a title. The display is always the bitmap, so letters
+The title needs a title. Our display is always in bitmap mode, so letters
 are drawn into it like everything else. The **character ROM** (card section 7) has 256 glyphs,
 8 × 8, one bit per pixel. `m.charRom('A')` returns a `*const [8]u8`, a
 pointer to the letter's eight bytes.
@@ -1068,8 +1083,8 @@ pointer to the letter's eight bytes.
 As in the 1984 game, **each glyph bit becomes one fat pixel** (1 to code
 01, 0 to 00), so each glyph row becomes two bitmap bytes and the letters
 come out broad and chunky. Expanding bits one at a time would be 64
-shifts and tests a letter. But four glyph bits make one bitmap byte, and four
-bits have only 16 values. Another table:
+shifts and tests a letter. But four glyph bits become one bitmap byte, and four
+bits have only 16 possible values, so all 16 answers fit in a table:
 
 ```
   glyph bits   bitmap byte
@@ -1089,9 +1104,9 @@ is drawn with `drawShape`, so text gets the same blitter, clipping and
 colours as every other picture.
 
 How does a string end? JavaScript strings carry their length. The 1984
-game spends no bytes at all: printable characters are all below `$80`,
-so **the last letter has bit 7 set.** A free bit, put to work, and the
-end of the string costs nothing. I love this one. The castle file stores
+game spends no extra bytes: printable characters are all below `$80`,
+so **the last letter has bit 7 set.** Bit 7 was never used by a letter
+anyway, so marking the end with it costs nothing. I love this one. The castle file stores
 all its text this way.
 
 **`src/text.zig`** (new file)
@@ -1199,9 +1214,10 @@ each time round, but not after a `break`.) `letter & 0x7F` masks bit 7
 off before asking the ROM. In Chapter 3, `draw` reads text straight out
 of the castle file.
 
-`say` is for strings in the program: `terminated` marks the last letter
-at compile time (and refuses bad strings), and `say` draws it from the
-text buffer.
+`say` is for strings typed into the program. At compile time,
+`terminated` sets bit 7 on the last letter (and refuses bad strings);
+then `say` copies the string into the text buffer and draws it from
+there.
 
 :::pro-tip `&` and `|` are equals in Zig
 A bug that bit us writing the widen table. The first version said
@@ -1318,7 +1334,8 @@ fn pole(m: *Machine, x: u8, top: u8, bottom: u8) void {
 `floor_top` stays 192, where Chapter 1's floor was. The ladder and pole
 go last, so their rails are ORed over the bricks, in the same colours.
 
-The title needs to notice a fire *press*: Chapter 1's Edge Detector,
+The title needs to notice a fire *press*, the moment the button goes
+down, not every frame it's held. That's Chapter 1's Edge Detector, now
 packaged as a function next to `held`. It stores this frame's stick for
 next time, so call it once a frame.
 
@@ -1509,8 +1526,8 @@ Here's the catch. Unpacking a frame is about 630 cycles of writes, and
 the VIDEO chip reads the block as the beam passes the explorer. Unpack
 into the block on screen while the beam is crossing him, and the top of
 him shows the old frame and the bottom the new. Today the unpack is done
-long before the beam gets there, but a room full of monsters will push
-it later and later. So each sprite gets **two blocks**:
+long before the beam gets there, but in a room full of monsters it will
+happen later in the frame, close enough for the beam to catch it. So each sprite gets **two blocks**:
 
 :::diagram ch02-double-buffer
 Unpack into the block the beam isn't reading, and flip the pointer, one byte, at the top of the next frame.
@@ -1645,13 +1662,14 @@ What's new:
 - **`show`** copies the sprite pointer too: that's the flip.
 - **`steer`** walks left or right only. The walk frame comes straight
   out of `x`: `(x >> 2) & 0b11` counts 0, 1, 2, 3 as `x` goes up by
-  four, so his feet keep pace with the floor. Walking left they count
-  down, and a loop of steps looks like walking whichever way it plays.
+  four, so his feet keep pace with the floor. Walking left, `x` goes
+  down, so the frames count 3, 2, 1, 0; a stride looks right played in
+  either order.
 - **`setFrame`** is the double buffer: `^ 8` finds the hidden block,
   `unpack` fills it, and it becomes the shown one.
 
-The fire colour cycle is gone: in the castle, fire is for doorbells and
-gun panels. Last, `main.zig`:
+The fire colour cycle is gone: in the castle, the fire button will work
+the things in the rooms. Last, `main.zig`:
 
 **`src/main.zig`** (at the end of `boot`, after the star map's `m.load`)
 
@@ -1759,10 +1777,10 @@ The 4 KB region lets the table nearly quadruple before `build` refuses
 it. The row table is 400.
 
 **Time.** The title draws in **156,200 cycles** and the room in
-**126,172**, more than half of each `clear`. A title frame costs
+**126,172**; more than half of each is `clear`. A title frame costs
 **6,698**; a room frame **104**, or 732 when the walk changes frame. The
-meter has plenty to say now, and what it's saying is that the room has
-room for monsters.
+meter has plenty to say now, and the news is good: a room frame leaves
+almost the whole budget free for monsters.
 :::
 
 :::game-over Common mistakes
