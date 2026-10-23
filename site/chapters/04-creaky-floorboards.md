@@ -7,8 +7,8 @@ checkpoint: ch04
 :::mission-briefing
 Chapter 3 built a castle the explorer can't use. He shuffles along the
 bottom of every room as if the walkways were painted on, and the ladders
-might as well be wallpaper. This chapter teaches him the castle. By the
-end he walks every floor of the Training Castle, stops where a walkway
+might as well be wallpaper. This chapter teaches him where the floors,
+ladders and poles are. By the end he walks every floor of the Training Castle, stops where a walkway
 stops, climbs the ladders and slides down the poles, all the way to the
 right-hand edge of the screen. The wall he hit in Chapter 1 is gone.
 
@@ -22,18 +22,20 @@ byte** comes back with a new job.
 ## The wall made of arithmetic
 
 Back in Chapter 1, the explorer walked right and stopped three quarters
-of the way across the screen, at nothing. No wall, no door, no monster:
-a barrier made of arithmetic. If you've ever watched a score roll over
-from 999,999 to zero, you've met its cousin. His X was a byte, and a
-byte stops at 255. Here's what happens when numbers outgrow their bytes,
-and how the 1984 game fits the whole screen into one anyway.
+of the way across the screen, at nothing. No wall, no door, no monster.
+The barrier was arithmetic: his X was a byte, and a byte can't count
+past 255. (If you've ever watched a score roll over from 999,999 to
+zero, that's the same problem.) Here's what happens when a number
+outgrows its byte, and how the 1984 game fits the whole screen's width
+into a single byte anyway.
 
 ### Every number has a size
 
 In Zig every integer type says how many bits it gets. A `u8` is 8 bits,
 unsigned: 0 to 255. A `u16` is 0 to 65,535. Any width works: a `u3`
 holds 0 to 7, which is why Chapter 3's castle map sizes were `u3`s. An
-`i8` is **signed**, −128 to 127 (more on that trick later).
+`i8` is **signed**, −128 to 127 (later in this chapter we'll see how a
+byte stores a negative number).
 
 Fixed width means a sum can need more bits than its type has. 255 + 1
 is 256, which needs a ninth bit. That's **overflow**, and the hardware's
@@ -48,8 +50,9 @@ run`, `zig build test` and `zig build wasm`) the game stops on the spot
 with `panic: integer overflow`. Zig's fastest build modes skip the check,
 and then anything can happen, so the checks are worth keeping on.
 
-When you *want* the odometer, you say so with a different operator, and
-you've already met them:
+When you *want* the number to roll over, you say so with a different
+operator. You've met both kinds: Chapter 2's stars used `+%`, which
+wraps, and Chapter 3's doors used `+|`, which stops at the limit:
 
 :::diagram ch04-wrap
 250 + 10 in a `u8`: **checked**, **wrapping** and **saturating**.
@@ -62,8 +65,8 @@ keeping only the low bits.
 
 :::under-the-hood Numbers that never overflow (until they do)
 In JavaScript every number takes 8 bytes, so `255 + 1` is always
-`256`, and Python's integers grow as big as memory allows. That's eight
-times the memory per coordinate on the Comet 64. Where JavaScript does
+`256`, and Python's integers grow as big as memory allows. On the Comet
+64 that would make every coordinate eight times bigger than a `u8`. Where JavaScript does
 use bytes, it wraps silently: `const a = new Uint8Array(1); a[0] = 256;`
 leaves `a[0]` at `0`. Zig makes you choose: a checked `+`, or a `+%`
 that says "I meant that".
@@ -71,17 +74,18 @@ that says "I meant that".
 
 ### A byte for the whole width
 
-So what's the trick? It's been hiding in plain sight since Chapter 3:
-every object's X is a **fat pixel plus 16**. X = 16 is the left edge of
-the screen, and X = 175 the last fat pixel on the right. The whole width
-fits in a byte with 80 to spare. Put the explorer on the same scale and
-the wall is gone. We don't knock it down; we halve the screen, because
-160 fat pixels is a smaller number than 320 screen pixels.
+So how does the 1984 game do it? The answer has been in front of us
+since Chapter 3: every object's X counts **fat pixels, plus 16**. X = 16
+is the left edge of the screen, and X = 175 the last fat pixel on the
+right. The screen is 320 screen pixels wide, which doesn't fit in a
+byte, but only 160 fat pixels wide, which fits with 80 to spare. Measure
+the explorer's X in fat pixels too, and the wall is gone.
 
-The VIDEO chip still wants screen pixels. A fat pixel is two, and castle
-X 16 lands on sprite X 24, the display's left edge, so sprite X is
-`2x − 8`, up to 342. The chip keeps each sprite's ninth X bit in
-`$D010` (reference card, section 4). The natural first try:
+The VIDEO chip still places sprites in screen pixels, two to a fat
+pixel. Castle X 16 has to land on sprite X 24, where the display's left
+edge is, so sprite X is `2x − 8`. That goes up to 342, too big for a
+byte, so the chip keeps a ninth X bit for each sprite in `$D010`
+(reference card, section 4). The natural first try:
 
 ```zig snippet
 m.poke(hw.spriteX(n), x * 2 - 8);
@@ -100,7 +104,7 @@ src/sprites.zig:45:29: 0x11ee151 in place (main.zig)
 
 A loud crash on the first frame beats a wrong number that hides for a
 week. The fix is to do the sum in a type that's big enough, then split
-it:
+the result into a low byte and the ninth bit:
 
 :::diagram ch04-ninth-bit
 Castle X fits a byte; sprite X doesn't. 330, the explorer at the right-hand end of a floor, splits in two.
@@ -135,13 +139,14 @@ pub fn place(m: *Machine, n: u3, x: u8, y: u8) void {
 `@as(u16, x)` widens before anything is multiplied, so the sum has room,
 and `@truncate` keeps the low byte on purpose. `place` changes only
 sprite `n`'s bit of `$D010`, with Chapter 2's masks: `& ~bit` clears it,
-`| bit` sets it, and the other seven come back as they were. (Castle X
+`| bit` sets it, and the other seven bits are written back unchanged. (Castle X
 below 4 would make `2x − 8` negative and stop the game, but nothing ever
 stands that far off the screen.)
 
 ### Into a doorway
 
-The player's two position bytes change their meaning:
+The player's two position bytes now use the castle's units, like every
+other object:
 
 **`src/map.zig`** (replace the `player_x` and `player_y` lines)
 
@@ -150,10 +155,10 @@ pub const player_x = player.first + 0; // castle X of his left edge: fat pixel +
 pub const player_y = player.first + 1; // castle Y of his top: the pixel row
 ```
 
-Now he can start somewhere the castle names: in front of a door. Until
-Chapter 5 brings the door he really walked through, he appears in the
-room's first door, which is quick to find because doors are the first
-group in every stream. `room.zig` gets a way to find a room's objects
+Now he can start at a place the castle data gives: in front of a door.
+Chapter 5 will put him at the door he came in by. Until then he appears
+at the room's first door, which is quick to find because doors come
+first in every room's object stream. `room.zig` gets a way to find a room's objects
 without painting anything:
 
 **`src/room.zig`** (replace `prepare`)
@@ -251,8 +256,8 @@ the screen is castle X 96). The final room has no doors, so he starts on
 its floor in the middle.
 
 One step of X is now a whole fat pixel, two screen pixels. The 1984 game
-moves the explorer one **step** every other frame, 25 a second, which is
-exactly the speed he walked before:
+moves the explorer one **step** every other frame, 25 a second. Two
+screen pixels every two frames is exactly the speed he walked before:
 
 **`src/player.zig`** (in `steer`, add at the top)
 
@@ -269,7 +274,7 @@ exactly the speed he walked before:
 ```
 
 `game_tick` goes up by one every frame, so its bit 0 is 0 on every other
-frame. The walk frame now comes from bits 1 and 2 of `x`, so he still
+frame, and those are the frames he steps on. The walk frame now comes from bits 1 and 2 of `x`, so he still
 changes picture every four screen pixels.
 
 Chapter 2's walking test now fails. Here's its replacement, and a helper
@@ -338,19 +343,20 @@ you can climb it, and how a walkway's end is as far as you go, no matter
 how hard you push? Under all of that is one question the game asks every
 step: **from here, which ways can he go?**
 
-The castle knows the answer, spread across its records. The JavaScript
+The answer is in the castle's records, spread across its walkways,
+ladders and poles. The JavaScript
 way is to ask them each time:
 `walkways.some(w => w.y === feetY && feetX >= w.x && ...)`, and the same
 for ladders and poles. On the Comet that means walking the room's whole
-object stream 25 times a second. The 1984 game asks once, when the room
-is drawn, and writes the answers down.
+object stream 25 times a second. The 1984 game works out every answer
+once, when the room is drawn, and stores them in a table.
 
 ### A byte for every cell
 
 The answers go in a grid with one entry per **cell**, the screen's 8×8
-squares: 4 fat pixels across and 8 rows down, 40 cells by 25. Everything
-you can walk on is built from cell-sized pieces on whole cells, so that's
-the right size.
+squares: 4 fat pixels across and 8 rows down, 40 cells by 25. Walkways,
+ladders and poles are all built from cell-sized pieces lined up on the
+cells, so one answer per cell is enough.
 
 Each cell's answer is a flags byte, like Chapter 2's sprite flags, but
 here each bit is a direction. Number the eight directions clockwise from
@@ -373,8 +379,8 @@ straight directions are ever set; no object sets a diagonal. We number
 them because the joystick gives a direction number too, and then "is
 that way open?" is one test: `ways & (1 << d)`. A cell in the middle of
 a walkway is `$44`, left and right; a rung in the middle of a ladder is
-`$11`, up and down. (Chapter 3's `packed struct(u8)` names bits; here we
-pick a bit by *number*, so plain masks fit better.)
+`$11`, up and down. (Chapter 3 used a `packed struct(u8)` to give bits
+names. Here we choose a bit by its *number*, so plain masks fit better.)
 
 ### A grid is a row of bytes
 
@@ -383,27 +389,27 @@ The memory map with the 1,000-byte navigation grid at `$C800` lit up.
 :::
 
 In JavaScript a grid is usually an array of arrays, `grid[y][x]`: 26
-separate objects, and every read follows a pointer to its row first. The
-flat version, `new Uint8Array(40 * 25)` read as `grid[y * 40 + x]`, is
-1,000 bytes in one block, with no pointers anywhere. Same thousand
-numbers, one block instead of twenty-six. That's the one we're building.
+separate objects (the outer array and its 25 rows), and every read
+follows a pointer to its row first. The flat version,
+`new Uint8Array(40 * 25)` read as `grid[y * 40 + x]`, is 1,000 bytes in
+one block, with no pointers anywhere. That's the one we're building.
 Cell (col, row) is `row × 40 + col` bytes in:
 
 :::diagram ch04-flat-grid
 The Ladders room's ladder top, cell (24, 16), in both views.
 :::
 
-That's the numbering the screen plane and colour RAM use, so cell *n* of
-the grid sits under cell *n* of the screen. And `row × 40` doesn't need
+The screen plane and colour RAM number their cells the same way, so
+grid byte *n* describes screen cell *n*. And `row × 40` doesn't need
 Chapter 2's 120-cycle multiply: 40 is 32 + 8, so it's `(row << 5) + (row
 << 3)`, two shifts and an add.
 
-A castle X becomes a column with a neat trick: divide by 4 for the fat
-pixels in a cell, and since the castle's 16 is exactly four cells, take
-4 away: `x / 4 − 4`. For an X below 16 (objects can hang off the left
-edge) that's below zero, a `u8` can't hold it, and the `-` stops the
-game. So `column` returns Chapter 2's optional, `?u8`, with "no column"
-for X off the screen.
+To turn a castle X into a column, divide by 4, because a cell is 4 fat
+pixels wide. Then take away 4, because castle X starts at 16, which is
+four cells: `x / 4 − 4`. For an X below 16 (objects can hang off the
+left edge) the answer would be below zero. A `u8` can't hold that, so
+the `-` would stop the game. Instead `column` returns Chapter 2's
+optional, `?u8`, which is `null` for an X off the screen.
 
 The grid goes in the free kilobyte between the sprite frames and the
 screen plane, from `$C800`:
@@ -476,18 +482,19 @@ pub fn at(m: *Machine, x: u8, y: u8) u8 {
 }
 ```
 
-`at` is the whole cost of a step's question: a test, two shifts and an
-add, one `peek`. Twenty cycles. Hold on to that number; we'll put it up
+`at` is all it costs a step to ask "which ways are open?": a test, two
+shifts and an add, one `peek`. Twenty cycles. Hold on to that number; we'll put it up
 against the slow way at the end of the chapter, and it isn't close.
 
-### Writing it down
+### Filling in the grid
 
 Here are the 1984 game's rules for what each record writes, so real
 castles play right when they load in Chapter 11:
 
 - **A walkway** opens right from its first piece, left from its last,
   and both ways in between. Walking off the end is impossible because
-  the end piece has no way out past the end. No edge check anywhere.
+  the end piece has no way out past the end, so no code ever checks for
+  the edge.
 - **A ladder** opens down from its top rung, up from its bottom rung,
   and both ways in between.
 - **A pole** opens down from every piece, and never up.
@@ -539,8 +546,8 @@ pub fn add(m: *Machine, r: castle.Record) void {
 the others, ORs each piece's ways into its cell, and stops at the
 screen's edge, which is also why `i += 1` can never overflow.
 
-The room builds its grid from the same walk over the stream that draws
-it, so the grid can never disagree with the picture:
+The room fills in the grid in the same loop over the object stream that
+draws the room, so the grid can never disagree with the picture:
 
 **`src/room.zig`** (add an import below `castle`)
 
@@ -605,7 +612,8 @@ castle: room poles: pole 0 must start on a walkway and end just above one (top p
 
 Chapter 3 drew the Sliding Poles pole one piece too long, and the
 Entrance Hall's too. On screen you'd never know, because the last piece
-disappears into the floor's bricks. In the grid, it's a hole. I love
+disappears into the floor's bricks. In the grid, that piece gives the
+floor a way down: a hole. I love
 this kind of bug: invisible on screen, fatal in the data, and caught
 before anyone falls in. Shorten both poles by one piece:
 
@@ -632,9 +640,9 @@ before anyone falls in. Shorten both poles by one piece:
 The grid is invisible, which makes it hard to trust. So let's give the
 game a switch that draws it. Press **G** and the room is redrawn with
 the grid over it (and the explorer back in the doorway, so look first,
-then walk). A second switch, **Q**, waits for the end of the chapter.
-Both stay off W A S D and I J K L, the browser's joysticks: a switch on
-S would flip every time you climbed down.
+then walk). A second switch, **Q**, arrives at the end of the chapter.
+Neither uses W A S D or I J K L, the keys the browser version uses as
+joysticks: a switch on S would flip every time you climbed down.
 
 **`src/map.zig`** (add below the `room` region)
 
@@ -712,7 +720,8 @@ pub fn overlay(m: *Machine) void {
 together, since they number cells the same way. Each open cell becomes a
 little map of its ways: `0b00_11_11_00` is one row of code-11 pixels in
 the middle of the cell, and the left or right pixel joins it when that
-way is open. Make the cell's colour-RAM byte yellow and they show.
+way is open. Setting the cell's colour-RAM byte to yellow makes those
+pixels yellow.
 
 **`src/main.zig`** (add below the `player` import)
 
@@ -768,11 +777,12 @@ multiple of 8, so his feet are at the very top of the walkway's cell.
 
 ### The stick as a direction
 
-The grid speaks in directions, so the joystick should too. The port's
-four switches can read 16 ways, and a 16-entry table turns each into a
-direction, or `still` for nothing (and for nonsense like up and down at
-once). The compiler fills the table using Chapter 1's `held`, so
-active-low is still spelled out in one place.
+The grid speaks in directions, so the joystick should too. The stick
+has four switches, so it has 16 possible readings, and a 16-entry table
+turns each into a direction, or `still` for nothing (and for nonsense
+like up and down at once). The compiler fills the table using Chapter
+1's `held`, so the active-low detail (a pressed switch reads 0) still
+lives in one place.
 
 The player needs one more byte, which way his last step went:
 
@@ -857,7 +867,7 @@ const step_x = [8]u8{ 0, 1, 1, 1, 0, 0xFF, 0xFF, 0xFF };
 const step_y = [8]u8{ 0xFE, 0xFE, 0, 2, 2, 2, 0, 0xFE };
 ```
 
-`still` is `$80`, a direction that isn't one. `compass` lays the
+`still` is `$80`, a value that isn't any of the eight directions. `compass` lays the
 directions out as they sit on the stick, and the block that fills
 `stick_way` picks a row (up, neither, down) and a column (left, neither,
 right) for each of the 16 readings. It runs in the compiler, like every
@@ -890,9 +900,9 @@ coincidence; it's how computers store negative numbers:
    1 0000 1001   265: the ninth bit falls off the end, leaving 9
 ```
 
-That's **two's complement**: an `i8` reads the top half of the dial,
-the bytes with the top bit set, as the negative numbers, so the ordinary
-wrapping add works unchanged:
+That's **two's complement**: an `i8` reads the bytes with the top bit
+set, 128 to 255, as −128 to −1. So the ordinary wrapping add works for
+negative numbers without any change:
 
 :::diagram ch04-minus-one
 A byte is a dial. Going 255 steps forward lands one step back.
@@ -906,7 +916,7 @@ either way with one add. Forwards and backwards, one instruction, no
 
 ### Taking a step
 
-Into the room, he isn't going anywhere yet:
+When he enters a room he isn't moving yet, so his last step is `still`:
 
 **`src/player.zig`** (in `enter`, add below the `player_y` line)
 
@@ -995,8 +1005,8 @@ Here's what a step does.
 **Which way is open?** `ways` is the byte under his feet. If the stick's
 direction is open, he goes that way. If not, there's one more chance,
 and it's what makes the stick feel right: if he's already moving and the
-stick is pushed *next to* that direction (usually a diagonal), he keeps
-going. Walking right with the stick at up-and-right, he keeps walking;
+stick is pushed *next to* the way he's moving (usually a diagonal), he
+keeps going. Walking right with the stick at up-and-right, he keeps walking;
 on a ladder with the stick at down-and-left, he keeps climbing down.
 Sloppy thumbs on a worn-out joystick still get where they meant to go.
 "Next to" is one more or one less round the compass, and the compass
@@ -1009,11 +1019,12 @@ pixel into the cell, `x - fx % 4 + 1`, centred between a ladder's rails.
 Going sideways, his Y is pulled up to the cell's top row, `y -= fy % 8`.
 That matters at the top of a ladder: the top rung doesn't open up, so a
 climb ends with his boots six rows below the walkway, and pushing left
-or right steps him onto it. That's why stepping off a ladder needs no
-instructions: you push the way you want to go.
+or right steps him onto it. So stepping off a ladder needs no special
+move: you push the way you want to go.
 
-**The step** is the two table adds. Stopping at a walkway's end, not
-climbing a pole: none of it has code. It falls out of the bits. This is
+**The step** is the two table adds. Stopping at a walkway's end and not
+being able to climb a pole have no code of their own: they happen because
+those bits are 0. This is
 the payoff for all that bookkeeping: the castle's rules live in the
 data, and `steer` only has to read them.
 
@@ -1025,8 +1036,8 @@ refuses:
 expected type 'u3', found 'u8'
 ```
 
-As in Chapter 2, a `u8` shifts by a `u3`, because shifting 8 or more
-places would empty it. `@intCast(way)` converts it, with a check that
+As in Chapter 2, the shift amount for a `u8` must be a `u3` (0 to 7),
+because shifting 8 or more places would empty it. `@intCast(way)` converts it, with a check that
 panics if `way` is ever 8 or more.
 :::
 
@@ -1207,7 +1218,7 @@ pub fn search(m: *Machine, objects: u16, x: u8, y: u8) u8 {
 For a walkway, the piece covering the cell is `col + 4 − x / 4 + 1`
 (counting from 1, as `add` does); for a ladder or pole it's
 `row − y / 8 + 1`. Then `piece` gives the same ways `add` wrote. Let the
-Q switch choose:
+Q switch choose between the search and the grid:
 
 **`src/player.zig`** (replace `waysAt`)
 
@@ -1250,10 +1261,10 @@ grid readers spend 320. That's the difference between a castle that
 crawls and one that plays.
 
 :::power-up The Precompute Power-Up
-When an answer only changes when the world changes, work it out then,
-not when you ask. The room changes once, when it's drawn; the explorer
-asks 25 times a second. So the drawing pass writes every answer down,
-and asking becomes one read. It's Chapter 2's Lookup Table Power-Up with
+If an answer only changes when the world changes, work it out when the
+world changes, not every time you ask. The room changes once, when it's
+drawn; the explorer asks 25 times a second. So the drawing pass stores
+every answer, and asking becomes one read. It's Chapter 2's Lookup Table Power-Up with
 the table built at run time: 1,000 bytes and about 10,000 cycles in a
 loading pause nobody feels, and every step after that is cheap. Collect
 this one; you'll use it all the way to the last castle.
@@ -1270,8 +1281,8 @@ frame slots), and 196 to 228 cycles a step in play.
 
 :::inside-the-disk Eight directions, four used
 The 1984 game keeps its grid at `$C000` with **two bytes per cell**,
-2,560 bytes in all, and never reads the second byte. Half a kilobyte of
-nothing, on a machine that counts every byte! The direction bits are
+2,560 bytes in all, and never reads the second byte: 1,280 bytes nothing
+uses, on a machine that counts every byte! The direction bits are
 exactly ours, and the movement code is ready for diagonals that nothing
 ever sets.
 
@@ -1318,7 +1329,7 @@ test "castle X becomes sprite X, ninth bit and all" {
 ```
 :::
 
-And whole-game tests, which need the grid's names:
+And whole-game tests, which need to import the grid:
 
 **`src/main.zig`** (add an import below `castle`)
 
@@ -1493,7 +1504,7 @@ Open <http://localhost:8000>, press Space, and explore: arrows to walk
 and climb, N and P for rooms, G for the grid, Q for the slow way.
 
 **He knows the castle!** Every floor, ladder and pole in the Training
-Castle works, read from 1,000 bytes the room wrote down as it was drawn.
+Castle works, read from the 1,000-byte grid the room fills in as it's drawn.
 Next chapter, the doors open.
 :::
 
