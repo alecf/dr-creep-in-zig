@@ -1040,16 +1040,17 @@ Who calls `touching`? Every actor against every object, every step, is
 The VIDEO chip can answer for free. As the beam draws, it sets a
 sprite's bit in `$D01F` when one of its pixels lands on a **foreground**
 pixel (codes `10` and `11`, reference card section 5), and in `$D01E`
-when it lands on another sprite. Objects are drawn in foreground
-colours, so an actor that touched no foreground can't be in front of
+when it lands on another sprite. Every object has foreground pixels,
+so an actor that touched no foreground can't be in front of
 anything:
 
 :::diagram ch05-touching
-The Gatehouse bell as the screen shows it, as the VIDEO chip checks it, and as our code does.
+The bell three ways: on screen, to the VIDEO chip, and to our code.
 :::
 
 Once a step the engine reads both registers, zeroes them, and copies
-each actor's bit into `hit_bitmap` and `hit_sprite`. The hardware does
+each actor's bit into `hit_bitmap` and `hit_sprite`. Only an actor with
+`hit_bitmap` set looks through the objects. The hardware does
 the rough test on every pixel, and our code the exact one only when it
 might say yes.
 
