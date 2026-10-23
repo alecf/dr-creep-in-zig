@@ -421,3 +421,73 @@ Keep a running list of rooms and their room numbers in the Decision log.
   canvas's next sibling if it has `data-comet-status`.
 - **check-all.sh** also asserts `web/game.wasm`, `web/shell.js`,
   `web/index.html` were written.
+- **Chapter files and titles.** `site/chapters/00-prologue.md` (front
+  matter `chapter: 0`, `title: "The Rules of the Game"`, `checkpoint:
+  starter`) and `site/chapters/01-its-alive.md` (`title: "It's Alive!"`).
+  Box directives may carry a title after the type (`:::power-up The Edge
+  Detector Power-Up`); `mission-briefing`, `warp-zone` and `bonus-stage`
+  usually don't. Screenshots live in `site/chapters/images/NN-name.png`:
+  headless PPMs converted to PNG at 2× scale (768×544), referenced as
+  `images/NN-name.png`. Non-Zig pseudo-code goes in a plain ``` fence,
+  never a ```zig one (every ```zig block should be real Zig).
+- **The reader's project.** The Prologue has the reader copy `starter/`
+  to `code/my-creep/` (a sibling of `machine/`, so `../machine` resolves)
+  and work there for the whole series. Chapter 1 renames the runner:
+  every checkpoint's `build.zig` uses `.name = "creep"` (supersedes
+  "`.name = "chNN"`" above; only `starter/` says `"starter"`). After
+  chapter 1, `build.zig` and `build.zig.zon` never change.
+- **Checkpoint READMEs.** Each `chNN/` has a short `README.md` (chapter
+  name, file list, the Boss Battle commands). It is a Warp Zone note, not
+  part of the reader's project, and is outside the exhaustiveness rule,
+  which covers `build.zig`, `build.zig.zon` and `src/`.
+- **Game source layout (from ch01).** `src/main.zig` holds only imports,
+  `boot`, `frame` and whole-game tests. `src/map.zig` is the memory map.
+  `src/room.zig` draws the room (ch01: the floor; exports `floor_top`,
+  display row 192). `src/player.zig` is player 1 (`start` in boot, `show`
+  and `steer` in frame). Later chapters add files per subsystem and keep
+  these names.
+- **Memory map style (`src/map.zig`).** `pub const Region = struct {
+  name: []const u8, first: u16, last: u16 }` with **inclusive** first/last
+  (reads like the card's `$0200–$0203`). A game region is a `pub const`
+  `Region` named for its contents (`player`); its fields are `u16`
+  address constants named `region_field`, computed from the region
+  (`pub const player_x = player.first + 0;`). Hardware regions the game
+  touches are private `Region` constants built from `machine.hw` names.
+  All go in `pub const regions = [_]Region{...}` **in address order**,
+  and a top-level `comptime` block rejects any overlap or inverted range
+  with `@compileError("memory map: A overlaps B")`. Chapters add rows;
+  they never bypass the map. ch01 rows: stack (reserved), player
+  `$0200–$0203`, program image, sprite frames, sprite pointers, VIDEO chip
+  `$D000–$D02E`, colour RAM, input ports `$DC00–$DC02`, bitmap.
+- **Game state at ch01.** `player` = `$0200 x`, `$0201 y`, `$0202
+  color`, `$0203 last_stick` (joystick-1 port byte from last frame, for
+  edge detection; boot sets `$FF`). Player is sprite 0 showing sprite
+  block 0 (`$C000`). X is a plain sprite-X byte clamped to 24–255 (the
+  9th bit, `$D010`, is unused; the chapter calls the stop at 255 "the
+  wall made of arithmetic" and promises chapter 4 fixes coordinates;
+  ch4 should pay that off, e.g. with the 1984 fat-pixel+16 X). Y is
+  clamped 50–221 (boots on the floor). ch01 colours: border blue,
+  background black, floor grey, player starts white; fire cycles 1→15→1,
+  skipping 0.
+- **Frame structure.** `frame` writes hardware first (`player.show`: the
+  shadow-copy pattern, state in RAM copied to the VIDEO chip before
+  raster 51), then runs game logic (`player.steer`), whose results show
+  next frame. Later chapters keep "all register writes at the top of
+  `frame`". Chapter 1 teaches the 3,213-cycle rule and shows a tear
+  (Secret Passage, `m.work(6000)` before `show`); the Inside the Disk box
+  told the 30-byte zero-page shadow-register story, so don't retell it.
+- **Joystick idiom.** `fn held(stick: u8, switch_bit: u8) bool { return
+  stick & switch_bit == 0; }` (private, in `player.zig`) is the only place
+  active-low is spelled out. A press is `held(stick, b) and !held(before,
+  b)` ("the Edge Detector Power-Up", named in ch01; ch5 doorbells and ch7
+  gun panel are promised to reuse it).
+- **Cost convention.** Each logic function charges one `m.work(n)`
+  estimate for its non-memory work, with a comment (`steer` charges 40).
+  ch01 frame: 92 cycles idle, 100 with a fire press. Buckets are not used
+  yet (all bucket 0); ch2 should assign the stable bucket ids.
+- **Terms introduced in ch01 prose.** "explorer" for the player sprite;
+  "page" (256-byte, the high hex byte of an address); "mask"; "active-low";
+  "tear"; "shadow copy". Hex: `$D020` in prose and tables, `0xD020` in
+  code. ch01 already told readers: overflow panics are chapter 4,
+  bitmap pixel codes are chapter 2, comptime room DSL is chapter 3,
+  interrupts are "a later chapter".
