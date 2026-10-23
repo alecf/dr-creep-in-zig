@@ -166,7 +166,7 @@ test "the Training Castle reads back: every room walks to its end tag" {
 }
 
 /// Walk one room's stream, check it holds what the plan says, and return
-/// the address just past its end tag.
+/// the address after its end tag.
 fn walkRoom(m: *Machine, at: u16, plan: author.Room(training.Room)) !u16 {
     var found = std.enums.EnumArray(castle.Kind, usize).initFill(0);
     var walk = castle.Walker{ .at = at };

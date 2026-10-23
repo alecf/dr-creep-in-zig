@@ -41,7 +41,7 @@ pub fn start(m: *Machine) void {
 /// (x, y), in `style` (see `style_height`). Letters are 8 fat pixels wide.
 /// The string ends at the first byte with bit 7 set, which is its last
 /// letter; letters that would run off the right edge of the screen are
-/// left out. Returns the address just past the string.
+/// left out. Returns the address after the string.
 pub fn draw(m: *Machine, x: u8, y: u8, color: Color, style: u8, addr: u16) u16 {
     const tall = @max(1, style & style_height); // each glyph row drawn this many times
     const flip: u8 = if (style & style_reversed != 0) 0xFF else 0x00;

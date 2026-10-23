@@ -187,7 +187,7 @@ pub fn isEnd(byte: u8, end: u8) bool {
 }
 
 /// One record in a room's stream: its kind, where it starts, and the
-/// address just past it.
+/// address after it.
 pub const Record = struct { kind: Kind, at: u16, end: u16 };
 
 /// Walks a room's object stream, one record at a time.

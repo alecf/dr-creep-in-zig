@@ -22,8 +22,8 @@ pub fn start(m: *Machine) void {
     m.poke(map.room_number, m.peek(castle.start_room));
 }
 
-/// Draw the room `room_number` names. Far too big for one frame: call it
-/// with the display blanked.
+/// Draw the whole room. Far too big for one frame: call it with the
+/// display blanked.
 pub fn draw(m: *Machine) void {
     screen.clear(m);
     var walk = prepare(m, m.peek(map.room_number));

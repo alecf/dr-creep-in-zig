@@ -261,6 +261,8 @@ room DSL introduced in chapter 3. Rooms are added as mechanics arrive,
 following the outline's coverage matrix. Room text is our own, in the
 guide's voice ("This is a doorbell. Stand in front of it and press fire.").
 Keep a running list of rooms and their room numbers in the Decision log.
+The current list (from chapter 3) is in the Decision log entry "Training
+Castle rooms (ch03)".
 
 ---
 
@@ -675,3 +677,239 @@ Keep a running list of rooms and their room numbers in the Decision log.
   (the reader copies the whole file from the Warp Zone, `code/chNN/src/art.zig`);
   `shapes.zig` (the converter) and at least one complete shape of each kind
   (walkway, `explorer_right_0`) are shown.
+- **Chapter 3 file, title, images.** `site/chapters/03-haunted-blueprints.md`,
+  `title: "Haunted Blueprints"`. Screenshots (full frames, 2×, 768×544):
+  `03-gatehouse.png` (Mission Briefing: room 0), `03-hall.png` (the
+  hand-typed one-room castle, the Entrance Hall, drawn from its stream),
+  `03-final.png` (Boss Battle: the final room). The chapter is built from a
+  template with a listing script (writer's scratch `ch3/tools/`:
+  `listings.py`, `rebuild.py`, `expand.py`); 42 listings rebuild `ch03` from
+  `ch02` byte for byte, every stage builds, tests and runs.
+- **Game source layout (from ch03).** Adds `castle.zig` (the format:
+  header/directory constants, `Entry`, `Size`, `Kind`, `code`, `kindOf`,
+  every record type, `Framing`, `isEnd`, `Record`, `Walker`, `shapeSize`,
+  `screenX`), `author.zig` (the castle-authoring kit, comptime only) and
+  `training.zig` (the Training Castle: `Room` enum, `plan`, `bytes`; bulk
+  data, the reader copies it from the Warp Zone). `room.zig` now draws
+  any room from its stream (`start`, `draw`, `prepare`, `paint`,
+  `roomColors`, `both`, per-kind drawers, `flip`); it keeps `floor_top`
+  (192) for the player. Whole-game tests stay in `main.zig` (the castle
+  round-trip test and `walkRoom` live there).
+- **Memory map at ch03.** `room` `$0208` (`room_number`: directory index of
+  the room on screen; the final room is `roomCount`). `text` grows to
+  `$0300–$037F`: `text_glyph` `$0310` is now up to 63 bytes (2 wide × up to
+  24 rows + 6 + 6 colour bytes, for triple-height letters), `text_buffer`
+  moves to `$0350` (still 48 bytes). **`castle` `$7800–$97FF`** (8 KB; the
+  1984 staging area at `$9800` stays free for ch10/ch11). 17 regions.
+- **Castle format, as implemented (all from the 1984 engine; corrections
+  to `docs/castle-format.md` noted).**
+  - Header: size word `$00` (whole file incl. header), magic `$80` at
+    `$02`, start rooms `$03/$04`, start doors `$05/$06`, lives `$07/$08`,
+    final-room stream pointer word at `$5F` (0 = none). The rest is zero on
+    our disk; ch9 uses it as runtime scratch ("Chapter 9 moves in").
+  - Directory at `$7900`, `castle.Entry = extern struct { color, map_x,
+    map_y, size: Size, skip: [2]u8, objects: [2]u8 }`; `Size = packed
+    struct(u8) { height: u3, width: u3, unused: u2 }` (bits 0-2 height in
+    8-row map cells, 3-5 width in 4-fat-pixel cells; the 1984 map code reads
+    them that way despite the reference port's swapped names). The end byte
+    has bit 6 set: `$40` with a final room, `$FF` without. Bit 7 of a colour
+    byte = visited (set at runtime by ch9). `skip` = objects + 2 (never
+    read; the builder writes it like the disk). `castle.max_rooms = 31` is
+    **our** rule (directory + end byte in one page), not the 1984 game's.
+  - Words in records are `[2]u8` read with `peek16`; record structs are all
+    `u8` fields. The chapter shows the machine's view error for `extern
+    struct { color: u8, objects: u16 }` and notes the header word at `$5F`
+    is odd.
+  - `castle.Kind` = 18 kinds in jump-table order (tag = `$0803 + 3k`):
+    door, walkway, pole, ladder, bell, lightning, forcefield, mummy, key,
+    lock, **pattern** (`$0821`, the 1984 MultiDraw: count, shape, x, y,
+    step_x, step_y, ends on 0; title screens only), ray_gun, teleport,
+    trapdoor, conveyor, frankenstein, text, image. `kindOf` = subtract
+    `$0803` (`-%`) and index a 54-entry `?Kind` table. Dispatch is a
+    `switch` in ch3. **Promise: ch5 brings back "the 1984 idea properly,
+    with a table of functions"** (dispatch table of function pointers,
+    ladder row 5).
+  - Record structs and sizes: Door 8 (`x, y, side, to_room, to_door, map_x,
+    map_y, exit`), Run 3 (`length, x, y`: walkway, pole, ladder), Bell 3
+    (`x, y, door`), Text 4 + string (`x, y, color, style`), Lightning 8
+    (`state, x, y, length, machines[4]`), Forcefield 4 (`button_x,
+    button_y, field_x, field_y`), Mummy 7 (`state, ankh_x, ankh_y, tomb_x,
+    tomb_y, runtime[2]`), Key 4 (`number, shape, x, y`), Lock 5 (`number,
+    shape, door, x, y`), Pattern 6, RayGun 7 (`state, x, y, length,
+    runtime, control_x, control_y`), Trapdoor 5 (`state, x, y, switch_x,
+    switch_y`), Conveyor 5 (`state, x, y, control_x, control_y`),
+    Frankenstein 7 (`state, x, y, runtime[4]`). **The field names of the
+    later kinds are provisional**: chapters 6-8 must check each meaning
+    against `creep.cpp` (`obj_*_Prepare`) and may rename fields (sizes are
+    fixed). Key/Lock byte 1 is the key's shape ID, not a colour copy.
+  - Framing (`castle.Framing`, a `union(enum)`): counted (door, bell);
+    marked with end test `isEnd(byte, end)` = `byte == 0` when `end` is 0,
+    else `byte & end != 0` (lightning `0x20`; ray gun, trapdoor, conveyor,
+    frankenstein `0x80`; everything else 0; **the 1984 lightning test is
+    `& 0x20`, not `== 0x20`**); text (records until x = 0, each record 4
+    bytes + bit-7-terminated string); teleport (one per tag: x, y, target,
+    then x,y pads until 0); image (one per tag: a shape in the shape-table
+    format, then x,y places until 0). The 1984 engine loops some marked
+    kinds do-while (first record unconditionally); `Walker` tests the
+    marker first for all of them. Identical for valid data, because no
+    record starts with its marker, which the builder enforces (and it
+    never writes an empty group).
+  - Door record: byte 2 bits 0-1 = the wall the door is on, on the castle
+    map (0 up, 1 right, 2 down, 3 left), **bit 7 = open** (the 1984 engine
+    sets it when a door opens, in the castle data). Byte 7 = 1 for the exit
+    door; it selects the exit arch (**it is not a door ID**:
+    `docs/castle-format.md` is wrong there; a bell's `door` is the door's
+    index in the room's door group). Bytes 5-6 are the marker position on
+    the map relative to the room's corner.
+- **Drawing semantics (ch03, keep).**
+  - `castle.screenX(x) ?u8` = `x - 16`, null for `x < 16` (not drawn; no
+    left clipping; the 1984 blitter clips left and treats Y ≥ 220 as
+    negative; neither modelled). Write object X in castle units everywhere
+    (DSL, records); convert only when calling the blitter.
+  - Walkway: `length` pieces of 4 fat pixels from x: left end, middles,
+    right end (length 1 = left end only). Ladder/pole: `length` pieces 8
+    rows apart from y down. Training Castle convention (checked by the
+    builder): ladders and poles start on a walkway row and end on the
+    walkway row below, their top and bottom pieces ORed over the bricks.
+    No through-walkway variant shapes yet (1984 has pole 0x27 and ladder
+    0x29/0x2C variants chosen from the nav grid); ch4 may add variants at
+    the end of `Id`.
+  - **Room colour** (1984 `roomSetColours`): `room.paint` recolours the
+    screen-plane bytes (both nibbles = room colour) of walkway,
+    walkway_left, walkway_right, ladder and pole with `shapes.recolor`
+    before drawing; colour RAM (code 11) stays light grey. The final room
+    has no entry and uses `final_color = .yellow`.
+  - Doors: frame `door_frame` / `exit_frame` (20 × 32, the 1984 footprint)
+    at (x, y); the door panel at **(x + 4, y + 8), 12 × 24**. **Deliberate
+    deviation:** the 1984 panel is 12 × 15 at (+4, +16); ours is taller so
+    the 21-row explorer fits the doorway (ch5's door-entry sprite placement
+    should use our panel). Open panel `door_open` is recoloured to the
+    destination room's colour (1984 behaviour), shut panel `door_shut`.
+  - Bells: `bell` 8 × 16 (1984's is 12 × 19), recoloured to the colour of
+    the room its door leads to (1984 behaviour); `room.draw` keeps the
+    room's first door record address in a local `doors`.
+  - Text style byte (1984 `StringPrint`): bits 0-1 height ×1-3 (0 counts
+    as 1; each glyph row repeated), bit 4 reversed (glyph rows XOR `$FF`),
+    bit 5 the letters set (always set by castles; ignored, the Comet ROM
+    has one set). `text.style_height/style_reversed/style_letters`,
+    `text.plain = $21`; headings `$22`. `text.draw(m, x, y, color, style,
+    addr) u16` returns the address after the string and walks to the
+    bit-7 letter even when letters are clipped at the right edge. `say`
+    passes `plain`; the title screen is pixel-identical to ch02. Still OR
+    only (no AND mask).
+  - Images: `shapes.point(m, .image, at)` aims the spare `image` directory
+    entry into the castle (1984: shape `$16`), then `drawShape` at each
+    place. `Id.image`'s entry is 0 at boot.
+- **Shape IDs (ch03, appended):** 20 `door_frame`, 21 `exit_frame`, 22
+  `door_shut`, 23 `door_open`, 24 `bell`, 25 `image` (no picture). Shape
+  table 1,691 bytes. `shapes.pack` is now `pub` (the builder packs Image
+  art); `shapes.recolor`, `shapes.point` added. `art.zig` walkway pieces
+  redrawn for room colouring (bricks code 01, mortar 00, edges 11); new
+  pieces above plus castle pictures `trophy` (16×24) and `sparkle` (4×8),
+  which are not `Id`s. Ladder art stays 8 fat pixels wide (1984: 4): **open
+  question for ch4/ch11**, real castles may put things in the column right
+  of a ladder.
+- **Castle-authoring kit (`author.zig`).** `build(Name, Castle(Name))
+  []const u8` at comptime. `Castle(Name)` = `start {room, door}`, `lives`
+  (3), `rooms: std.enums.EnumFieldStruct(Name, Room(Name), null)` (one
+  field per room; numbers from `Name`'s order), `final: ?Room(Name)`.
+  `Room(Name)` has `color`, `map: Map {x, y, width: u3, height: u3}` and
+  one list per kind **named after its `Kind` tag** (`door`, `walkway`,
+  ..., `image`); later kinds are written as their `castle.*` records
+  (chapters 6-8 add records to `training.zig`'s rooms; the kit needs no
+  change except where a helper is wanted, e.g. lightning switch machine
+  indices are stored × 8). `Door(Name)` `{x, y, to: Name, to_door = 0,
+  open = false, exit = false}`; `Line {x, y, color = .white, height: u2 =
+  1, words}` (style `$20 | height`); `Teleport {x, y, target, pads}`;
+  `Image {art: shapes.Art, at: []Spot}`. Streams in tag order. Computed
+  for you: object pointers, skip words, size, end byte, final pointer,
+  door `side` (wall facing the target room on the map; exit doors: nearer
+  wall) and map offsets (`map_y = min(rows-3, (y+16)*rows/200)` for
+  left/right, `map_x = min(cols-4, (x-16)*cols/160)` for up/down; **ch9 may
+  refine these**). Checks (all `@compileError("castle: room NAME: ...")`):
+  room count ≤ 31, start door exists, every room has a map place and a
+  non-black colour, things on screen and on byte boundaries (x % 4),
+  doors on cell rows, door pairs lead back (exit doors exempt), bells name
+  existing doors, run length ≠ 0, ladders/poles start and end on
+  walkways, no overlaps among doors, bells, text lines and image
+  placements, later-kind records don't start with their end marker,
+  total ≤ castle region.
+- **Training Castle rooms (ch03).** Map: a 5 × 4 snake (rows alternate
+  right/left), each room 4 × 3 map cells at `x = 56 + 16·col`, `y = 48 +
+  24·row`. Every room: floor walkway at y 192 (40 pieces), door 0 = back
+  (to the previous room's door 1), door 1 = forward, a bell for door 1
+  beside it; upper walkways at y 128 (`upper_left` x 16, `upper_right` x
+  96, 20 pieces) with ladders (x 56 / 112) or a pole; doors at y 160
+  (floor) or 96 (upper); text: centred yellow heading (height 2) at y 8,
+  light-grey body lines at x 16 from y 32 every 10 rows, ≤ 20 letters, ≤ 6
+  lines in rooms with an upper door. Start: gatehouse door 0.
+  | # | `Room` tag | Heading | Mechanic | Alive in |
+  |---|---|---|---|---|
+  | 0 | gatehouse | THE GATEHOUSE | doors and doorbells | ch5 |
+  | 1 | gallery | THE LONG GALLERY | walkways | ch4 |
+  | 2 | ladders | LADDERS | ladders | ch4 |
+  | 3 | poles | SLIDING POLES | sliding poles | ch4 |
+  | 4 | lightning | LIGHTNING | lightning + switch | ch6 |
+  | 5 | forcefields | FORCEFIELDS | forcefield + timer | ch6 |
+  | 6 | trapdoors | TRAPDOORS | trapdoor + switch | ch6 |
+  | 7 | conveyors | CONVEYORS | conveyor + control | ch6 |
+  | 8 | transmitter | THE TRANSMITTER | matter transmitter | ch6 |
+  | 9 | keys | KEYS AND LOCKS | key + lock | ch7 |
+  | 10 | ray_guns | RAY GUNS | ray gun + panel | ch7 |
+  | 11 | mummy | THE MUMMY | mummy + ankh | ch8 |
+  | 12 | frankenstein | FRANKENSTEIN | Frankenstein | ch8 |
+  | 13 | frank_trap | A TRAP FOR FRANK | Frankenstein + trapdoor | ch8 |
+  | 14 | frank_ride | FRANK'S RIDE | Frankenstein + conveyor | ch8 |
+  | 15 | under_fire | UNDER FIRE | ray gun + forcefield | ch7 |
+  | 16 | mummy_storm | MUMMY IN A STORM | mummy + lightning | ch8 |
+  | 17 | locked_away | LOCKED AWAY | key behind a teleport | ch7 |
+  | 18 | two_players | TWO'S COMPANY | two players, one switch | ch9 |
+  | 19 | way_out | THE WAY OUT | exit door (door 1, `exit`) | ch9 |
+  | final | (`plan.final`) | YOU ESCAPED! | image room: `trophy` ×1, `sparkle` ×6, floor, 2 text lines | ch9 |
+  Rooms 6/7 (and the combination rooms) were given floor-only or simple
+  geometry; later chapters may change a room's geometry and text to fit
+  its machines (e.g. remove the ladder in `transmitter`, put the trapdoor
+  in the floor) but must keep room numbers; new rooms go at the end of
+  `Room`. The text promises mechanics in general terms only ("A SWITCH
+  OPENS IT", "YOU CAN'T FIGHT HIM"); check room text when the mechanic
+  lands. Castle size 4,324 bytes (header 256, directory 161, streams
+  3,907, of which text 2,876).
+- **Main loop at ch03.** Title fire → `room.start` (header start room) →
+  `draw_room`. Room mode: after `player.steer`, `m.bucket(0)` and
+  `room.flip` (N/P via `$DC02`, any key acknowledged with 0; N past the
+  last room goes to the final room, then room 0) → `draw_room`. The
+  explorer is unchanged from ch02 (walks the floor at 192 in every room).
+  Headless: a `--key` that lands on a skipped slot of a loading pause is
+  lost; the chapter's runs space keys 40 frames apart.
+- **Costs at ch03.** Room draws 132,074 (final room) to 221,418 cycles (7-12
+  slots); `clear` 80,000; a plain letter ≈ 670 cycles, a tall one ≈ 1,160;
+  the walker a few dozen per record. Title draw 157,316 (ch02 156,200;
+  `draw` now fills the glyph colours). Room frame 108 idle (ch02 104 + the
+  key peek), ≈ 360 on a key frame. Boss Battle run: `--frames 300 --press
+  20:f:5 --key 60:N --key 100:N --key 140:P --key 180:P --key 220:P
+  --dump-every 20`, 233 calls, max 221,418, 7 loading pauses, final room
+  from frame 240.
+- **Tests at ch03 (10).** `castle.zig`: tag codes ↔ kinds; the walker
+  over a hand-written stream with door, walkway, bell, lightning machine
+  and switch, ray gun, teleport, two texts and an image. `main.zig`: N/P
+  flipping with a loading pause and wrap to the final room; the Training
+  Castle read back (header, room count, each stream's address and per-kind
+  counts against the plan, streams end to end, final room last, size).
+- **Ladder bookkeeping (ch03).** Taught: `extern struct` layout, padding
+  and alignment (with the machine's view error), `packed struct(u8)` for a
+  packed byte (ch4 should refer back for its flag bytes), little-endian
+  (ch2's promise paid: the processor adds from the low byte), sentinels
+  (the Sentinel Power-Up), comptime properly (same language earlier,
+  type-returning functions with a TypeScript-generics bridge, `inline
+  for` + `@field`, `EnumFieldStruct`, `@setEvalBranchQuota`'s 1,000
+  default, `@compileError` validation), tagged unions (`union(enum)` and
+  payload capture), iterators (`while (w.next(m)) |r|`), `orelse`.
+  In passing: `-%` (ch4 overflow), `@max`, destructuring (`const w, const
+  h = ...`), `align(1)`. Prose promises made: ch4 puts the explorer on the
+  object-X scale ("that's how he'll get past the wall made of
+  arithmetic"), "Chapter 4 teaches him the castle"; ch5 opens doors (the
+  open-door look is already drawn), function-table dispatch in ch5; ch9
+  moves into the header's spare bytes, draws the castle map from map
+  x/y/size and the doors' map bytes, sets the visited bit, and turns bytes
+  into digits (Bonus Stage); ch11's disk load replaces `m.load` (unchanged
+  promise).
