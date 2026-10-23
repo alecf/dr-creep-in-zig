@@ -12,7 +12,7 @@ test "the game boots and runs 100 frames" {
     m.boot(game);
     for (0..100) |i| {
         m.input = .{ .joy1 = if (i % 20 < 10) machine.joy.fire else 0 };
-        m.runFrame(game);
+        _ = m.runFrame(game);
     }
-    try std.testing.expectEqual(100, m.frames);
+    try std.testing.expect(m.stats.frames >= 100);
 }

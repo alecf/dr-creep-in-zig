@@ -2,9 +2,9 @@
 //!
 //! Each glyph is 8 bytes, top row first; bit 7 of a byte is the leftmost
 //! pixel. Codes 0x20-0x5F follow ASCII (space, punctuation, digits, @,
-//! A-Z, [\]^_). 0x60-0x7F repeat the capitals in the lowercase slots so
+//! A-Z, [\]^_). The lowercase letters 0x61-0x7A repeat the capitals so
 //! lowercase text still prints. A few picture glyphs live at 0x01-0x0B.
-//! Everything else is blank.
+//! Everything else (including 0x60 and 0x7B-0x7F) is blank.
 //!
 //! The house style: two-pixel-wide uprights, one-pixel crossbars, square
 //! shoulders. Letters sit in the top seven rows and leave the right column

@@ -35,39 +35,46 @@ remember something from one frame to the next, give it an address.
 Every frame goes like this:
 
 1. The machine latches the joysticks and keyboard into the input ports.
-2. It resets the work meter and calls your `frame`.
-3. When `frame` returns, the VIDEO chip draws the picture from what's in
-   memory right then and records any sprite collisions.
+2. The beam goes back to the top of the screen, the work meter resets to
+   zero, and the machine calls your `frame`.
+3. As your code spends cycles, the beam sweeps down the screen and the
+   VIDEO chip draws each line it passes (section 6). When `frame`
+   returns, the beam finishes the picture from what's in memory then.
 
 ---
 
 ## 2. Memory map
 
-| Address | Size | What lives there |
-|---|---|---|
-| `$0000–$00FF` | 256 | Zero page. Plain memory, free for your use. |
-| `$0100–$01FF` | 256 | **Reserved:** the processor's stack. Don't use. |
-| `$0200–$07FF` | 1.5 KB | Free memory. |
-| `$0800–$77FF` | 28 KB | **Program image.** Your game's code lives here. Large built-in tables are copied into the top of it at boot. |
-| `$7800–$BFFF` | 18 KB | Free memory for your game's data. |
-| `$C000–$C7FF` | 2 KB | Sprite frames: 32 blocks of 64 bytes. |
-| `$C800–$CBFF` | 1 KB | Free memory. |
-| `$CC00–$CFE7` | 1000 | Screen plane: one byte per 8×8 cell (two colours). |
-| `$CFF8–$CFFF` | 8 | Sprite pointers: which block each sprite shows. |
-| `$D000–$D3FF` | | VIDEO chip registers. |
-| `$D400–$D7FF` | | SOUND chip registers (`$D400–$D418`). |
-| `$D800–$DBE7` | 1000 | Colour plane: one byte per cell (low 4 bits used). |
-| `$DC00–$DCFF` | | Input ports. |
-| `$E000–$FF3F` | 8000 | The bitmap: 320×200 pixels. |
+| Address | Size | What lives there | Zig name |
+|---|---|---|---|
+| `$0000–$00FF` | 256 | Zero page. Plain memory, free for your use. | |
+| `$0100–$01FF` | 256 | **Reserved:** the processor's stack. Don't use. | `hw.stack` |
+| `$0200–$07FF` | 1.5 KB | Free memory. | |
+| `$0800–$77FF` | 28 KB | **Program image.** Your game's code lives here. Large built-in tables are copied into the top of it at boot. | `hw.program` … `hw.program_end` |
+| `$7800–$BFFF` | 18 KB | Free memory for your game's data. | |
+| `$C000–$C7FF` | 2 KB | Sprite frames: 32 blocks of 64 bytes. | `hw.sprite_data` |
+| `$C800–$CBFF` | 1 KB | Free memory. | |
+| `$CC00–$CFE7` | 1000 | Screen plane: one byte per 8×8 cell (two colours). | `hw.screen` |
+| `$CFE8–$CFF7` | 16 | Free memory. | |
+| `$CFF8–$CFFF` | 8 | Sprite pointers: which block each sprite shows. | `hw.sprite_pointers` |
+| `$D000–$D02E` | 47 | VIDEO chip registers (section 4). | `hw.video_chip` |
+| `$D400–$D418` | 25 | SOUND chip registers (section 11). | `hw.sound_chip` |
+| `$D800–$DBE7` | 1000 | Colour RAM: one byte per cell (low 4 bits used). | `hw.color_ram` |
+| `$DC00–$DC02` | 3 | Input ports (section 7). | `hw.joy2`, `hw.joy1`, `hw.key` |
+| `$E000–$FF3F` | 8000 | The bitmap: 320×200 pixels. | `hw.bitmap` |
+| `$FF40–$FFFF` | 192 | Free memory. | |
+
+The rest of `$D000–$DFFF` (`$D02F–$D3FF`, `$D419–$D7FF`, `$DBE8–$DBFF`,
+`$DC03–$DFFF`) is **reserved** for expansion hardware. Don't keep
+anything there.
 
 Addresses are written in hexadecimal: `$D020` on this card is `0xD020` in
-Zig. The hardware addresses are also available by name as `machine.hw`
-(for example `machine.hw.border`).
+Zig. The Zig names live in `machine.hw` (for example `machine.hw.border`).
 
-The chips' registers, the planes and the bitmap are ordinary memory. You
-write them whenever you like during a frame; the VIDEO chip reads them
-once, when your frame is done. The machine writes the input ports and the
-collision registers between frames.
+The chips' registers, the planes and the bitmap are ordinary memory, and
+you can write them at any time. The VIDEO chip reads them as the beam
+passes (section 6). The machine writes the input ports between frames,
+and the VIDEO chip sets the collision and raster registers as it draws.
 
 ---
 
@@ -107,7 +114,7 @@ The 2-bit code picks the colour:
 | `00` | Background colour, `$D021` (shared by the whole screen) |
 | `01` | Screen plane byte for this cell, **high** 4 bits (`$CC00 + cell`) |
 | `10` | Screen plane byte for this cell, **low** 4 bits |
-| `11` | Colour plane byte for this cell, low 4 bits (`$D800 + cell`) |
+| `11` | Colour RAM byte for this cell, low 4 bits (`$D800 + cell`) |
 
 where `cell = r × 40 + c`. Codes `00` and `01` are **background** pixels;
 codes `10` and `11` are **foreground** pixels. Sprites can hide behind
@@ -122,34 +129,39 @@ To find fat pixel (`x`, `y`), with `x` from 0 to 159:
 
 ## 4. VIDEO chip registers
 
-| Address | Name | What it does |
+| Address | Zig name (`machine.hw.`) | What it does |
 |---|---|---|
-| `$D000 + 2n` | Sprite *n* X | Low 8 bits of sprite *n*'s X position (n = 0–7) |
-| `$D001 + 2n` | Sprite *n* Y | Sprite *n*'s Y position |
-| `$D010` | X high bits | Bit *n* is the 9th bit of sprite *n*'s X |
-| `$D015` | Sprite enable | Bit *n* on = sprite *n* is shown |
-| `$D017` | Double height | Bit *n* on = sprite *n* is twice as tall |
-| `$D01B` | Behind | Bit *n* on = sprite *n* goes behind foreground pixels |
-| `$D01C` | Multicolour | Bit *n* on = sprite *n* is a multicolour sprite |
-| `$D01D` | Double width | Bit *n* on = sprite *n* is twice as wide |
-| `$D01E` | Sprite hits | Collision report: sprites touching sprites |
-| `$D01F` | Bitmap hits | Collision report: sprites touching foreground pixels |
-| `$D020` | Border | Border colour (0–15) |
-| `$D021` | Background | Background colour, pixel code `00` |
-| `$D025` | Sprite colour A | Shared colour for multicolour sprite code `01` |
-| `$D026` | Sprite colour B | Shared colour for multicolour sprite code `11` |
-| `$D027 + n` | Sprite *n* colour | Sprite *n*'s own colour |
+| `$D000 + 2n` | `spriteX(n)` | Low 8 bits of sprite *n*'s X position (n = 0–7) |
+| `$D001 + 2n` | `spriteY(n)` | Sprite *n*'s Y position |
+| `$D010` | `sprite_x_msb` | Bit *n* is the 9th bit of sprite *n*'s X |
+| `$D011` | `control` | Bit 4: display on (1) or blanked (0). Bit 7: bit 8 of the raster line (read only). Other bits unused. |
+| `$D012` | `raster` | The raster line the beam is on, low 8 bits (read only) |
+| `$D015` | `sprite_enable` | Bit *n* on = sprite *n* is shown |
+| `$D017` | `sprite_double_height` | Bit *n* on = sprite *n* is twice as tall |
+| `$D01B` | `sprite_behind` | Bit *n* on = sprite *n* goes behind foreground pixels |
+| `$D01C` | `sprite_multicolor` | Bit *n* on = sprite *n* is a multicolour sprite |
+| `$D01D` | `sprite_double_width` | Bit *n* on = sprite *n* is twice as wide |
+| `$D01E` | `sprite_sprite_hits` | Collision report: sprites touching sprites |
+| `$D01F` | `sprite_bitmap_hits` | Collision report: sprites touching foreground pixels |
+| `$D020` | `border` | Border colour (0–15) |
+| `$D021` | `background` | Background colour, pixel code `00` |
+| `$D025` | `sprite_mc0` | Shared colour for multicolour sprite code `01` |
+| `$D026` | `sprite_mc1` | Shared colour for multicolour sprite code `11` |
+| `$D027 + n` | `spriteColor(n)` | Sprite *n*'s own colour |
 
-Colours are palette numbers 0–15 (section 9). Only the low four bits of a
-colour register count.
+`spriteX`, `spriteY` and `spriteColor` are functions: `hw.spriteX(3)` is
+`$D006`. `$D011` bit 4 is also `machine.display_on`. Colours are palette
+numbers 0–15 (section 10). Only the low four bits of a colour register
+count. At power-on every register is 0 except `$D011`, which is `$10`
+(display on).
 
 ---
 
 ## 5. Sprites
 
 The VIDEO chip draws up to **eight sprites** over the bitmap. They move
-anywhere without disturbing what's underneath: just change their
-registers.
+anywhere without disturbing what's underneath. Change their registers and
+they move.
 
 **Frames.** A sprite frame is **24 × 21** pixels stored in **63 bytes**:
 21 rows of 3 bytes, top row first, leftmost pixel in bit 7 of the first
@@ -172,10 +184,10 @@ across:
 
 **Position.** Sprite coordinates count from a point above and to the left
 of the display, so a sprite can slide in from off-screen. **X = 24,
-Y = 50** puts a sprite's top-left pixel on the display's top-left pixel.
-X needs 9 bits to reach the right-hand side, so its top bit lives in
-`$D010`. Sprites are only seen inside the display window, not over the
-border.
+Y = 50** puts a sprite's top-left pixel on the display's top-left pixel
+(`machine.video.sprite_origin_x` / `sprite_origin_y`). X needs 9 bits to
+reach the right-hand side, so its top bit lives in `$D010`. Sprites are
+only seen inside the display window, not over the border.
 
 **Size.** `$D01D` and `$D017` double a sprite's width and height (48 × 42).
 
@@ -183,17 +195,76 @@ border.
 sprite 2, and so on. A sprite with its bit set in `$D01B` goes behind
 foreground pixels (codes `10` and `11`) and in front of background ones.
 
-**Collisions.** While drawing, the VIDEO chip watches for a visible
+**Collisions.** As the beam draws, the VIDEO chip watches for a visible
 sprite pixel landing on another sprite's visible pixel (sets both
 sprites' bits in `$D01E`), or on a foreground bitmap pixel (sets the
-sprite's bit in `$D01F`). It checks every pixel, inside the display
+sprite's bit in `$D01F`). It checks every pixel inside the display
 window. The bits **stay set** until you clear them by writing `0` to the
-register. A collision drawn at the end of frame *F* is waiting for you
-when frame *F + 1* begins.
+register. A collision low on the screen is usually found after your
+`frame` has finished, so look for it at the start of the next frame.
 
 ---
 
-## 6. Character ROM
+## 6. Racing the beam
+
+The picture is drawn by a beam that sweeps the tube from top to bottom,
+one **raster line** at a time: **312 lines a frame, 63 cycles a line**.
+That's where the budget of 19,656 cycles comes from. The work meter *is*
+the beam: when your `frame` has spent `c` cycles, the beam is on line
+`c / 63`.
+
+| Raster lines | What the beam is doing |
+|---|---|
+| 0–14 | Off the top of the tube (vertical blank) |
+| 15–50 | Top border |
+| **51–250** | **The display**: display row `y` is raster line `51 + y` |
+| 251–286 | Bottom border (the work meter is down here) |
+| 287–311 | Off the bottom of the tube (vertical blank) |
+
+Your `frame` starts with the beam at line 0. The VIDEO chip draws each
+line as the beam finishes it, from memory and registers **as they are at
+that moment**. So:
+
+- Anything you change in the first **3,213 cycles** (51 lines × 63) is in
+  place before the beam reaches the display. Do your sprite and screen
+  updates first and they can never tear.
+- Change a sprite while the beam is halfway down it, and its top half
+  shows the old frame or position and its bottom half shows the new one:
+  a **tear**. The same goes for the bitmap and the colours.
+- When `frame` returns, the beam finishes the rest of the picture from
+  memory as you left it.
+
+`m.rasterLine()` tells you the line the beam is on (0–311), for free.
+The same number is in `$D012` (low 8 bits) and `$D011` bit 7 (bit 8).
+
+### Blank the screen for big jobs
+
+Some jobs are too big for one frame, like clearing the whole screen and
+drawing a new room. A frame can run as long as it needs to: it takes as
+many frame slots as its cycles fill (a 50,000-cycle frame takes three),
+and the machine skips calling `frame` for the extra slots. Time passes as
+normal while it works.
+
+If the display was on while the beam drew any of that frame, the player
+saw it run long: it's an **overrun**, and the meter turns red. If you
+switch the display off first (clear bit 4 of `$D011`), the display window
+shows plain border colour and nothing in it is drawn, not even sprites,
+and no collisions are reported. A long frame that never showed the
+display is a **loading pause**, not an overrun. The meter shows a grey
+bar instead. Blank it early, before the beam reaches the display (in
+the first 3,213 cycles); a display line already drawn with the display
+on counts. Switch the display back on when you're done, and the rest of
+the picture is drawn with your finished screen:
+
+```zig
+m.poke(hw.control, 0);                    // blank
+drawTheWholeRoom(m);                      // as long as it takes
+m.poke(hw.control, machine.display_on);   // and reveal
+```
+
+---
+
+## 7. Character ROM
 
 The Comet 64 has a **2 KB character ROM** holding 256 glyphs of 8 × 8
 pixels in the Comet's own chunky typeface. Codes `$20–$5F` follow ASCII:
@@ -218,13 +289,13 @@ which returns a pointer to the glyph's 8 bytes. Reading the ROM is free.
 
 ---
 
-## 7. Input ports
+## 8. Input ports
 
-| Address | What you read |
-|---|---|
-| `$DC00` | Joystick 2 |
-| `$DC01` | Joystick 1 |
-| `$DC02` | Keyboard: last key pressed, as an uppercase ASCII code; `0` = none |
+| Address | Zig name | What you read |
+|---|---|---|
+| `$DC00` | `hw.joy2` | Joystick 2 |
+| `$DC01` | `hw.joy1` | Joystick 1 |
+| `$DC02` | `hw.key` | Keyboard: last key pressed, as an uppercase ASCII code; `0` = none |
 
 A joystick port packs five switches into one byte. A switch reads **0
 while it's pressed** and 1 when it's not. Bits 5–7 always read 1.
@@ -242,19 +313,22 @@ With nothing pressed a port reads `$FF`. Holding up and fire reads
 
 The keyboard port holds the last key pressed until **you** clear it by
 writing `0`. Write `0` once you've handled a key, and you'll see each
-press exactly once.
+press exactly once. Letters and symbols arrive as uppercase ASCII;
+**Return** is 13, **Backspace** is 8 and **Esc** is 27.
 
 **Keys.** In the browser, joystick 1 is the arrow keys or **W A S D**,
-with **Space** to fire. Joystick 2 is **I J K L**, with **Enter** to fire.
-Those keys belong to the joysticks; every other key goes to the keyboard
-port. **Esc** is 27, **Backspace** is 8, **Tab** is 9.
+with **Space** to fire. Joystick 2 is **I J K L**, with **Return** to
+fire. Those keys work the joysticks *and* type into the keyboard port,
+like every other key, so a game reads whichever it wants. **Tab** moves
+the keyboard away from the Comet.
 
 ---
 
-## 8. The work meter
+## 9. The work meter
 
-The processor runs **19,656 cycles per frame** (312 lines of 63 cycles).
-That's your budget: everything your `frame` does has to fit.
+The processor runs **19,656 cycles per frame** (312 lines of 63 cycles,
+`machine.frame_budget`). That's your budget: everything your `frame` has
+to do should fit.
 
 The machine counts what you spend. Its memory routines charge as they go,
 and you charge for your own computation with `m.work`:
@@ -265,13 +339,16 @@ and you charge for your own computation with `m.work`:
 | `m.poke(addr, value)` | write a byte | 4 |
 | `m.peek16(addr) u16` | read 2 bytes, low byte first | 8 |
 | `m.poke16(addr, value)` | write 2 bytes, low byte first | 8 |
-| `m.copy(dst, src, n)` | copy `n` bytes (overlap is fine) | 8 per byte |
+| `m.copy(dst, src, n)` | copy `n` bytes of memory (overlap is fine) | 8 per byte |
 | `m.fill(dst, n, value)` | set `n` bytes to `value` | 8 per byte |
+| `m.load(dst, bytes)` | copy a `const` table from your program into memory | 8 per byte |
 | `m.mul8(a, b) u16` | multiply two bytes (there's no multiply instruction; this is a routine) | 120 |
 | `m.work(n)` | charge `n` cycles for your own work | n |
 | `m.view(T, addr)` | a typed pointer into memory (see below) | 0 |
 | `m.charRom(code)` | a glyph from the character ROM | 0 |
 | `m.meter() u32` | cycles the **previous** frame used | 0 |
+| `m.rasterLine() u16` | the line the beam is on | 0 |
+| `m.bucket(id)` | send the cycles that follow to meter bucket `id` (0–7) | 0 |
 
 `m.ram` is the memory itself and can be read directly. The meter is an
 honest estimate, not a stopwatch, so play fair: if a loop does work
@@ -280,23 +357,42 @@ the loop's own counting and branching.
 
 **`m.view(T, addr)`** gives you a `*align(1) T` pointing straight into
 memory at `addr`, so you can treat a run of bytes as a record. `T` must
-have a fixed byte layout: an `extern struct`, a `packed struct`, a
-whole-byte integer, or an array of those. The view itself costs nothing;
-charge `m.work` for what you do with it.
+have exactly the same bytes in Zig as in memory:
+
+- whole-byte integers: `u8`, `u16`, `u32` (not `usize`);
+- an `extern struct` whose fields leave no gaps. Zig lines a `u16` field
+  up on an even byte, so `extern struct { color: u8, ptr: u16 }` has a
+  hidden padding byte and is refused. Use `ptr: [2]u8` (and `m.peek16`),
+  or arrange the fields so every `u16` starts on an even byte and the
+  whole record is an even number of bytes;
+- a `packed struct(u8)` (or `u16`, `u32`) for a byte of flags;
+- an `enum(u8)` with a `_` member, so any byte value is allowed;
+- arrays of any of those.
+
+Anything else is a compile error that says what's wrong. The view itself
+costs nothing; charge `m.work` for what you do with it.
+
+**Buckets.** Each frame starts in bucket 0. Call `m.bucket(2)` before
+drawing and `m.bucket(3)` before moving monsters, say, and the meter
+records how much of the frame each part took. `m.last.buckets` holds the
+previous frame's eight totals.
 
 **The meter on screen.** A bar in the bottom border shows how much of
 the budget the last frame used, across the width of the display:
 
 - **green**: under 75%. Comfortable.
 - **yellow**: 75% to 100%. Getting tight.
-- **red, with a red stripe across the border**: over budget.
+- **red, with a red stripe across the border**: over budget, with the
+  display on. That's an **overrun**.
+- **grey**: over budget with the display blanked. A loading pause
+  (section 6).
 
 A frame that goes over budget still finishes (the Comet 64 is
-forgiving), but the machine counts it as an **overrun**.
+forgiving). It takes more than one frame slot instead.
 
 ---
 
-## 9. The palette
+## 10. The palette
 
 | No. | Colour | Hex | No. | Colour | Hex |
 |---|---|---|---|---|---|
@@ -313,18 +409,16 @@ The names are also an enum, `machine.Color`: `@intFromEnum(machine.Color.purple)
 
 ---
 
-## 10. The SOUND chip
+## 11. The SOUND chip
 
 The SOUND chip's registers sit at `$D400–$D418`: three voices of seven
 registers each, then the filter and volume. You can already write them,
-and they hold what you write, but the speaker isn't connected yet. The
-full SOUND chip description is in its own supplement.
-
-<!-- TODO(author): audio output and this section's register table arrive with the music chapter. -->
+and they hold what you write, but this model ships without its speaker
+board. The SOUND chip has its own supplement, which comes with the board.
 
 ---
 
-## 11. Running your game
+## 12. Running your game
 
 **In the browser:**
 
@@ -345,14 +439,16 @@ zig build run -- --frames 250 --press 50:rf:20 --dump frames --dump-every 50
 |---|---|
 | `--frames N` | run N frames (default 250, five seconds) |
 | `--press FRAME:KEYS[:DUR][@2]` | hold joystick directions from FRAME for DUR frames (default 10). KEYS is any of `u d l r f`. Add `@2` for joystick 2. Repeat as needed. |
-| `--key FRAME:C` | type the character C at FRAME |
+| `--key FRAME:C` | type the character C at FRAME; `--key FRAME:#13` types code 13 (Return) |
 | `--dump DIR` | where to save pictures (default `frames`) |
 | `--dump-every K` | also save every Kth frame (the last frame is always saved) |
 
-Frames are counted from 0, the first frame after `boot`. Pictures are
+Frames are counted from 0, the first frame after `boot`. A long frame
+covers several frame numbers, and they all get its picture. Pictures are
 saved as `DIR/frame_NNNNN.ppm`, border and meter included, 384 × 272.
 When the run ends you get a summary: frames run, the most and average
-cycles per frame, and how many frames overran.
+cycles per call to `frame`, each meter bucket that was used, and how many
+frames overran or were loading pauses.
 
 **Testing:** `zig build test` runs your game's own `test` blocks, then
 powers the machine on with your game and runs 100 frames.

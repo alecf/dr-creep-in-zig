@@ -18,7 +18,7 @@ const usage =
     \\  --press FRAME:KEYS[:DUR][@2]
     \\                          hold joystick KEYS (any of u d l r f) from FRAME
     \\                          for DUR frames (default 10); @2 = joystick 2
-    \\  --key FRAME:C           type character C at FRAME
+    \\  --key FRAME:C           type character C at FRAME (FRAME:#13 types code 13)
     \\  --dump DIR              where pictures go (default "frames")
     \\  --dump-every K          save every Kth frame too (default: last only)
     \\
@@ -37,7 +37,7 @@ const Script = struct {
     fn inputFor(s: *const Script, frame: u32) machine.Input {
         var in: machine.Input = .{};
         for (s.presses.items) |p| {
-            if (frame < p.frame or frame >= p.frame + p.dur) continue;
+            if (frame < p.frame or frame - p.frame >= p.dur) continue;
             if (p.port == 2) in.joy2 |= p.mask else in.joy1 |= p.mask;
         }
         for (s.keys.items) |k| {
@@ -58,7 +58,9 @@ fn parsePress(spec: []const u8) !Press {
     var parts = std.mem.splitScalar(u8, rest, ':');
     const frame = try std.fmt.parseInt(u32, parts.next() orelse return error.BadPress, 10);
     const keys = parts.next() orelse return error.BadPress;
+    if (keys.len == 0) return error.BadPress;
     const dur = if (parts.next()) |d| try std.fmt.parseInt(u32, d, 10) else 10;
+    if (parts.next() != null) return error.BadPress;
     var mask: u8 = 0;
     for (keys) |ch| mask |= switch (ch) {
         'u' => machine.joy.up,
@@ -73,11 +75,16 @@ fn parsePress(spec: []const u8) !Press {
 
 fn parseKey(spec: []const u8) !KeyPress {
     const colon = std.mem.indexOfScalar(u8, spec, ':') orelse return error.BadKey;
-    if (spec.len != colon + 2) return error.BadKey;
-    return .{
-        .frame = try std.fmt.parseInt(u32, spec[0..colon], 10),
-        .key = std.ascii.toUpper(spec[colon + 1]),
-    };
+    const frame = try std.fmt.parseInt(u32, spec[0..colon], 10);
+    const what = spec[colon + 1 ..];
+    const key: u8 = if (what.len > 1 and what[0] == '#')
+        try std.fmt.parseInt(u8, what[1..], 10)
+    else if (what.len == 1)
+        std.ascii.toUpper(what[0])
+    else
+        return error.BadKey;
+    if (key == 0) return error.BadKey;
+    return .{ .frame = frame, .key = key };
 }
 
 fn parseArgs(gpa: std.mem.Allocator, args: std.process.Args) !Script {
@@ -143,26 +150,38 @@ pub fn main(init: std.process.Init) !void {
     var dir = try cwd.openDir(io, script.dump_dir, .{});
     defer dir.close(io);
 
+    // A long frame uses several frame slots; the frames it swallowed pass
+    // without a call to `frame`, and show the same picture.
     var frame: u32 = 0;
-    while (frame < script.frames) : (frame += 1) {
+    var last_saved: u32 = 0;
+    while (frame < script.frames) {
         m.input = script.inputFor(frame);
-        m.runFrame(game);
-        const last = frame == script.frames - 1;
-        const due = script.dump_every != 0 and frame % script.dump_every == 0;
-        if (last or due) {
-            var name_buf: [32]u8 = undefined;
-            const name = try std.fmt.bufPrint(&name_buf, "frame_{d:0>5}.ppm", .{frame});
-            try writePpm(io, dir, name, &m.screen);
+        const slots = m.runFrame(game);
+        const end = @min(script.frames, frame +| slots);
+        while (frame < end) : (frame += 1) {
+            const last = frame == script.frames - 1;
+            const due = script.dump_every != 0 and frame % script.dump_every == 0;
+            if (last or due) {
+                var name_buf: [32]u8 = undefined;
+                const name = try std.fmt.bufPrint(&name_buf, "frame_{d:0>5}.ppm", .{frame});
+                try writePpm(io, dir, name, &m.screen);
+                last_saved = frame;
+            }
         }
     }
 
+    const s = &m.stats;
     const budget = machine.frame_budget;
-    const avg: u32 = @intCast(m.total_cycles / m.frames);
-    try out.print("ran {d} frames\n", .{m.frames});
+    const avg: u64 = s.total_cycles / @max(1, s.calls);
+    try out.print("ran {d} frames ({d} calls to frame)\n", .{ frame, s.calls });
     try out.print("cycles: max {d} ({d}%), avg {d} ({d}%) of {d}\n", .{
-        m.max_cycles, @as(u64, m.max_cycles) * 100 / budget, avg, @as(u64, avg) * 100 / budget, budget,
+        s.max_cycles, @as(u64, s.max_cycles) * 100 / budget, avg, avg * 100 / budget, budget,
     });
-    try out.print("overruns: {d}\n", .{m.overruns});
-    try out.print("last frame: {s}/frame_{d:0>5}.ppm\n", .{ script.dump_dir, frame - 1 });
+    for (s.bucket_total, 0..) |total, i| {
+        if (total == 0) continue;
+        try out.print("  bucket {d}: max {d}, avg {d}\n", .{ i, s.bucket_max[i], total / @max(1, s.calls) });
+    }
+    try out.print("overruns: {d}, loading pauses: {d}\n", .{ s.overruns, s.loading });
+    try out.print("last frame: {s}/frame_{d:0>5}.ppm\n", .{ script.dump_dir, last_saved });
     try out.flush();
 }

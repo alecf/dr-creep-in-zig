@@ -70,7 +70,11 @@ Location: `site/code/machine/`. It is identical for every chapter. If a
 later chapter needs a hardware feature, it has to be added to the
 machine (and the reference card), never faked inside game code. The
 hardware is **forgiving**: it doesn't model cycle timing or bus quirks.
-It does enforce the hard limits.
+It does enforce the hard limits. One timing model exists: the raster
+beam, driven by the work meter, so writes made while the beam is on the
+display can tear (Decision log, "Beam" and "Display blank"). The
+reader-facing spec is `site/code/machine/REFERENCE.md`; where it and
+this section differ, the card and the Decision log win.
 
 ### Memory map (fixed hardware layout)
 
@@ -97,7 +101,8 @@ The memory-mapped I/O regions are plain RAM that the hardware reads
 ### VIDEO chip registers (subset of the classic layout)
 
 `$D000+2n / $D001+2n` sprite n X (low 8 bits) / Y. `$D010` X bit 8 for
-each sprite. `$D015` sprite enable. `$D017` double height. `$D01B`
+each sprite. `$D011` bit 4 display enable (bit 7 = raster bit 8, read
+only). `$D012` raster line (read only). `$D015` sprite enable. `$D017` double height. `$D01B`
 sprite-behind-background priority. `$D01C` sprite multicolour enable.
 `$D01D` double width. `$D01E` sprite–sprite collision (set by hardware
 each frame; the game writes 0 to clear). `$D01F` sprite–background
@@ -272,18 +277,20 @@ Keep a running list of rooms and their room numbers in the Decision log.
     `Machine`. The shell sets `m.input` (`joy1`, `joy2` as held `joy.*`
     bits, `key` as uppercase ASCII) before each `runFrame`. Boot is not
     metered. `m.meter()` during a frame returns the *previous* frame's
-    cycles. Collision bits computed while drawing frame F are ORed into
-    `$D01E/$D01F` after F, so the game sees them in frame F+1.
+    cycles. `runFrame` returns the frame slots used (see "Beam" below).
+    *(Superseded: collisions now latch line by line as the beam draws.)*
   - *Hardware state outside `ram`:* `Machine` also holds the rendered
-    screen (`m.screen`, 384×272 RGBA), the input latch, and meter
-    statistics (`frames`, `overruns`, `max_cycles`, `total_cycles`). These
-    are "the hardware", not game state.
+    screen (`m.screen`, 384×272 RGBA), the input latch, the beam, the
+    current bucket, `m.last` (previous frame's `Report`: cycles, buckets,
+    kind, slots) and `m.stats` (frames, calls, overruns, loading,
+    max/total cycles, per-bucket max/total). These are "the hardware", not
+    game state; game code must not use them for game logic.
   - *Picture:* 384×272 with the 320×200 display at (32, 36). Sprites and
     collisions exist only inside the display window (no sprites over the
     border).
-  - *Meter bar:* light green (<75%), yellow (75–100%), red when over;
-    over budget also draws a full-width red stripe below the bar. Both on
-    a black outline so they read against any border colour.
+  - *Meter bar:* light green (<75%), yellow (75–100%), red + full-width
+    red stripe for an overrun, light grey (no stripe) for a loading pause.
+    All on a black outline so they read against any border colour.
   - *Sprite pointers:* block N is at `$C000 + N*64` for any byte value
     (no masking); the card tells the reader to use 0–31.
   - *Sprite priority quirk kept:* priority is resolved per pixel by the
@@ -291,18 +298,31 @@ Keep a running list of rooms and their room numbers in the Decision log.
     bitmap pixel is foreground, the bitmap shows (it does not fall
     through to a lower-priority sprite).
   - *`charRom` is free* (0 cycles); the ROM is outside the 64 KB map.
-  - *`m.view` types allowed:* whole-byte integers, `extern`/`packed`
-    struct/union, and arrays of those (checked at comptime); a view past
-    `$FFFF` panics. `copy`/`fill` wrap past `$FFFF`; `copy` is
+  - *`m.view` types allowed (strict, `src/layout.zig`):* whole-byte ints
+    whose size equals their bits (u8/u16/u32/u64; not usize/isize, not
+    u24); non-exhaustive enums over those; padding-free `extern struct`
+    (every field viewable, `@offsetOf` = running sum, no tail padding);
+    `packed struct` with `@bitSizeOf == @sizeOf*8` (i.e. backed by
+    u8/u16/u32/u64; bools/odd ints fine inside); `extern union` whose fields
+    are all full-size; arrays of those. Rejected with an explanatory
+    compile error: bool, pointers, auto layout, exhaustive enums,
+    `extern struct {u8, u16}`, `packed struct {u8, u16}`, `[2]u24`. A view
+    past `$FFFF` panics. `copy`/`fill` wrap past `$FFFF`; `copy` is
     overlap-safe (memmove).
   - *Keyboard port:* `$DC02` is latched only when a key arrives and
-    stays until the game writes 0. Browser: printable keys → uppercase
-    ASCII, plus Esc=27, Backspace=8, Tab=9. Joystick keys (arrows, WASD,
-    Space, IJKL, Enter) never reach `$DC02`. Ctrl/Cmd/Alt combos are left
-    to the browser. Keyboard only reaches the game while the canvas has
-    focus (so embedded pages still scroll).
-  - *Headless extras:* `--key FRAME:C` types a character (needed from
-    chapter 3, "flip between rooms with a key"); `--help`. Defaults:
+    stays until the game writes 0. Browser: **every** key goes to `$DC02`
+    (printable → uppercase ASCII; Return=13, Backspace=8, Esc=27), and the
+    joystick keys *also* drive the sticks (Space=32 and Return=13 arrive
+    as keys too). Tab is not captured (keyboard users can leave the
+    canvas). Ctrl/Cmd/Alt combos are left to the browser. Key repeat
+    doesn't retype. One key per frame: a second key in the same 20 ms
+    replaces the first (no queue). Keyboard only reaches the game while
+    the canvas has focus (so embedded pages still scroll).
+  - *Headless extras:* `--key FRAME:C` types a character, `--key
+    FRAME:#13` a decimal code (needed from chapter 3, "flip between rooms
+    with a key", and for Return/Backspace in chapter 11); `--help`.
+    `--press` rejects an empty KEYS and extra fields; huge DUR values
+    don't overflow. Defaults:
     250 frames, dump dir `frames`, only the last frame saved unless
     `--dump-every`. Picture names `frame_NNNNN.ppm` (0-based frame
     index).
@@ -324,5 +344,80 @@ Keep a running list of rooms and their room numbers in the Decision log.
   ReleaseSafe so panics show in the browser console. `zig build test`
   runs the game's own tests plus a machine-provided 100-frame boot test.
 - **SOUND chip:** registers are plain RAM; no audio yet. The reference
-  card has a placeholder section and the code has a TODO; both get filled
-  in by the music chapter.
+  card (§11) says, in-world, that this model "ships without its speaker
+  board" and the SOUND supplement comes with it. The music chapter adds
+  audio output to the machine, replaces card §11 with the register table,
+  and updates the `hw.sound_chip` comment in `machine.zig`. (Author TODO
+  lives here, not in reader-visible files.)
+- **Beam (racing the raster).** Added so tearing and double-buffering are
+  real. 312 raster lines × 63 cycles; the work meter drives the beam
+  (line = cycles / 63). `frame()` starts with the beam at line 0. Picture
+  line 0 (top of border) = raster 15, display row 0 = raster 51
+  (`video.picture_first_raster`, `video.display_first_raster`), display
+  rows 0–199 = rasters 51–250, bottom border 251–286, vblank 0–14 and
+  287–311. Every charge (`peek/poke/.../work`) checks one compare; when
+  the beam finishes a line the VIDEO chip draws that picture line from
+  RAM/registers *at that moment* (per-line render, sprite registers
+  re-read per line). When `frame` returns, the rest of the current lap is
+  drawn from final RAM. A frame that runs several laps keeps only the
+  last lap (earlier laps would have been overwritten on the tube).
+  `copy`/`fill`/`load` write their bytes first and then charge, so the
+  beam sees them as one burst. Collision bits are ORed into `$D01E/$D01F`
+  as each line is drawn (a hit high on the screen is visible later in
+  the same frame; one low on the screen usually only next frame).
+  `m.rasterLine()` (free) and `$D012` (low 8 bits) / `$D011` bit 7
+  (bit 8) report the line; the machine rewrites those bits on every line,
+  so game writes to them are lost. Boot has no beam.
+- **Display blank and multi-frame work.** `$D011` bit 4 = display on
+  (`hw.control`, `machine.display_on`); power-up value `$10`. Off: the
+  display window is border colour, no bitmap, no sprites, no collisions
+  (the border and meter still draw). A frame using `c` cycles takes
+  `max(1, ceil(c / 19656))` frame slots; `runFrame` returns that, and the
+  shells skip calling `frame` for the extra slots (headless frame numbers
+  advance and the skipped frame numbers get the same picture; the
+  browser subtracts slots × 20 ms from its accumulator). An over-budget
+  frame is an **overrun** if any *display-window* line was drawn by the
+  beam during `frame` with the display on; otherwise it's a **loading
+  pause** (grey bar, counted in `stats.loading`, not an overrun). Lines
+  drawn at end-of-frame completion don't count, so "blank → big job →
+  re-enable → return" is a loading pause whose final picture is the
+  finished screen. Consequence the chapters must teach: blank in the
+  first 3,213 cycles (before raster 51). Card §6 "Racing the beam" /
+  "Blank the screen for big jobs".
+- **`m.load(dst, bytes)`** copies a Zig slice (a `const` table, the
+  program image) into RAM at 8 cycles/byte (free during boot, like
+  everything). Wraps past `$FFFF`; panics if longer than 64 KB.
+- **Meter buckets.** `m.bucket(id: u3)` (free) sends subsequent charges
+  to one of 8 buckets; each frame starts in bucket 0. Previous frame's
+  totals: `m.last.buckets`; wasm `comet_bucket(i)`; JS
+  `comet.buckets()`; headless prints max/avg for each non-zero bucket.
+  Chapters should assign bucket ids in the game's own constants (e.g.
+  0 = misc, 1 = input, 2 = drawing, 3 = actors…) and keep them stable
+  across chapters for the budget-meter widget.
+- **Other wasm exports:** `comet_frame(joy1, joy2) u32` returns slots;
+  `comet_loading()`, `comet_kind()` (0 ok, 1 overrun, 2 loading).
+- **Memory-map gaps (card §2):** `$CFE8–$CFF7` (16 bytes) and
+  `$FF40–$FFFF` (192 bytes) are free RAM. `$D02F–$D3FF`, `$D419–$D7FF`,
+  `$DBE8–$DBFF`, `$DC03–$DFFF` are **reserved for expansion hardware**
+  (the disk drive will want some). Game memory maps must not place data
+  there.
+- **Terminology:** "colour RAM" (`hw.color_ram`) everywhere; "screen
+  plane" for `$CC00`. The card's register tables now carry a Zig-name
+  column.
+- **Disk drive (planned, not built):** a disk drive device is added to
+  the machine in chapter 11: a file list (directory in disk order), load
+  and save of a named file into RAM at a given address (with a cycle /
+  slot cost so loading shows as a loading pause), a wasm-side buffer the
+  browser fills from a file picker for a real disk image, and `--disk
+  FILE` for headless runs. Its registers go in the reserved `$DD00–$DFFF`
+  range. Until then, chapters 3–10 load the Training Castle with
+  `m.load` from a comptime table at `$7800`; chapter 11 swaps that one
+  call for a disk load (same destination), so earlier loader code stays.
+- **Browser shell details:** joystick state is rebuilt from the set of
+  held keys (two keys on one direction work); falls back from
+  `instantiateStreaming` to `instantiate` when the server doesn't send
+  `application/wasm`; `reset()` after a panic re-instantiates the module
+  (a trapped instance is not reused); the status element is the
+  canvas's next sibling if it has `data-comet-status`.
+- **check-all.sh** also asserts `web/game.wasm`, `web/shell.js`,
+  `web/index.html` were written.

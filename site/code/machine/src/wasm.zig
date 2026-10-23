@@ -33,7 +33,9 @@ fn log(
     comet_log(text.ptr, text.len);
 }
 
-var m: Machine = .{};
+// Set up by `comet_boot` (`boot` resets every field), so it can live in
+// zeroed memory instead of a half-megabyte data section.
+var m: Machine = undefined;
 
 /// Power on (or reset) the machine.
 export fn comet_boot() void {
@@ -41,10 +43,11 @@ export fn comet_boot() void {
 }
 
 /// Run one frame with the given held joystick bits (see `machine.joy`).
-export fn comet_frame(joy1: u8, joy2: u8) void {
+/// Returns the frame slots it used: wait that many frames before the next.
+export fn comet_frame(joy1: u8, joy2: u8) u32 {
     m.input.joy1 = joy1;
     m.input.joy2 = joy2;
-    m.runFrame(game);
+    return m.runFrame(game);
 }
 
 /// A key was pressed (uppercase ASCII). Delivered at the next frame.
@@ -74,5 +77,18 @@ export fn comet_budget() u32 {
     return machine.frame_budget;
 }
 export fn comet_overruns() u32 {
-    return m.overruns;
+    return m.stats.overruns;
+}
+export fn comet_loading() u32 {
+    return m.stats.loading;
+}
+
+/// Last frame's cycles in meter bucket `id` (0-7).
+export fn comet_bucket(id: u32) u32 {
+    return if (id < 8) m.last.buckets[id] else 0;
+}
+
+/// Last frame's kind: 0 fitted, 1 overrun, 2 loading pause.
+export fn comet_kind() u32 {
+    return @intFromEnum(m.last.kind);
 }

@@ -21,6 +21,9 @@ for dir in "$here"/starter "$here"/ch[0-9]*; do
   (cd "$dir" && zig build test)
   step "$name: zig build wasm"
   (cd "$dir" && zig build wasm)
+  for f in game.wasm shell.js index.html; do
+    [ -s "$dir/web/$f" ] || { echo "zig build wasm did not write web/$f for $name"; exit 1; }
+  done
   step "$name: headless, 100 frames"
   (cd "$dir" && zig build run -- --frames 100 --dump "$frames/$name")
   [ -s "$frames/$name/frame_00099.ppm" ] || { echo "no frame written for $name"; exit 1; }
