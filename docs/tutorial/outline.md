@@ -1,7 +1,7 @@
 # Tutorial outline — "The Castles of Dr. Creep, written in Zig"
 
-*Draft 1 — high-level flow for review. Chapter-level detail comes once the
-flow is approved.*
+*Draft 2: decisions from the first review are folded in (see "Decisions"
+at the end). Chapter-level detail comes once the flow is approved.*
 
 ## The premise
 
@@ -52,7 +52,7 @@ to the reader as an exercise, in three tiers:
 | 3 | Sliding poles | Sliding pole | grid + slide anim | 4 |
 | 4 | Doors (in-room, between rooms) | Door | open/close anim, room transition | 5 |
 | 5 | Doorbells | Doorbell | "in front of" + fire | 5 |
-| 6 | Exit door / escaping the castle | Door (exit flag) | escape sequence | 8 |
+| 6 | Exit door / escaping the castle | Door (exit flag) | escape sequence | 9 |
 | 7 | Lightning machines + switches | Lightning | sprite actor, switch→machine links | 6 |
 | 8 | Forcefields + timer button | Forcefield | countdown timer object | 6 |
 | 9 | Trapdoors + switch | Trap door | floor removal, grid update | 6 |
@@ -61,15 +61,15 @@ to the reader as an exercise, in three tiers:
 | 12 | Keys | Key | per-player inventory | 7 |
 | 13 | Locks | Lock | key colour → door id | 7 |
 | 14 | Ray guns + control panel | Ray gun | tracking AI, laser actor, player control | 7 |
-| 15 | Mummy + ankh trigger | Mummy | tomb release, pursuit AI | 7 |
-| 16 | Frankenstein | Frankenstein | wake, chase, die (trapdoor/lightning/ray) | 7 |
+| 15 | Mummy + ankh trigger | Mummy | tomb release, pursuit AI | 8 |
+| 16 | Frankenstein | Frankenstein | wake, chase, die (trapdoor/lightning/ray) | 8 |
 | 17 | On-screen text | Text | bit-7-terminated strings | 2/3 |
-| 18 | Images / final room | Image | multi-placement blit, ending reveal | 8 |
-| 19 | Two players at once | — | per-player state, shared room | 8 |
+| 18 | Images / final room | Image | multi-placement blit, ending reveal | 9 |
+| 19 | Two players at once | — | per-player state, shared room | 9 |
 | 20 | Lives, death, respawn | — | flash/die lifecycle | 5 |
-| 21 | Castle map | room directory | reveal-as-visited, "you are here" arrows | 8 |
-| 22 | Timer & high scores | — | BCD time, initials entry | 8/10 |
-| 23 | Save/load position | — | save files, disk I/O | 10 |
+| 21 | Castle map | room directory | reveal-as-visited, "you are here" arrows | 9 |
+| 22 | Timer & high scores | — | BCD time, initials entry | 9/11 |
+| 23 | Save/load position | — | save files, disk I/O | 11 |
 
 Combination rooms to include (each one stress-tests an interaction):
 Frankenstein + trapdoor, Frankenstein + conveyor, ray gun + forcefield,
@@ -78,8 +78,13 @@ cooperate on a switch.
 
 ## The machine we target
 
-The reader writes the game against a small **"fantasy C64"** module,
-`hw`, written in chapter 1 and provided as a package after that:
+The reader writes the game in ordinary Zig against a small **"fantasy
+C64"** module, `hw`, written in chapter 1 and provided as a package after
+that. `hw` is a **deliberately forgiving emulator**: it does not model
+cycle timing, bus quirks or chip bugs. It models only the hard limits, and
+it makes those impossible to ignore. Breaking a limit fails loudly: a
+compile error where possible, otherwise a red overlay and a log line.
+The limits:
 
 - `ram: [65536]u8`: the *only* memory there is. No allocator anywhere in
   the game. The memory map is a comptime table, and the build fails if two
@@ -94,11 +99,16 @@ The reader writes the game against a small **"fantasy C64"** module,
   it, so the reader can see when a design is too expensive for the machine.
   This is how the "limited resources" theme becomes concrete instead of
   hand-waved.
+- Graphics assets must fit the same hardware formats: 2-bit multicolour
+  shapes, 24×21 sprite frames, the fixed 16-colour palette, and at most
+  four colours per 8×8 cell. Art that breaks a format won't build.
 - Shells: native window (sokol, as in `src/app.zig`) and wasm32-freestanding
   (as in `src/wasm.zig`) for the website.
 
-Stretch appendix: compile the same game for a real 6502 via the llvm-mos
-Zig fork (see open questions).
+We don't compile for a real 6502. The limits are self-imposed, and the
+point is to practise the 1984 discipline, not to reproduce 1984 toolchains.
+This repo's 6502 emulator stays behind the scenes. It is the source of the
+"what the original did" sidebars, not something the reader runs.
 
 ## Website shape (the "semi-interactive" part)
 
@@ -127,9 +137,9 @@ Zig fork (see open questions).
   publishes it with `actions/deploy-pages`. Every push to the default branch
   redeploys the site.
 - **Nothing copyrighted gets deployed.** The checkpoints that Pages hosts
-  use only the Training Castle and the tutorial's own art and font. That's
-  why replacement art (open question 2) is effectively required: anything
-  from the disk can't be served from a public site.
+  use only the Training Castle and the tutorial's own art and font. Anything
+  from the disk can't be served from a public site, which is one more
+  reason the tutorial ships its own art.
 - "Load your own disk" in the browser uses a file picker. The D64 is parsed
   client-side in the wasm build and never leaves the reader's machine, so
   the real castles are playable on the hosted site without the site
@@ -210,19 +220,30 @@ conveyors (moving whatever stands on them), and the matter transmitter
 machines; toggling single bits; cheap colour cycling instead of redrawing.
 **Checkpoint:** the Training Castle's machine rooms all work.
 
-### 7. Keys, guns, and monsters
+### 7. Keys and guns
 Per-player key inventory, and locks matched by colour to door id. Ray guns
-that track the player, plus the control panel that lets the player drive
-them; the laser as a short-lived actor. Mummies released by the ankh, and
-Frankenstein waking, chasing, and dying in trapdoors, lightning and ray
-fire. A tiny LFSR random number generator.
+that track the player up and down, plus the control panel that lets the
+player take over a gun and fire it. The laser is the first short-lived
+actor: spawned into a free slot, it travels, collides, and frees its slot
+again.
+**Techniques:** inventories as small fixed lists; a whole gun's state in
+one flag byte (move up/down, tracking, fired-by-player); finding and
+recycling free actor slots; transient actors under an 8-sprite cap.
+**Checkpoint:** the key, lock and ray-gun rooms work; you can shoot
+another player.
+
+### 8. Monsters
+Mummies released by walking past the ankh, then pursuing along the
+floors. Frankenstein waking when you share his level, chasing, getting
+carried by conveyors, and dying in trapdoors, lightning and ray fire. A
+tiny LFSR random number generator.
 **Techniques:** AI as a handful of bytes of state; pursuit without
-pathfinding (using the nav grid); recycling actor slots; deterministic
-randomness for replays and tests.
+pathfinding, reading the navigation grid; monster-vs-mechanism rules as
+table lookups; deterministic randomness for replays and tests.
 **Checkpoint:** every mechanic in the coverage matrix works, plus the
 combination rooms.
 
-### 8. The whole castle
+### 9. The whole castle
 Turn rooms into a game: the **castle map** (drawn from the room directory,
 revealed as you visit, arrows per player), two simultaneous players with
 per-player state, lives and game over, a running BCD timer, the exit door
@@ -233,7 +254,7 @@ already has.
 **Checkpoint:** play the Training Castle from start to escape, alone or
 with two players.
 
-### 9. Three voices
+### 10. Three voices
 A SID-style synth, then the **music bytecode** (notes, waits, tempo,
 voice control) and its interpreter, driven from the frame interrupt. Sound
 effects reuse the same interpreter by taking over its stream pointer.
@@ -242,7 +263,7 @@ streaming commands instead of storing samples; deciding what a sound is
 allowed to interrupt.
 **Checkpoint:** title music and gameplay sound effects.
 
-### 10. The shell: title, menus, disk, scores
+### 11. The shell: title, menus, disk, scores
 Everything around the castles: the title and intro screen, the castle
 select menu (order taken from the disk directory), the options menu,
 high-score tables with initials entry, saving and loading position, and a
@@ -258,33 +279,25 @@ high score.
 Load the real disk and play all 14 castles on the engine you wrote. The
 room editor. Exercises: recreate a real castle, design your own, add a
 new object type. A retrospective on the resource budget (where the bytes
-and cycles went). Appendix: running on real 6502 hardware.
+and cycles went).
 
 ---
 
-## Open questions for you
+## Decisions (from review of draft 1)
 
-1. **Target machine:** is the fantasy-C64 `hw` module with a work meter
-   the right level? The alternatives are (a) plain modern Zig with
-   self-imposed limits (simpler, less authentic), or (b) actually
-   compiling for the 6502 via llvm-mos (most authentic, but toolchain
-   maturity is a real risk and it would dominate the tutorial).
-2. **Art assets:** the sprites and room shapes live inside the copyrighted
-   binary. Options: ship original replacement art for the tutorial,
-   with the real graphics appearing when you load your own disk
-   (recommended); or require the disk from chapter 2 onward.
-3. **Chapter split:** chapter 7 is heavy (keys + ray guns + two monsters).
-   It could split into "Keys and guns" and "Monsters", with 9 and 10
-   merged into one chapter. That keeps the count at 10.
-4. **Relationship to this repo:** the tutorial's game is a clean-room
-   native Zig implementation, separate from this repo's emulator/lift
-   approach. Should the emulator appear in the tutorial (e.g. as a
-   differential tester: "your handler vs the original"), or stay purely
-   behind-the-scenes in the sidebars?
-5. **Where the site lives:** it deploys to GitHub Pages either way. I
-   recommend a `site/` directory in this repo, deployed by this repo's
-   Actions workflow, with the per-chapter companion code under
-   `site/code/chNN/` (one buildable Zig project per checkpoint) rather
-   than git tags. That way the site is a single repo and CI can check that
-   every checkpoint still builds. The alternative is a separate tutorial
-   repo with its own Pages site.
+1. **Target:** ordinary Zig with self-imposed limits, packaged as the
+   fantasy-C64 `hw` module. The purpose is to teach working inside tight
+   constraints the way 1984 developers had to, so the constraints matter
+   more than authenticity.
+2. **Art:** the tutorial ships its own replacement art, and that art obeys
+   the same hardware formats and limits as everything else. The real
+   graphics appear only when a reader loads their own disk.
+3. **Chapters:** the old chapter 7 is split into "Keys and guns" (7) and
+   "Monsters" (8), giving 11 chapters plus a prologue and epilogue.
+4. **Emulator:** `hw` is a very forgiving emulator. It isn't accurate; its
+   job is to make the hard limits visible (memory, sprites, colours per
+   cell, voices, frame budget). This repo's 6502 core is not part of the
+   tutorial.
+5. **Site:** lives in `site/` in this repo, with checkpoints under
+   `site/code/chNN/`, deployed to GitHub Pages by this repo's Actions
+   workflow.
