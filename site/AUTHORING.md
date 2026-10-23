@@ -44,6 +44,25 @@ Read "Voice and tone" in the outline in full. A summary:
 - **Stay generic:** no real magazine, console, company or character
   names.
 
+### Brevity (added after the first read-through: "too much text")
+
+- **Say it once, short.** Prose is there to get the reader to the next
+  listing with the idea in their head. Cut scene-setting, recaps,
+  previews of later chapters, repeated reassurance, and asides that don't
+  teach. Targets: the prologue is about 800 words, and a chapter's prose
+  is about 4,000–4,500 words (code listings aren't counted).
+- **Introduce things when they arrive.** Don't tour mechanics, boxes or
+  tools ahead of time. The prologue says what the game is in a paragraph,
+  and the chapters introduce each mechanic when it's built.
+- **Calibrate to the reader, both ways.** If an idea gets a careful
+  explanation, don't then lean on something just as unfamiliar to them
+  without explaining it. For example, "in JavaScript every number is a
+  64-bit float" assumes they know what a float is. Either give it a
+  clause ("a number with a decimal point, stored in 8 bytes") or drop
+  the comparison.
+- **Boxes earn their place.** Keep a box only if it adds something the
+  main text doesn't. Merge or drop the ones that repeat the prose.
+
 ## 2. The fiction
 
 - **The machine:** the **Comet 64**, a fictional 1980s home computer.
