@@ -1,7 +1,8 @@
 # Tutorial outline — "The Castles of Dr. Creep, written in Zig"
 
-*Draft 4: voice and tone, now with a guardrail against talking down. Decisions from earlier reviews are at the
-end. Chapter-level detail comes once the flow is approved.*
+*Draft 5: voice and tone, with the reader persona pinned down. Decisions
+from earlier reviews are at the end. Chapter-level detail comes once the
+flow is approved.*
 
 This document is for us, the authors. The reader never sees it, and none
 of its behind-the-scenes framing (reverse engineering, "pretend",
@@ -36,21 +37,43 @@ rooms. Every page should feel like a fun project we're doing together.
   sentences, exclamation points where they're earned (a few per chapter,
   not per paragraph). Mark real milestones ("Your hero just climbed his
   first ladder!") and don't cheer for routine steps.
-- **Treat the reader as a capable peer.** The playfulness is about the
-  project, never at the reader's level. They are a programmer who doesn't
-  know these tricks *yet*, not a kid who needs coaxing. In practice:
+- **Senior dev to a promising junior.** We're the senior developer who
+  loves this stuff and wants to share it. The reader is a junior developer
+  we believe in: clearly capable, just new to the low-level world. We
+  never doubt they can follow along. We also never assume they've already
+  seen what's under the hood.
+- **Who the reader is:**
+  - Comfortable in JavaScript or Python: functions, loops, objects,
+    arrays, classes, maybe a framework or two.
+  - Kind of understands pointers but has never really used them.
+  - Knows what "an array of objects" is, but not how it's laid out in
+    memory. They don't know that a JS object is a pointer to a heap
+    allocation somewhere, or that an array of structs is one contiguous
+    run of bytes.
+  - Hasn't had to think about bytes, bits, hex, integer sizes,
+    overflow, or what a CPU actually does with each line.
+  - New to Zig.
+- **Explain from first principles, bridging from what they know.**
+  Low-level ideas (memory as one big byte array, addresses, pointers,
+  struct layout, bit masks, hex, fixed-width integers and wrapping,
+  lookup tables) get a real explanation the first time they appear,
+  anchored to a JS/Python equivalent: "in JS you'd write
+  `rooms.push({x, y})`; here's what that actually becomes in memory, and
+  here's what we do instead." Diagrams of bytes in memory are the main
+  teaching tool. Don't re-explain general programming they already know
+  (loops, functions, what a variable is).
+- **Respect without condescension.** In practice:
   - No quizzes, "can you guess?" prompts, or gold stars. Exercises are
     offered as fun things to build, not homework to check.
   - No "easy!", "simple!", "just", or "obviously". If something is hard,
-    say so and say why it's worth it.
-  - Don't over-explain basic programming. Explain the *retro-specific* and
-    *Zig-specific* ideas properly, and trust the reader with the rest
-    (linking out for basics is fine).
+    say so, say why it's worth it, and break it down until it isn't.
   - No baby talk, no mascot narrating to the reader, no "great job!" after
     every listing.
-  - The test: would an experienced developer enjoy reading this, or feel
-    talked down to? The goal is the enthusiasm of a friend showing off a
-    cool hack, not a teacher managing a class.
+  - Do name the "aha" moments, the way a senior dev would lean over and
+    say "okay, this next bit is my favourite trick in the whole game."
+  - The test: would a sharp JS developer finish the page feeling smarter
+    and excited to keep going, without having felt talked down to or
+    lost?
 - **Never break the fiction or get meta.** In the site's world, Dr. Creep
   is a Zig game for a 64 KB home computer, and you're building it from
   scratch. No mentions of reverse engineering, disassembly, emulators,
@@ -75,6 +98,7 @@ rooms. Every page should feel like a fun project we're doing together.
 | **Power-Up!** | A resource-saving technique, named and explained (e.g. "the Lookup Table Power-Up"). |
 | **Byte Budget** | A running tally of the memory and frame-time each new piece costs, tied to the memory map and budget meter. |
 | **Pro Tip** | Short Zig-specific advice, including 0.16 gotchas. |
+| **Under the Hood** | The JS/Python-to-metal bridge: a familiar snippet, what it really costs in memory and time, and the low-level version we're writing instead. |
 | **Secret Passage** | An optional deep dive for readers who want more (e.g. how the colour cells really pack). |
 | **Game Over?** | Common mistakes and the bug each one produces, with the fix. |
 | **Warp Zone** | Jump straight to a chapter's finished checkpoint. |
@@ -228,8 +252,14 @@ machine you're building them for. A tour of the finished game. The budget: 64 KB
 How to read the site and use the checkpoints. Zig 0.16 setup.
 
 ### 1. A machine in 64 KB
-Build `hw`: the RAM array, the comptime memory map, the frame loop and its
-interrupt, the work meter, joystick input, and the native and wasm shells.
+Opens with the low-level foundations the rest of the tutorial stands on,
+taught through the machine itself. Memory is one 64 KB array of bytes. An
+address is an index into it, and **a pointer is just an address**. Hex,
+bits, bit masks, and `u8`/`u16` with wrapping arithmetic. How a struct
+and an array of structs lay out as bytes, compared with JS objects and
+arrays. Then build `hw`: the RAM array, the comptime memory map, the
+frame loop and its interrupt, the work meter, joystick input (your first
+bit masks, on a real input port), and the native and wasm shells.
 **Techniques:** no allocator; comptime layout checks; shadow registers
 written once per frame; why a fixed frame budget beats "as fast as
 possible".
