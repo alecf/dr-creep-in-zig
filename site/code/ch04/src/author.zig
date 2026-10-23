@@ -272,14 +272,18 @@ fn checkRoom(comptime Name: type, comptime c: Castle(Name), comptime room: Room(
     }
     // A ladder's bottom rung stands on the walkway below it. A pole stops
     // one row short: every piece of a pole slides you down, even the last.
-    for ([_][]const Run{ room.ladder, room.pole }, [_][]const u8{ "ladder", "pole" }, [_]u16{ 0, 8 }) |runs, kind, short| {
-        for (runs, 0..) |r, i| {
-            const what = std.fmt.comptimePrint("{s} {d}", .{ kind, i });
+    const columns = [_]struct { runs: []const Run, kind: []const u8, short: u16 }{
+        .{ .runs = room.ladder, .kind = "ladder", .short = 0 },
+        .{ .runs = room.pole, .kind = "pole", .short = 8 },
+    };
+    for (columns) |col| {
+        for (col.runs, 0..) |r, i| {
+            const what = std.fmt.comptimePrint("{s} {d}", .{ col.kind, i });
             if (r.length == 0) fail("room {s}: {s} has length 0, which is the end marker", .{ name, what });
             const bottom = r.y + 8 * (r.length - 1);
             _ = onScreen(name, what, r.x, r.y, 4, bottom + 8 - r.y);
-            if (!onWalkway(room, r.x, r.y) or !onWalkway(room, r.x, bottom + short))
-                fail("room {s}: {s} must start on a walkway and end {s} one (rows {d} and {d})", .{ name, what, if (short == 0) "on" else "just above", r.y, bottom });
+            if (!onWalkway(room, r.x, r.y) or !onWalkway(room, r.x, bottom + col.short))
+                fail("room {s}: {s} must start on a walkway and end {s} one (top piece row {d}, bottom piece row {d})", .{ name, what, if (col.short == 0) "on" else "just above", r.y, bottom });
         }
     }
     for (room.text, 0..) |line, i| {

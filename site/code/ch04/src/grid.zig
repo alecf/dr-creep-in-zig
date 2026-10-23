@@ -83,7 +83,7 @@ pub fn add(m: *Machine, r: castle.Record) void {
     }
 }
 
-/// The same answer as `at`, the slow way: no grid, just the castle. Walk
+/// The same answer as `at`, the slow way: no grid, only the castle. Walk
 /// the room's whole object stream (from `objects`) and work out the cell
 /// under castle point (x, y) from every walkway, ladder and pole in it.
 pub fn search(m: *Machine, objects: u16, x: u8, y: u8) u8 {

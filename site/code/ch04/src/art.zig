@@ -526,22 +526,23 @@ pub const explorer_left_1 = mirror(explorer_right_1);
 pub const explorer_left_2 = mirror(explorer_right_2);
 pub const explorer_left_3 = mirror(explorer_right_3);
 
-/// Climbing, seen from behind: one hand reaching for the next rung while
-/// the other foot finds the last one, then the same the other way round.
+/// Climbing, seen from behind, hands on the rails: one hand reaching for
+/// the next rung while the other foot finds the last one. Then a frame
+/// with both hands level, and both again the other way round.
 pub const explorer_climb_0 = frame(.white, &.{
-    "........",
-    ".1.33...",
-    ".23333..",
+    "..1.....",
+    "..233...",
+    "..233...",
     ".333333.",
-    ".23333..",
-    ".23333..",
-    ".2.11...",
-    ".222222.",
-    "..22222.",
-    "..22222.",
-    "..22222.",
-    "..22222.",
-    "..33331.",
+    "..3333..",
+    "..3333..",
+    "...11...",
+    "..2221..",
+    "..2222..",
+    "..2222..",
+    "..2222..",
+    "..2222..",
+    "..3333..",
     "..2222..",
     "..2..2..",
     "..2..2..",
@@ -555,11 +556,11 @@ pub const explorer_climb_0 = frame(.white, &.{
 pub const explorer_climb_1 = frame(.white, &.{
     "........",
     "...33...",
-    "..3333..",
+    "...33...",
     ".333333.",
-    ".133331.",
-    ".233332.",
-    ".2.11.2.",
+    "..1331..",
+    "..2332..",
+    "..2112..",
     ".222222.",
     "..2222..",
     "..2222..",
@@ -570,34 +571,35 @@ pub const explorer_climb_1 = frame(.white, &.{
     "..2..2..",
     "..2..2..",
     "..2..2..",
-    "..2..2..",
-    "..2..2..",
-    "..3..3..",
-    ".33..33.",
+    "..2..3..",
+    "..2.33..",
+    "..3.....",
+    ".33.....",
 });
 
 pub const explorer_climb_2 = mirror(explorer_climb_0);
 pub const explorer_climb_3 = mirror(explorer_climb_1);
 
-/// Sliding down a pole: hands together above his head, knees round the pole.
+/// Sliding down a pole: both hands gripping it above his hat, knees out
+/// round it.
 pub const explorer_slide = frame(.white, &.{
     "...11...",
+    "...11...",
     "..2..2..",
-    "..2332..",
+    ".2.33.2.",
     ".233332.",
     ".333333.",
-    ".211112.",
-    ".211.12.",
-    ".211112.",
-    "..2112..",
-    "...22...",
+    "..1111..",
+    "..11.1..",
+    "..11111.",
+    "...111..",
     "..2222..",
     ".222222.",
     ".222222.",
     "..3333..",
     "..2222..",
-    "..2..2..",
-    "...22...",
+    ".2....2.",
+    ".2....2.",
     "..2..2..",
     "..2..2..",
     "..3..3..",

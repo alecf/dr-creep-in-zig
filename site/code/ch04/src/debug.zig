@@ -40,9 +40,9 @@ pub fn overlay(m: *Machine) void {
             (if (ways & grid.right != 0) @as(u8, 0b00_00_00_11) else 0);
         const above: u8 = if (ways & grid.up != 0) middle else 0;
         const below: u8 = if (ways & grid.down != 0) middle else 0;
-        const rows = [8]u8{ above, above, above, across, across, below, below, below };
+        const pattern = [8]u8{ above, above, above, across, across, below, below, below };
         var at = hw.bitmap + n * 8; // the cell's eight bitmap bytes
-        for (rows) |row| {
+        for (pattern) |row| {
             m.poke(at, row);
             at += 1;
         }

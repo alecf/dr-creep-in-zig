@@ -19,7 +19,7 @@ pub const player_color = player.first + 2; // palette number, 1-15
 pub const player_last_stick = player.first + 3; // joystick 1 as it read last frame
 pub const player_block = player.first + 4; // sprite block the VIDEO chip shows: 0 or 8
 pub const player_frame = player.first + 5; // shape ID of the picture in that block
-pub const player_way = player.first + 6; // the direction of his last step, or player.still
+pub const player_way = player.first + 6; // the direction of his last step, or $80 for none
 
 /// Which screen the game is on, and a clock.
 pub const game = Region{ .name = "game", .first = 0x0207, .last = 0x0208 };

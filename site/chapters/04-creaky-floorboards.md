@@ -53,8 +53,8 @@ Zig won't let that happen by accident. An ordinary `+`, `-` or `*` that
 overflows is a bug as far as Zig is concerned, and in a **Debug** build
 (what `zig build`, `zig build run` and `zig build test` make) or a
 **ReleaseSafe** build (what `zig build wasm` makes for the browser) the
-game stops on the spot with `panic: integer overflow` and the line that
-did it. The two fast build modes, ReleaseFast and ReleaseSmall, leave the
+game stops on the spot with `panic: integer overflow` (and, in a native
+build, the line that did it). The two fast build modes, ReleaseFast and ReleaseSmall, leave the
 check out to save the time it costs, and then an overflow is *undefined*:
 you might get the wrapped number, or the optimiser might have built code
 that does something stranger. So the checks are worth keeping on.
@@ -69,10 +69,16 @@ you've already met them:
 | `+\|` | **saturates**: stops at 255 | a door's panel position (Chapter 3) |
 
 There are `-%`, `*%`, `-|` and `*|` to match. And when a value changes
-size there are three tools: `@as(u16, x)` widens (always safe, a `u8`
-always fits in a `u16`); `@intCast` narrows, with a check that panics if
-the value doesn't fit; `@truncate` narrows on purpose and keeps only the
-low bits.
+size there are three tools, two of which you've used since Chapter 2:
+`@as(u16, x)` widens (always safe, a `u8` always fits in a `u16`);
+`@intCast` narrows, with a check that panics if the value doesn't fit;
+`@truncate` narrows on purpose and keeps only the low bits.
+
+Chapter 2 left a question hanging here: what happens when a byte like
+`left`, the letter position in `text.draw`, overflows? Now you know: the
+game would stop. That's why Chapter 2's `draw` stopped at the right edge
+before `left += 8` could carry it past 255, and why Chapter 3's, which
+walks on to a string's last letter, counts in a `u16`.
 
 :::under-the-hood Numbers that never overflow (until they do)
 In JavaScript, `255 + 1` is `256` and always will be. Every number is a
@@ -100,7 +106,7 @@ number than 320 screen pixels.
 
 The VIDEO chip still wants screen pixels. A fat pixel is two of them,
 and castle X 16 has to land on sprite X 24, the display's left edge, so
-sprite X is `2x − 8`: as much as 344, more than a byte. The chip keeps the
+sprite X is `2x − 8`: 342 at the screen's last fat pixel, more than a byte. The chip keeps the
 ninth bit of every sprite's X in `$D010`, one bit per sprite, as the
 reference card's section 4 says. The natural first try looks like this:
 
@@ -108,8 +114,10 @@ reference card's section 4 says. The natural first try looks like this:
 m.poke(hw.spriteX(n), x * 2 - 8);
 ```
 
-It compiles. Zig works out `x * 2` in `x`'s own type, a `u8`, so the
-first time the explorer stands at castle X 128 or more, the game stops:
+It compiles. Zig works out `x * 2` in `x`'s own type, a `u8`, so any
+castle X of 128 or more overflows. The explorer starts the Gatehouse at
+X 162, so the game stops the moment the room appears (your thread number
+and addresses will differ):
 
 ```
 thread 14449 panic: integer overflow
@@ -141,7 +149,8 @@ const video = machine.video;
 ```zig
 /// Put sprite `n`'s top-left corner at castle point (x, y). A fat pixel is
 /// two of the VIDEO chip's pixels and castle X 16 is its X 24, so its X
-/// is 2x - 8: up to 344, a nine-bit number. The ninth bit goes in $D010.
+/// is 2x - 8: 342 at the screen's last fat pixel, a nine-bit number. The
+/// ninth bit goes in $D010.
 pub fn place(m: *Machine, n: u3, x: u8, y: u8) void {
     const sx = @as(u16, x) * 2 - 8;
     const bit = @as(u8, 1) << n;
@@ -218,7 +227,7 @@ const castle = @import("castle.zig");
 
 ```zig
 /// How far he may go, in castle X: from the left edge of the screen to
-/// the right edge, less his own 8 fat pixels.
+/// the right edge, less about his own width.
 const min_x = castle.left_edge;
 const max_x = castle.left_edge + 160 - 8;
 
@@ -423,8 +432,8 @@ hovering a byte shows its cell's column, row and ways out.
 In JavaScript a grid is usually an array of arrays: `grid[y][x]`. That's
 26 objects: the outer array and 25 row arrays, each allocated somewhere
 on the heap by itself, each with a hidden header. Reading a cell follows
-one pointer to the row and another to the number, and every cell holds a
-full JavaScript number.
+a pointer to the row first, and each row carries its own header and
+spare capacity.
 
 The flat version is `new Uint8Array(40 * 25)` with `grid[y * 40 + x]`.
 It's 1,000 bytes in one block, row 0 first, then row 1, and so on, with
@@ -632,27 +641,32 @@ Fix the rule:
 ```zig
     // A ladder's bottom rung stands on the walkway below it. A pole stops
     // one row short: every piece of a pole slides you down, even the last.
-    for ([_][]const Run{ room.ladder, room.pole }, [_][]const u8{ "ladder", "pole" }, [_]u16{ 0, 8 }) |runs, kind, short| {
-        for (runs, 0..) |r, i| {
-            const what = std.fmt.comptimePrint("{s} {d}", .{ kind, i });
+    const columns = [_]struct { runs: []const Run, kind: []const u8, short: u16 }{
+        .{ .runs = room.ladder, .kind = "ladder", .short = 0 },
+        .{ .runs = room.pole, .kind = "pole", .short = 8 },
+    };
+    for (columns) |col| {
+        for (col.runs, 0..) |r, i| {
+            const what = std.fmt.comptimePrint("{s} {d}", .{ col.kind, i });
             if (r.length == 0) fail("room {s}: {s} has length 0, which is the end marker", .{ name, what });
             const bottom = r.y + 8 * (r.length - 1);
             _ = onScreen(name, what, r.x, r.y, 4, bottom + 8 - r.y);
-            if (!onWalkway(room, r.x, r.y) or !onWalkway(room, r.x, bottom + short))
-                fail("room {s}: {s} must start on a walkway and end {s} one (rows {d} and {d})", .{ name, what, if (short == 0) "on" else "just above", r.y, bottom });
+            if (!onWalkway(room, r.x, r.y) or !onWalkway(room, r.x, bottom + col.short))
+                fail("room {s}: {s} must start on a walkway and end {s} one (top piece row {d}, bottom piece row {d})", .{ name, what, if (col.short == 0) "on" else "just above", r.y, bottom });
         }
     }
 ```
 
-and build. The Training Castle's own pole breaks it:
+and build. The new rule catches the Training Castle straight away:
 
 ```
-castle: room poles: pole 0 must start on a walkway and end just above one (rows 128 and 192)
+castle: room poles: pole 0 must start on a walkway and end just above one (top piece row 128, bottom piece row 192)
 ```
 
-The builder has paid for itself. The pole in the Sliding Poles room is
-one piece too long, and so is the Entrance Hall's, which only the tests
-build:
+Chapter 3 drew the Sliding Poles pole one piece too long, and the
+Entrance Hall's too (only the tests build the hall). On screen you'd never
+know, because the last piece disappears into the floor's bricks. In the
+grid, it's a hole:
 
 **`src/training.zig`** (in the `poles` room, replace the pole)
 
@@ -676,8 +690,9 @@ build:
 
 The grid is invisible, which makes it hard to trust. So let's give the
 game a switch that draws it. Press **G** and the room is drawn again with
-the grid over it. A second switch, **S**, waits for the end of the
-chapter.
+the grid over it. Drawing a room puts the explorer back in its doorway,
+so look first, then walk. A second switch, **S**, waits for the end of
+the chapter.
 
 **`src/map.zig`** (add below the `room` region)
 
@@ -739,9 +754,9 @@ pub fn overlay(m: *Machine) void {
             (if (ways & grid.right != 0) @as(u8, 0b00_00_00_11) else 0);
         const above: u8 = if (ways & grid.up != 0) middle else 0;
         const below: u8 = if (ways & grid.down != 0) middle else 0;
-        const rows = [8]u8{ above, above, above, across, across, below, below, below };
+        const pattern = [8]u8{ above, above, above, across, across, below, below, below };
         var at = hw.bitmap + n * 8; // the cell's eight bitmap bytes
-        for (rows) |row| {
+        for (pattern) |row| {
             m.poke(at, row);
             at += 1;
         }
@@ -834,7 +849,7 @@ pub const player = Region{ .name = "player", .first = 0x0200, .last = 0x0206 };
 **`src/map.zig`** (add below `player_frame`)
 
 ```zig
-pub const player_way = player.first + 6; // the direction of his last step, or player.still
+pub const player_way = player.first + 6; // the direction of his last step, or $80 for none
 ```
 
 and the build stops:
@@ -873,7 +888,7 @@ const grid = @import("grid.zig");
 ```zig
 /// Directions run clockwise from 0, up, to 7, up and left: the grid's bit
 /// numbers. `still` is no direction at all.
-pub const still: u8 = 0x80;
+const still: u8 = 0x80;
 
 /// The eight directions, laid out the way they are on the stick.
 const compass = [3][3]u8{
@@ -915,9 +930,11 @@ because it's a plain function of two numbers.
 `compass` is a 2D array, and here Zig differs from JavaScript in exactly
 the way this chapter is about: a `[3][3]u8` is not three separate arrays
 reached through pointers, it's nine bytes in a row, row after row. Zig
-lays out an array of arrays the way we're laying out the grid. We still
-index the grid by hand, because the grid lives in the Comet's memory at
-an address, where all we have is bytes.
+lays out an array of arrays the way we're laying out the grid. We could
+even ask the machine for the grid as a `[25][40]u8` with Chapter 3's
+`m.view`. We index it by hand instead, with `peek` and `poke`, because
+those charge the meter for every read, and the meter is the point of this
+chapter.
 
 `step_x` and `step_y` say how far one step goes in each direction: a fat
 pixel across and two rows up or down. They hold **no negative numbers**,
@@ -1042,7 +1059,9 @@ he keeps going. Walking right with the stick at up-and-right, he keeps
 walking; on a ladder with the stick at down-and-left, he keeps climbing
 down. "Next to" is one more or one less round the compass, and the
 compass wraps: `(last +% 1) & 7` takes 7 to 0, and `(last -% 1) & 7`
-takes 0 to 255 and then to 7. Wrapping arithmetic again, on purpose.
+takes 0 to 255 and then to 7. Wrapping arithmetic again, on purpose. (One reading note: Zig binds `&`
+tighter than `==`, so `way & 3 == 2` means what it says. In JavaScript
+you'd need `(way & 3) === 2`.)
 
 **Lining up.** Up or down, his X is set so that his feet are one fat
 pixel into the cell: `x - fx % 4 + 1`. Push up anywhere along a ladder's
@@ -1101,22 +1120,23 @@ Copy the new `art.zig` from the Warp Zone checkpoint
 drawings and their mirror images, and the slide is one drawing:
 
 ```zig snippet
-/// Climbing, seen from behind: one hand reaching for the next rung while
-/// the other foot finds the last one, then the same the other way round.
+/// Climbing, seen from behind, hands on the rails: one hand reaching for
+/// the next rung while the other foot finds the last one. Then a frame
+/// with both hands level, and both again the other way round.
 pub const explorer_climb_0 = frame(.white, &.{
-    "........",
-    ".1.33...",
-    ".23333..",
+    "..1.....",
+    "..233...",
+    "..233...",
     ".333333.",
-    ".23333..",
-    ".23333..",
-    ".2.11...",
-    ".222222.",
-    "..22222.",
-    "..22222.",
-    "..22222.",
-    "..22222.",
-    "..33331.",
+    "..3333..",
+    "..3333..",
+    "...11...",
+    "..2221..",
+    "..2222..",
+    "..2222..",
+    "..2222..",
+    "..2222..",
+    "..3333..",
     "..2222..",
     "..2..2..",
     "..2..2..",
@@ -1130,25 +1150,26 @@ pub const explorer_climb_0 = frame(.white, &.{
 pub const explorer_climb_2 = mirror(explorer_climb_0);
 pub const explorer_climb_3 = mirror(explorer_climb_1);
 
-/// Sliding down a pole: hands together above his head, knees round the pole.
+/// Sliding down a pole: both hands gripping it above his hat, knees out
+/// round it.
 pub const explorer_slide = frame(.white, &.{
     "...11...",
+    "...11...",
     "..2..2..",
-    "..2332..",
+    ".2.33.2.",
     ".233332.",
     ".333333.",
-    ".211112.",
-    ".211.12.",
-    ".211112.",
-    "..2112..",
-    "...22...",
+    "..1111..",
+    "..11.1..",
+    "..11111.",
+    "...111..",
     "..2222..",
     ".222222.",
     ".222222.",
     "..3333..",
     "..2222..",
-    "..2..2..",
-    "...22...",
+    ".2....2.",
+    ".2....2.",
     "..2..2..",
     "..2..2..",
     "..3..3..",
@@ -1201,7 +1222,9 @@ top rung opens only down, but the rung under it opens up. Poles never
 open up anywhere, so on a pole he slides. Climbing frames come from bits
 2 and 3 of his Y, a new frame every 4 rows, and when he climbs down they
 play backwards, which looks right. When he stops on a ladder or a pole he
-holds on and keeps his picture; when he stops walking he stands.
+holds on and keeps his picture. That includes the bottom of a pole: he
+lands in his sliding pose and stays in it until you walk him off, as the
+1984 explorer does. When he stops walking he stands.
 
 Build and run. Now he climbs hand over hand and slides down the pole with
 his knees round it.
@@ -1216,7 +1239,7 @@ walkway, ladder and pole in it:
 **`src/grid.zig`** (add at the end of the file)
 
 ```zig
-/// The same answer as `at`, the slow way: no grid, just the castle. Walk
+/// The same answer as `at`, the slow way: no grid, only the castle. Walk
 /// the room's whole object stream (from `objects`) and work out the cell
 /// under castle point (x, y) from every walkway, ladder and pole in it.
 pub fn search(m: *Machine, objects: u16, x: u8, y: u8) u8 {
@@ -1272,7 +1295,7 @@ bucket 2, is where `steer` charges its cycles. Press S and walk again:
 
 | Each step, in the Ladders room | Grid | Search (S) |
 |---|---|---|
-| finding the way out of one cell | 20 cycles | about 1,170 |
+| finding the way out of one cell | 20 cycles | about 1,440 |
 | a walking step | 204 | 1,626 |
 | a climbing step, picture change included | 856 | 3,700 |
 
@@ -1281,14 +1304,15 @@ The frame budget, bucket by bucket, while the explorer climbs: once
 reading the grid and once searching.
 :::
 
-A search costs between 850 and 1,380 cycles depending on the room, and
+A search costs between 1,100 and 1,650 cycles depending on the room, and
 most of that is stepping over the room's text, letter by letter. The grid costs 20 in every room,
 however full the room is. One explorer can afford to search: 3,700
 cycles is a fifth of a frame. But everything that walks the castle asks
 the same question every step, and later chapters fill a room with up to
 eight sprites: a second explorer, mummies, Frankenstein's monsters. Eight
-searchers climbing would cost 30,000 cycles a step, a frame and a half,
-before anything has been drawn. Eight grid readers cost 320.
+searchers climbing, two questions a step each, would spend 23,000 cycles
+a step only asking, more than a whole frame, before anything has been
+drawn. Eight grid readers spend 320.
 
 :::power-up The Precompute Power-Up
 When the answer to a question only changes when the world changes, work
@@ -1297,7 +1321,7 @@ when it's drawn; the explorer asks 25 times a second. So the drawing pass
 writes every answer into a table, and asking becomes one read. It's the
 Lookup Table Power-Up from Chapter 2 with the table built at run time
 instead of compile time: you spend memory (1,000 bytes) and a little time
-up front (about 9,000 cycles, in a loading pause nobody feels), and every
+up front (about 10,000 cycles, in a loading pause nobody feels), and every
 step after that is cheap.
 :::
 
@@ -1305,12 +1329,13 @@ step after that is cheap.
 **Memory.** The navigation grid is **1,000 bytes** at `$C800–$CBE7`. The
 game's state grew by three bytes: `player_way` and the two debug
 switches (and `game` and `room` moved up a byte to make room). The three
-tables in `player.zig`, 32 bytes, live in the program image. The shape
+tables in `player.zig`, 32 bytes, live in the program image; the fourth,
+`compass`, only exists while the compiler fills `stick_way`. The shape
 table grew from 1,716 to 1,951 bytes with the five new frames (45 bytes
 each, plus a directory entry).
 
-**Time.** Building the grid adds about 9,000 cycles to drawing a room:
-8,000 to clear it and the rest to mark the pieces. The worst room now
+**Time.** Building the grid adds 9,400 to 11,400 cycles to drawing a
+room: 8,000 to clear it and the rest to mark the pieces. The worst room now
 draws in 229,000 cycles, still 12 frame slots. In play, a frame between
 steps costs 88 cycles; a step costs 196 to 228, plus about 630 when he
 changes picture (Chapter 2's unpack).
@@ -1329,7 +1354,9 @@ The same 16-entry table turns the stick into a direction, and the
 explorer takes one step every two frames: 25 steps a second, a fat pixel
 across or two rows up or down. The 1984 explorer is
 a little shorter than ours: his feet are 3 fat pixels in and 17 rows
-down. And the grid isn't only written when a room is drawn. A trapdoor
+down. He also takes his pole pose for a moment when he starts down a
+ladder, because the top rung's cell has no way up; ours looks one cell
+further down before it picks his picture. And the grid isn't only written when a room is drawn. A trapdoor
 that opens clears the bits that let you walk across it, and sets them
 again when it shuts. Chapter 6 does the same.
 :::
@@ -1537,7 +1564,7 @@ last frame: frames/frame_00999.ppm
 of the chapter), `frame_00520.ppm` at the upper door on the right, and
 `frame_00690.ppm` on his way down the pole:
 
-![The Sliding Poles room: the explorer halfway down a grey pole, hands together above his head, between a green upper walkway with a door on the left and the floor, with a doorbell and a door on the right](images/04-poles.png)
+![The Sliding Poles room: the explorer halfway down a grey pole, both hands gripping it above his hat and knees out round it, between a green upper walkway with a door on the left and the floor, with a doorbell and a door on the right](images/04-poles.png)
 
 Then play it:
 

@@ -40,7 +40,8 @@ pub fn unpack(m: *Machine, id: shapes.Id, block: u8) u8 {
 
 /// Put sprite `n`'s top-left corner at castle point (x, y). A fat pixel is
 /// two of the VIDEO chip's pixels and castle X 16 is its X 24, so its X
-/// is 2x - 8: up to 344, a nine-bit number. The ninth bit goes in $D010.
+/// is 2x - 8: 342 at the screen's last fat pixel, a nine-bit number. The
+/// ninth bit goes in $D010.
 pub fn place(m: *Machine, n: u3, x: u8, y: u8) void {
     const sx = @as(u16, x) * 2 - 8;
     const bit = @as(u8, 1) << n;

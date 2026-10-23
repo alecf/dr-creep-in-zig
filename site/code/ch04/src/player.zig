@@ -39,7 +39,7 @@ comptime {
 
 /// Directions run clockwise from 0, up, to 7, up and left: the grid's bit
 /// numbers. `still` is no direction at all.
-pub const still: u8 = 0x80;
+const still: u8 = 0x80;
 
 /// The eight directions, laid out the way they are on the stick.
 const compass = [3][3]u8{

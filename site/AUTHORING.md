@@ -1004,14 +1004,16 @@ Castle rooms (ch03)".
   16..175 (off-screen pieces are skipped, so X < 16 objects can't underflow);
   rows ≥ 25 skipped. `grid.at(m, x, y)` (castle point) = 20 cycles.
   `grid.search(m, objects, x, y)` computes the same byte from the stream
-  (850–1,380 cycles); a test proves `at == search` for every cell of every
+  (1,118–1,646 cycles per question including `room.objects`, as `waysAt`
+  calls it; Ladders room 1,442; corrected after the ch04 review); a test proves `at == search` for every cell of every
   room. **Deviation:** 1984 uses `$C000`, 2 bytes per cell (the second never
   read) and 32 rows (2,560 bytes); we use 1 byte, 25 rows. **Note for ch6
   (trapdoors):** 1984 opening a trapdoor clears the right bit of the
   trapdoor's cell and the left bit of the cell two to its right (`+4` bytes
   in its 2-byte grid), and sets them again when it shuts (`$36F6`, `$3734`,
   `$5220`); translate to our 1-byte cells (`+2`).
-- **Movement rules (1984 `obj_Player_Execute`, kept exactly).** One step every
+- **Movement rules (1984 `obj_Player_Execute`; the movement is kept
+  exactly, the picture choice deviates, see "Shape IDs (ch04)").** One step every
   other frame (`steer` returns when `game_tick & 1 != 0`; 25 steps/s; 1984:
   the engine loop waits 2 frames and the player's countdown is 1). Stick →
   direction by a 16-entry comptime table built from `held` (compass
@@ -1034,7 +1036,11 @@ Castle rooms (ch03)".
   must end one row **above** a walkway (else he slides through the floor).
   The builder now checks ladders end on a walkway and poles just above one
   (message: `castle: room poles: pole 0 must start on a walkway and end just
-  above one (rows 128 and 192)`). Training Castle `poles` pole length 9 → 8;
+  above one (top piece row 128, bottom piece row 192)`; the check loops over
+  a small array of `{ runs, kind, short }` structs). **ch11 note:** verify on
+  a real castle file that 1984 poles end one row above a walkway (derived
+  from the code: the last pole piece also opens down and there's no floor
+  test; not yet confirmed on data). Training Castle `poles` pole length 9 → 8;
   `hall.zig` pole 16 → 15 (bytes and plan). Castle still 4,323 bytes.
   Supersedes ch03's "ladders and poles start on a walkway row and end on the
   walkway row below" for poles.
@@ -1054,9 +1060,21 @@ Castle rooms (ch03)".
   `(x >> 1) & 3` on castle X (still every 4 screen pixels); climb frame
   `climb_0 + ((y >> 2) & 3)`; going up/down shows climbing if the feet cell
   **or the cell below** has the up bit (a ladder's top rung has no up), else
-  `explorer_slide`; stopped on a ladder/pole keeps the picture; stopped
-  walking stands. A second `comptime` check requires the climb frames to be
-  consecutive.
+  `explorer_slide`. **Deliberate deviation:** 1984 (`$3421`) tests only the
+  feet cell's up bit *before* the step, so its explorer shows the pole frame
+  `$26` for his first steps down from a ladder top; ours looks one cell
+  further (said in the Inside the Disk box); ch8 monsters copying 1984's
+  picture rules should decide consciously. Stopped on a ladder/pole keeps
+  the picture (he lands from a pole still in his slide pose, as in 1984; the
+  prose says so); stopped walking stands. Art (revised after review):
+  `climb_1` is asymmetric so the four climb frames are distinct, hands sit
+  on the rails (sprite columns 2 and 5), the slide grips the pole above the
+  hat with knees out. A second `comptime` check requires the climb frames
+  to be consecutive.
+- **ch2 promise paid (ch04).** ch2's "Chapter 4 has the story of what
+  happens when a byte like `left` overflows" is answered in ch4's overflow
+  section (ch2's `draw` stops before `left += 8` passes 255; ch3's walks on
+  in a `u16`). `player.still` is now private (map comment says `$80`).
 - **Debug switches (ch04, keep).** `debug.keys` (called before `room.flip`
   as `debug.keys(m) or room.flip(m)`): **G** toggles `debug_grid` and redraws
   the room (the explorer re-enters at the door), **S** toggles
@@ -1064,12 +1082,16 @@ Castle rooms (ch03)".
   after `room.draw` in `.draw_room`: each open cell is cleared and redrawn
   as a code-11 pipe map (centre block + arms), colour RAM yellow. Later
   chapters may add keys here; N and P stay `room.flip`'s.
-- **Costs at ch04.** Room draw ≈ +9,000 cycles for the grid; 141,776
-  (final room) to 229,244 (still 12 slots). Room frames: 88 between steps;
-  step 196 (standing) / 204 (walking) / 228 (climbing), +628 on a picture
-  change. With S: 1,618–3,700 per step. The chapter's table (Ladders room):
-  one lookup 20 vs ≈ 1,170; walking step 204 vs 1,626; climbing step with
-  picture 856 vs 3,700; "eight searchers climbing ≈ 30,000 a step". Boss
+- **Costs at ch04 (re-measured after the review).** Grid build 9,400–11,440
+  cycles (clear 8,000 + marking); room draw is ch03's +9,650–11,010, from
+  141,776 (final room) to 228,268 (`room.draw` alone; 229,244 for the whole
+  draw frame, still 12 slots). Room frames: 88 between steps; step 196
+  (standing) / 204 (walking) / 228 (climbing), +628 on a picture change.
+  With S: 1,618 / 1,626 / 3,072, and 3,700 climbing with a picture change.
+  The chapter's table (Ladders room): one lookup 20 vs ≈ 1,440; walking step
+  204 vs 1,626; climbing step with picture 856 vs 3,700. Like-for-like in
+  prose: eight climbers' lookups (2 a step each) 8 × 2 × 1,442 ≈ 23,000 vs
+  8 × 2 × 20 = 320. Boss
   Battle: `--frames 1000 --press 20:f:5 --key 60:N --key 100:N --press
   120:r:176 --press 300:u:80 --press 390:r:130 --key 530:N --press 560:r:96
   --press 660:d:80 --press 750:r:220 --dump-every 10` → 950 calls, max

@@ -60,7 +60,7 @@ step('A5', '**`src/player.zig`** (add an import below `map`, and delete the `vid
      arg='const video = machine.video;\nconst map = @import("map.zig");\n')
 LIMITS_OLD = between('src/player.zig', '/// How far the sprite may go', '/// The first frame of each walk', root=OLD)
 LIMITS_A = '''/// How far he may go, in castle X: from the left edge of the screen to
-/// the right edge, less his own 8 fat pixels.
+/// the right edge, less about his own width.
 const min_x = castle.left_edge;
 const max_x = castle.left_edge + 160 - 8;
 
@@ -105,7 +105,7 @@ step('B7', "**`src/room.zig`** (in `draw`, add after the `switch` statement's cl
      arg='            else => {}, // machines and monsters come alive in later chapters\n        }\n', run='B0')
 POLE_RULE_OLD = lines_of('src/author.zig', '    for ([_][]const Run{ room.ladder, room.pole }', '    }', root=OLD)
 step('B8', '**`src/author.zig`** (in `checkRoom`, replace the loop over ladders and poles)', 'replace_text',
-     lines_of('src/author.zig', '    // A ladder\'s bottom rung stands', '    }'), arg=None)
+     between('src/author.zig', '    // A ladder\'s bottom rung stands', '    for (room.text'), arg=None)
 STEPS[-1]['arg'] = None
 step('B9', '**`src/training.zig`** (in the `poles` room, replace the pole)', 'replace_text',
      '            .pole = &.{.{ .length = 8, .x = 72, .y = 128 }},\n', arg='            .pole = &.{.{ .length = 9, .x = 72, .y = 128 }},\n')
