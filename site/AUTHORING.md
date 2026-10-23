@@ -1121,3 +1121,220 @@ Castle rooms (ch03)".
   and the real arrival door; ch6 trapdoors rewrite grid bits ("Chapter 6
   does the same"); later chapters bring up to eight sprites that read the
   grid (a second explorer, mummies, Frankenstein's monsters).
+- **Chapter 5 file, title, images.** `site/chapters/05-ding-dong.md`,
+  `title: "Ding Dong, You're Dead"`. Screenshots (full frames, 2×, 768×544,
+  all from the Boss Battle run): `05-bell.png` (Mission Briefing: Gatehouse
+  door half wiped, explorer at the bell, `frame_00120`), `05-doorway.png`
+  (walking into the open Gatehouse door, `frame_00230`), `05-flicker.png`
+  (white hires flash in the Lightning room, `frame_02170`). Built from
+  `site/tools/ch05/ch05.tmpl.md` with `listings.py`, `rebuild.py`,
+  `expand.py`, `errs.py`, `wc.py`, plus `runs.py` (the stage runs; `{{A F}}`
+  in the template expands to the Boss Battle arguments). `rebuild.py` gained
+  a `replace_all` op (a search-and-replace table in prose, used once for the
+  tests' `m.ram[map.player_*]` → `explorer(m).*`). 94 labelled listings plus
+  three prose-only deletions (`player.sprite`, `player.setFrame`,
+  `room.start`) and the replace table rebuild `ch05` from `ch04` byte for
+  byte; stages A (actors), B (preparer table), C (objects + bell), D (doors),
+  E (death), F (C switch) each pass `zig fmt --check`, build, test and run.
+  Prose ≈ 6,750 words, code ≈ 7,250 (most of it in type-ins).
+- **Game source layout (from ch05).** Adds `actors.zig` (`Box`, `Actor`,
+  `State`, `Kind`, `Behaviour`, `kinds`, `slots`, `table`, `slot`, `clear`,
+  `add`, `show`, `step`, `flicker`, `setFrame`), `objects.zig` (`Object`,
+  `Flags`, `Kind`, `Handlers`, `kinds`, `slots`, `slot`, `clear`, `add`,
+  `step`, `touching`, `overlap`) and `doors.zig` (`ring`, `find`, `open`,
+  `enter`, `bell_reach` 12, `into_door` 1). `player.zig` is the explorer as
+  actor kind `player` (`Status`, `feet_x` now `pub`, `doorway` walk table,
+  `start`, `newGame`, `add`, `playing`, `turn`, `read`, `steer`, `walkIn`,
+  `walk`, `kill`, `roomOver`, `nextRoom`, `pressedFire`, `pressed`, `held`);
+  `player.show`, `player.enter`, `player.setFrame` and `room.start` are gone.
+  `room.zig`: `objects(m, n)` renamed **`stream(m, n)`** (clashed with the
+  `objects` import; "object stream" = castle data, "object table" = live
+  slots), `firstDoor` replaced by `doorAt(m, room, i) ?u16` (any room; null
+  if the stream doesn't start with doors or `i` ≥ count), per-kind preparers
+  `door/walkway/pole/ladder/bell/line/image/later` all `fn (m, castle.Record)
+  void`, `panel(m, door_at)`, `wipe(m, x, y)`, constants `door_panel_dx 4`,
+  `door_panel_dy 8`, `door_panel_width 12`, `door_panel_height 24`.
+- **Memory map at ch05.** `player` `$0200–$0204`: `player_actor` (slot),
+  `player_status` (`player.Status`), `player_lives`, `player_last_stick`
+  (kept at `$0203`), `player_door` (the door he enters the room by; 1984
+  `$780B`). x/y/colour/block/frame/way moved into his actor slot; `$0205–
+  $0206` are free. `game` `$0207–$0208`, `room` `$0209` unchanged. `debug`
+  `$020A–$020C` (adds `debug_scan`, C). `engine` `$020D–$020E`
+  (`engine_objects` = object slots in use, `engine_ending` = steps until the
+  room is over, 0 = not ending). **`actors` `$BD00–$BD7F`** (8 × 16), **`objects`
+  `$BE00–$BFFF`** (32 × 16): 1984's addresses (its tables are `$BD00` 8 × 32
+  bytes, `$BE00`/`$BF00` two 32 × 8 tables). comptime checks in both files
+  that slots × size fills the region. 22 regions.
+- **Actor slot layout (16 bytes, `extern struct`, ch6+ must keep offsets):**
+  0 `kind` (`actors.Kind = enum(u8) { player, _ }`), 1 `state`, 2–5 `box`
+  (`Box = extern struct { x, y, width, height }`: castle top-left, picture
+  size in fat px/rows; `setFrame` writes width = frame bytes × 4, height =
+  rows, as 1984 `hw_SpritePrepare`), 6 `frame` (shape ID), 7 `block` (n or
+  n + 8; `add` sets n + 8 so the first picture lands in block n), 8 `color`,
+  9 `countdown`, 10 `pace` (1984 `Sprite_field_5/6`), 11 `flashes` (field_8),
+  12 `way` (field_1F), 13 `stick` (direction this turn, field_1E), 14 `fire`
+  (1 = pressed this turn, field_1D), 15 `walk` (doorway table index,
+  field_1B). Bytes 12–15 are the player's; later kinds may reuse them their
+  own way (1984 does) or ch6+ may rename them generically. **Slot n is
+  sprite n** (1984 too). `State = packed struct(u8)` with 1984's bits: 0
+  unused, 1 hit_sprite, 2 hit_bitmap, 3 free, 4 destroy, 5 dying, 6 flash,
+  7 created.
+- **Object slot layout (16 bytes):** 0 `kind` (`objects.Kind = enum(u8) {
+  door, bell, _ }`; ch6+ append kinds), 1 `flags` (`Flags = packed
+  struct(u8) { own: u5, picked (bit 5), execute (bit 6), disable (bit 7) }`,
+  1984's `ITM_*`), 2–5 `box`, 6–7 `record: u16` (castle record address; the
+  first `u16` in our own structs, at an even offset), 8 `number` (door: index
+  in the room's door group; bell: its door's index), 9 `open` (door, 1984
+  `Object_field_1`), 10 `step` (door wipe row, field_2), 11–15 `spare`.
+  Objects are created enabled (1984 creates them disabled until drawn; same
+  effect). `add` returns `?u8`, null when 32 are used (object drawn but
+  inert, 1984 behaviour). `picked` is defined but nothing handles it yet:
+  **ch7 (keys)** implements 1984's removal (swap the last object into the
+  slot, `object_Execute` `$3F96`).
+- **Handler tables (ladder row 5: dispatch tables).** Built with
+  `std.enums.directEnumArray(Kind, T, 0, .{...})`, so a missing kind is a
+  compile error (`missing struct field: image`, quoted in the chapter) and
+  the table is a plain `[N]T` indexed by `@intFromEnum`. Three tables:
+  `room.prepares` (castle `Kind` → `*const fn (m, castle.Record) void`; 11
+  kinds are `later`, a no-op; ch3's promise paid), `actors.kinds`
+  (`Behaviour { turn: *const fn (m, n: u3) void, flickers: bool }`; 1984's
+  `$088F` records also have hit-sprite and hit-object handlers: **ch6/ch7 add
+  `hit` (sprite–sprite) and `touch` (sprite–object, e.g. trapdoor kills,
+  1984 `obj_Player_Collision`) fields when lightning/trapdoors arrive**), and
+  `objects.kinds` (`Handlers { execute, in_front: ?*const fn }`, optional =
+  1984's zero address). Non-exhaustive kind enums are required by `m.view`;
+  an unnamed kind indexes out of bounds and panics.
+- **Engine step (1984 `events_Execute`).** One step every other frame
+  (`game_tick & 1 == 0`, moved out of `steer`), in `main`'s `.room` branch
+  after `actors.show`: `actors.step` (bucket 3) then `objects.step`
+  (bucket 4), then `player.roomOver`. `actors.step`: read `$D01E/$D01F`,
+  write 0 to both, copy each in-use actor's bit to `hit_sprite`/`hit_bitmap`;
+  then per slot: `destroy` → turn immediately; `flash` or `dying` →
+  `flicker`; else countdown −1, at 0: if `hit_bitmap` (or `debug_scan`)
+  `objects.touching`, then turn unless `flash` got set; `free` → `unused`;
+  countdown = pace. `objects.step`: for each slot, if `execute`, call
+  `execute` (or clear the flag if null). No event queue: **the outline's
+  "event queue" was dropped**: 1984 has none (`EventAdd`/`mEvents` in the
+  reference port are its SDL input queue; `events_Execute` is the engine
+  loop). The execute flag is the to-do list. `actors.show` (bucket 2) runs
+  every frame: place/colour/pointer for every in-use, non-`destroy` slot;
+  `$D015` from in-use slots, `$D01C` multicolour unless `dying`. `clear`
+  also zeroes `$D01E/$D01F`.
+- **Collision approach.** Hardware first pass, then boxes: only an actor
+  whose `$D01F` bit was set (sprite pixel on a foreground bitmap pixel,
+  codes 10/11) runs `objects.touching`, which box-tests every non-disabled
+  object (`overlap`: inclusive edges, sums in `u16`, 40 cycles) and calls its
+  `in_front`. Doors (arch, panel), bells (outline) are foreground enough;
+  verified in the Gatehouse and on every door in the Boss run. `hit_sprite` is
+  recorded but **unused until ch6** (lightning is the first second actor):
+  ch6 adds 1984's `Sprite_Collision_Check` (actor box vs every other actor
+  with `hit_sprite`, per-kind hit-data mask at `$0895`, both directions'
+  handlers). Measured: Gatehouse standing step 246 cycles (bucket 3), 374
+  with C (2 objects ≈ 64 each); prose extrapolates 8 × 32 × 64 = 16,384.
+- **Doors and doorbells, as implemented.** Bell `in_front` (`doors.ring`):
+  actor kind player, `a.fire` (a *press* this turn; 1984 accepts fire held,
+  said in an Inside the Disk box), player status playing, `a.x + feet_x −
+  bell.x < 12` with wrapping (1984 `$41D8` uses `mWidth = 3`), door found by
+  searching objects for kind door with the bell's number (1984 too), and if
+  the door's `open` is 0, set its `execute`. Door `execute` (`doors.open`):
+  first call sets `open`, `step = door_panel_height − 1` (23), and bit 7 of
+  byte 2 of **this door and the door it leads to** in the castle (1984
+  `obj_Door_Execute`); each step `room.wipe` zeroes the 3 bitmap bytes of
+  panel row `step` (bottom up, colour cells untouched); at step 0, wipes row
+  0, clears `execute`, `room.panel` draws `door_open` recoloured to the
+  destination. **Deviation:** 24 rows / 23 steps (≈ 0.96 s) vs 1984's 15
+  rows / 14 steps; 1984 erases with shape `$7C` (3 × 1). Door object box =
+  the panel (12 × 24 at +4, +8; 1984 12 × 15 at +4, +16). Bell box = the bell
+  shape's size (12 × 19). Persistence is the castle bit, so doors stay open
+  across rooms, deaths and (until ch9's clean copy) games.
+- **Entering a door: stick up-and-right (direction 1), 1984-exact.**
+  `obj_Door_InFront` (`$4085`: `lda $bd1e,x; cmp #$01`) requires the
+  stored stick direction to be 1 (up+right via the `$5F59` table), on every
+  door; teleports and switches use 0 (up). The Gatehouse sign changed to
+  "PUSH UP AND RIGHT." (castle 4,333 bytes). This **supersedes** ch3's log
+  line "doors: push up". Door `in_front` (`doors.enter`): door `open`, actor
+  kind player, `a.stick == 1`, status playing → `player.walkIn`: status
+  `doorway`, `walk = 0`, `pace = 3`, snap to (door x + 6, door y + 11),
+  `room_number = to_room`, `player_door = to_door` at once (1984 sets
+  `$7809/$780B` at once too).
+- **Doorway walk and arrival geometry (ch4 promise paid).** `player.doorway`
+  table, 14 entries `{dx, dy, frame, then: ?Status}`: in = entries 0–6
+  (frame only, then 5 moves +1 x, −1/0/−1/0/−1 y, then `.gone`), out = 7–13
+  (frame, 5 moves −1 x, +1/0/+1/0/+1 y, then `.playing`); one entry per turn
+  at pace 3 (≈ 0.84 s). Same timing and displacement as 1984's 12 × 4-byte
+  table at `$34A1` (walk out starts at offset `$18`). Frames are our walk
+  frames (right going in, left coming out); 1984 has six dedicated images
+  `$1E–$23` (a Bonus Stage suggests back-view art). Arrival through an
+  **open** door: (door x + 11, door y + door_y − 3) = (+11, +8) — 1984's
+  (+11, +12) is its +15 less 3 — status `doorway`, `walk = 7`, pace 3; walks
+  out to (+6, +11). Shut door: (+6, +11), standing, facing right if x < 96.
+  No doors (final room): middle of the floor. Facing after walk-out is
+  left (1984 too).
+- **Room end and lives (1984 `roomMain`/`Game`).** `player.roomOver`: while
+  status is playing/doorway, false; otherwise `engine_ending` counts 30
+  steps (1984 runs 30 more engine ticks) and then true. `player.nextRoom`:
+  through a door → true (room/door already set); dead → lives `-|` 1; 0 →
+  false → `.draw_title` (minimal game over); else room/door = castle
+  header start room/door (**1984 respawns at the castle's start**, not the
+  room's entry door; `$7809 = $7803`). `player.newGame` (title fire) sets
+  room/door from the header and lives from header `$07`. **ch9 must:** show
+  "GAME OVER", keep the clean `$9800` copy so a new game's doors are shut
+  again (now a new game after game over keeps the open doors), show the map
+  between rooms (1984 `mapDisplay` after every room), move lives/room/door
+  into the header scratch if it wants 1984's layout (`$7807/$7809/$780B/
+  $780D`), add the escape when the exit door's walk-in ends (1984 sets
+  `$785D` in `obj_Door_InFront` when byte 7 ≠ 0; in ch5 The Way Out's exit
+  door leads back into its own door 0, said in prose), and a second
+  player (`player_actor` already decouples player from slot).
+- **Death lifecycle (coverage row 20), in the engine now.** K (`debug.keys`;
+  1984's equivalent is the kill key it offers for being stuck) →
+  `player.kill`: only if playing; status `dead`, actor `flash`. `flicker`
+  (1984 `Sprite_FlashOnOff`): `flash` → clear, if the kind `flickers`:
+  `dying`, `flashes = 8`, `pace = 1`, else `destroy` at once; each dying step
+  on even engine steps (`game_tick & 2 == 0`) colour white and `flashes −1`,
+  odd steps black; hires while dying (`$D01C` bit off); at 0 → `destroy` →
+  the kind's turn (player: `free`) → `unused`. **ch6 wires real hazards**
+  (lightning touch, trapdoor fall) by setting `player_status = dead` and the
+  actor's `flash` (1984 sets status 2 and returns true from the collision
+  handler); **ch10** adds the flash sound (1984 `SOUND_SPRITE_FLASH`, pitch
+  from `flashes << 3`) and the door sound (`SOUND_DOOR_OPEN` each opening
+  step, pitch `$10 − step`).
+- **Pure fire-press rule (ch2 caveat resolved).** `player.pressed(stick,
+  before) bool` is pure. In a room, `player.read` (every turn, every status)
+  is the only writer of `player_last_stick` and records `a.stick` (direction)
+  and `a.fire` (press) in the slot; handlers read the slot. The title still
+  uses `pressedFire` (per frame). Consequence: a press is per *turn* (every
+  other frame), so a one-frame tap on an odd frame is missed (fine for
+  humans; tests hold fire ≥ 2 frames).
+- **N/P kept** as a debug aid: `room.flip` also sets `player_door = 0`, so
+  he enters by door 0 (walking out if it's open). G/S unchanged; **C**
+  (`debug_scan`) makes every actor run `touching` every turn; K kills.
+- **Costs at ch05 (measured).** Room frames: 170 cycles without an engine
+  step (146 of it `actors.show` over 8 slots), 448 with one standing still
+  (bucket 3 246, bucket 4 28), ≈ 1,096 with a picture change; ch04 was 88 /
+  196. Door opening: bucket 4 440 on the first step, 102 per wipe step, 2,112
+  on the final draw. Room preparation 143,106–236,478 cycles (12 slots at
+  worst; ch04 236 k incl. grid). Boss Battle (`runs.py` F, 2,300 frames):
+  2,227 calls, max 236,824, 7 loading pauses, 0 overruns.
+- **Tests at ch05 (28 with the machine's).** `actors.zig`: slot add/free/
+  capacity; the table is one block (offsets, state bits). `objects.zig`:
+  `overlap` edges and no wrap; handlers cover every kind and `add` stops at
+  32. `room.zig`: a preparer for every castle kind. `player.zig`: the press
+  rule. `main.zig`: ch04 tests on `explorer(m)` (helper returns the
+  player's slot); bell opens the door on both sides; fire held across the
+  room doesn't ring; through the Gatehouse door into the Gallery's door 0
+  and back (door still open; up alone doesn't enter); K → flicker
+  (multicolour off) → 2 lives at the start → game over → title.
+- **Ladder bookkeeping (ch05).** Taught: arrays of structs as one block
+  (JS heap/pointer diagram vs `[8]Actor` view; slot address arithmetic),
+  fixed-capacity slot tables (Slot Table Power-Up), function pointers and
+  dispatch tables (Jump Table Power-Up; `*const fn`, optional `?*const fn`
+  with `if (f) |call|`, `directEnumArray`), non-exhaustive enums, hardware
+  collision as a first pass and execute flags (Only-If-Asked Power-Up). In
+  passing: `.?` (unwrap or panic), shadowing is an error, struct field
+  defaults in a `const` table (`Walk`). Linking by index is still ch6's
+  (doors/bells name each other by number, used lightly). Prose promises:
+  ch6 brings the machines into the `later` entries, the second actor kinds
+  and sprite–sprite collision, and real deaths; ch7 transient actors (lasers)
+  and keys (`picked`); ch9 the escape, game over words, clean castle per
+  game, the map; ch10 sound.

@@ -1,29 +1,39 @@
-# Checkpoint: Chapter 4, "Creaky Floorboards"
+# Checkpoint: Chapter 5, "Ding Dong, You're Dead"
 
-The game at the end of Chapter 4: the explorer walks the Training Castle's
-walkways, climbs its ladders and slides down its poles. Every room's
-navigation grid (one byte per screen cell at `$C800`, a bit for each way
-out) is built while the room is drawn, and each step he takes reads one
-byte of it. He moves on the castle's own coordinates (X = fat pixel + 16),
-converted for the VIDEO chip with the ninth X bit in `$D010`, so he reaches
-the right-hand edge of the screen. He appears in each room's first doorway.
+The game at the end of Chapter 5: the castle's engine. Every room has an
+actor table (eight 16-byte slots at `$BD00`, one per sprite; the explorer
+is the only actor so far) and an object table (32 16-byte slots at
+`$BE00`, filled while the room is prepared: its doors and doorbells). Each
+engine step, every other frame, the VIDEO chip's collision reports decide
+which actors look through the objects, each actor takes its turn, and the
+objects that asked to run do. What each kind does comes from tables of
+functions, and so does preparing each kind of castle record.
 
-Keys: N and P flip rooms; G draws the grid over the room; S makes the
-explorer search the castle for his way instead of reading the grid (watch
-the meter).
+Ring a doorbell (stand at it, press fire) and its door wipes open from the
+bottom up, on both sides of the wall, for good. At an open door, push the
+stick up and to the right: he walks in, and out of the door it leads to,
+in the next room. K gives up a life: he flickers away and starts again at
+the castle's start door; with no lives left it's back to the title.
+
+Keys: N and P flip rooms; G draws the grid; S searches instead of reading
+the grid; C makes every actor check every object every turn (watch the
+meter); K gives up a life.
 
 ```
-src/main.zig      boot(), frame(), the game's modes, whole-game tests
+src/main.zig      boot(), frame(), the game's modes and the engine step, whole-game tests
 src/map.zig       the game's memory map, checked at compile time
+src/actors.zig    the actor table: slots, state flags, turns, flickering, showing sprites
+src/objects.zig   the object table: slots, flags, handlers, touching, the execute pass
+src/doors.zig     doors and doorbells: ringing, opening, walking in
+src/player.zig    the explorer: joystick, steps, ladders, poles, doorways, lives
 src/grid.zig      the navigation grid: building it, reading it, and the slow search
-src/player.zig    the explorer: joystick, steps, ladders, poles and pictures
 src/sprites.zig   unpacking sprite frames; castle coordinates to sprite registers
-src/debug.zig     the G and S switches: the grid view and the search
+src/debug.zig     the G, S, C and K keys
 src/castle.zig    the castle format: header, room directory, tags, records, the stream walker
 src/author.zig    the castle-authoring kit: declarations in, checked castle bytes out
 src/hall.zig      Chapter 3's hand-typed one-room castle, and the test that the kit matches it
 src/training.zig  the Training Castle, written with the kit (bulk data)
-src/room.zig      drawing a room from its object stream (and its grid); N and P
+src/room.zig      preparing a room from its object stream, a function per kind; N and P
 src/screen.zig    the row table, one fat pixel, and the shape blitter
 src/shapes.zig    the shape table: format, IDs, the comptime packer, recolouring
 src/art.zig       every picture, drawn as text (bulk data)
@@ -32,7 +42,7 @@ src/title.zig     the title screen
 ```
 
 ```
-zig build run -- --frames 1000 --press 20:f:5 --key 60:N --key 100:N --press 120:r:176 --press 300:u:80 --press 390:r:130 --key 530:N --press 560:r:96 --press 660:d:80 --press 750:r:220 --dump-every 10
+zig build run -- --frames 2300 --press 20:f:5 --press 60:l:34 --press 100:f:5 --press 160:r:20 --press 200:ur:10 --press 350:r:180 --press 540:f:5 --press 600:r:40 --press 650:ur:10 --press 840:r:176 --press 1020:u:80 --press 1100:r:60 --press 1165:f:5 --press 1220:r:30 --press 1255:ur:10 --press 1500:r:96 --press 1600:d:70 --press 1675:r:140 --press 1820:f:5 --press 1880:r:30 --press 1915:ur:10 --key 2150:K --dump-every 10
 zig build wasm && python3 -m http.server -d web
 zig build test
 ```

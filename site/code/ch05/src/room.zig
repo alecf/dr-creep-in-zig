@@ -1,5 +1,5 @@
-//! The room on screen, drawn from the castle: walk the room's object
-//! stream and draw everything in it that stands still.
+//! The room on screen, prepared from the castle: walk the room's object
+//! stream, draw everything in it, and make the objects that do things.
 
 const std = @import("std");
 const machine = @import("machine");
@@ -273,4 +273,10 @@ pub fn flip(m: *Machine) bool {
     m.poke(map.room_number, next);
     m.poke(map.player_door, 0); // he comes in by its first door
     return true;
+}
+
+// ---- tests ----------------------------------------------------------------
+
+test "preparing a room has a function for every kind of record" {
+    try std.testing.expectEqual(std.enums.values(castle.Kind).len, prepares.len);
 }

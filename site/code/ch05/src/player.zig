@@ -28,7 +28,7 @@ pub const Status = enum(u8) {
 pub const feet_x = 3;
 const feet_y = 21;
 
-/// Where he stands in front of a door: in the middle, boots on the sill.
+/// Where he appears in a doorway: in the middle, boots on the sill.
 const door_x = 6;
 const door_y = 11;
 
