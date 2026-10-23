@@ -104,8 +104,8 @@ Zig fork (see open questions).
 
 - One page per chapter: prose + code listings + an embedded wasm build of
   **that chapter's checkpoint** running in the page.
-- Every chapter ends at a runnable checkpoint (a git tag in a companion
-  repo, e.g. `ch04-done`), so readers can diff against it or skip ahead.
+- Every chapter ends at a runnable checkpoint (a complete project under
+  `site/code/ch04/`, etc.), so readers can diff against it or skip ahead.
 - Interactive widgets, reused across chapters:
   - **Memory map viewer**: live 64 KB map coloured by region, filling as
     the game boots.
@@ -117,6 +117,25 @@ Zig fork (see open questions).
   - **Room editor** (final chapter): edit a Training Castle room in the
     browser and play it.
 - "What the original did" sidebars linking into `disasm/object.s`.
+
+### Deployment: GitHub Pages
+
+- The site is static: HTML/CSS/JS plus one `.wasm` per chapter checkpoint.
+  No server is needed.
+- A GitHub Actions workflow (`.github/workflows/pages.yml`) installs Zig
+  0.16, builds each checkpoint with `zig build wasm`, builds the site, and
+  publishes it with `actions/deploy-pages`. Every push to the default branch
+  redeploys the site.
+- **Nothing copyrighted gets deployed.** The checkpoints that Pages hosts
+  use only the Training Castle and the tutorial's own art and font. That's
+  why replacement art (open question 2) is effectively required: anything
+  from the disk can't be served from a public site.
+- "Load your own disk" in the browser uses a file picker. The D64 is parsed
+  client-side in the wasm build and never leaves the reader's machine, so
+  the real castles are playable on the hosted site without the site
+  distributing them.
+- The site uses relative URLs so it works under the project path
+  (`<user>.github.io/dr-creep-in-zig/`).
 
 ---
 
@@ -262,5 +281,10 @@ and cycles went). Appendix: running on real 6502 hardware.
    approach. Should the emulator appear in the tutorial (e.g. as a
    differential tester: "your handler vs the original"), or stay purely
    behind-the-scenes in the sidebars?
-5. **Where the site lives:** a `site/` directory in this repo with its own
-   build step, or a separate repo for the tutorial plus companion code?
+5. **Where the site lives:** it deploys to GitHub Pages either way. I
+   recommend a `site/` directory in this repo, deployed by this repo's
+   Actions workflow, with the per-chapter companion code under
+   `site/code/chNN/` (one buildable Zig project per checkpoint) rather
+   than git tags. That way the site is a single repo and CI can check that
+   every checkpoint still builds. The alternative is a separate tutorial
+   repo with its own Pages site.
