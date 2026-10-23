@@ -12,9 +12,9 @@
 .ch05-bits { display: flex; flex-wrap: wrap; gap: 10px 6px; align-items: flex-start; }
 .ch05-bits .ch05-grp { display: flex; flex-direction: column; gap: 2px; }
 .ch05-bits .ch05-grp > div { display: flex; gap: 2px; }
-.ch05-bits .ch05-b { display: flex; flex-direction: column; gap: 2px; width: 4.6em; }
-.ch05-bits .ch05-b > span { text-align: center; font-size: .66rem; color: var(--ink-soft); }
-.ch05-bits .ch05-b > span:last-child { color: var(--ink); overflow-wrap: anywhere; line-height: 1.2; }
+.ch05-bits .ch05-b { display: flex; flex-direction: column; gap: 2px; min-width: 4.4em; }
+.ch05-bits .ch05-b > span:not(.dg-bit) { text-align: center; font-size: .66rem; color: var(--ink-soft); }
+.ch05-bits .ch05-b > span:last-child { color: var(--ink); white-space: nowrap; padding: 0 2px; }
 .ch05-bits .ch05-g { font-size: .68rem; color: var(--ink-soft); padding-top: 3px; border-top: 2px solid var(--ink-soft); text-align: center; }
 .ch05-a-note { margin: 0; font-size: .74rem; color: var(--ink-soft); }
 </style>

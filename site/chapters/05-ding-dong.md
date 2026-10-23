@@ -38,28 +38,15 @@ monsters.push(new Monster(40, 100));
 
 Every `new` takes a fresh piece of the **heap**, the pool of memory the
 engine hands out as objects are made, wherever it finds room. So the
-array holds **pointers**, and the monsters are scattered about:
+array holds **pointers**, and a dead monster waits for the garbage
+collector. Python's lists work the same way. The 1984 game never has
+more than eight movers, so it keeps **eight slots in one block of
+memory** and marks the empty ones free. Nothing to follow, allocate or
+collect.
+:::
 
-```
-  monsters ──► [ ptr │ ptr │ ptr ]
-                 │      │     └──────────────► { header, x, y, ... }
-                 │      └──► { header, x, y, ... }
-                 └────────────────────────────────────► { header, x, y, ... }
-```
-
-Visiting them follows a pointer each, and a dead one waits for the
-garbage collector. Python's lists work the same way. The 1984 game never
-has more than eight movers, so it keeps **eight slots in one block of
-memory** and marks the empty ones free:
-
-```
-  $BD00 ┌──────────┬──────────┬──────────┬─────┬──────────┐
-        │  slot 0  │  slot 1  │  slot 2  │ ... │  slot 7  │
-        └──────────┴──────────┴──────────┴─────┴──────────┘
-          16 bytes   16 bytes   16 bytes          ends at $BD7F
-```
-
-Slot *n* is at `$BD00 + 16n`. Nothing to follow, allocate or collect.
+:::diagram ch05-slots
+Three monsters in JavaScript, eight actors in 1984.
 :::
 
 ### Sixteen bytes an actor
@@ -155,23 +142,15 @@ pub const State = packed struct(u8) {
 `Box` is a corner and a size. Objects start with one too, and overlapping
 boxes are how we'll tell an actor is in front of something. `Actor` is
 sixteen bytes of `u8`s, so it's an `extern struct` with no padding
-(Chapter 3). Here's slot 0 with the explorer in the Gatehouse doorway:
+(Chapter 3):
 
-```
-  offset:  0     1      2   3   4   5    6      7      8      9      10    ...   15
-        ┌──────┬──────┬───┬───┬───┬───┬──────┬──────┬──────┬──────┬──────┬─────┬──────┐
-        │ kind │state │ x │ y │ w │ h │frame │block │colour│count │ pace │ ... │ walk │
-        │  0   │ $00  │162│171│ 8 │21 │  16  │  0   │  1   │  1   │  1   │     │  0   │
-        └──────┴──────┴───┴───┴───┴───┴──────┴──────┴──────┴──────┴──────┴─────┴──────┘
-                        └──── box ────┘
-```
+:::diagram ch05-actor
+:::
 
 `state` is eight flags in a `packed struct(u8)`, in 1984's bit order.
-Six are an actor's life story: `created`; `flash` and `dying` if it's
-killed; `destroy` (one last turn) and `free` (empty me after this step);
-and `unused` for an empty slot. The other two, `hit_sprite` and
-`hit_bitmap`, come from the VIDEO chip, and they're the best trick in
-the chapter. They wait for the doorbell.
+`destroy` is an actor's last turn, and `free` empties its slot after
+this step. The two hit flags come from the VIDEO chip, and they're the
+best trick in the chapter. They wait for the doorbell.
 
 :::widget byte-diagram
 The actor table live: eight 16-byte rows at `$BD00`, slot 0's fields named and its `state` split into flags.
@@ -959,6 +938,10 @@ This time the function pointers are **optional**, `?*const fn`: a bell
 has nothing to do on its own, so its `execute` is `null`, and callers
 check with Chapter 2's `if (x) |v|`.
 
+:::diagram ch05-dispatch
+From a kind byte to the code that runs: index, read, call.
+:::
+
 **`src/objects.zig`** (add at the end of the file)
 
 ```zig
@@ -1054,18 +1037,21 @@ plus its width can pass 255 (Chapter 4's overflow lesson, coming due).
 Who calls `touching`? Every actor against every object, every step, is
 8 × 32 = 256 box tests in a busy room, and nearly all of them say "no".
 
-The VIDEO chip can answer for free. As the beam draws, it notices every
-sprite pixel that lands on a **foreground** pixel of the bitmap (codes
-`10` and `11`, reference card section 5) and sets that sprite's bit in
-`$D01F`; `$D01E` does the same for sprites touching sprites. Every
-object is drawn with foreground colours, so an actor that touched no
-foreground can't be in front of anything.
+The VIDEO chip can answer for free. As the beam draws, it sets a
+sprite's bit in `$D01F` when one of its pixels lands on a **foreground**
+pixel (codes `10` and `11`, reference card section 5), and in `$D01E`
+when it lands on another sprite. Objects are drawn in foreground
+colours, so an actor that touched no foreground can't be in front of
+anything:
 
-So once a step the engine reads both registers, zeroes them, and copies
-each actor's bit into `hit_bitmap` and `hit_sprite`. Only an actor with
-`hit_bitmap` set looks through the objects. The hardware does the rough
-test on every pixel, and our code does the exact one only when it might
-say yes.
+:::diagram ch05-touching
+The Gatehouse bell as the screen shows it, as the VIDEO chip checks it, and as our code does.
+:::
+
+Once a step the engine reads both registers, zeroes them, and copies
+each actor's bit into `hit_bitmap` and `hit_sprite`. The hardware does
+the rough test on every pixel, and our code the exact one only when it
+might say yes.
 
 **`src/actors.zig`** (add below the `sprites` import)
 
@@ -1203,8 +1189,11 @@ bell does.
 **`open`** is the door's `execute`. The first time, it sets the open bit
 **in the castle**, on this door and the one it leads to: a door is one
 opening in a wall, so it's open from both sides and stays open when you
-come back. Then it wipes the panel a row a step from the bottom up, like
-a portcullis, and draws the open door at the top.
+come back. Then it wipes the panel a row a step, like a portcullis:
+
+:::diagram ch05-door
+The Gatehouse door after its bell rings: a row an engine step, every other frame.
+:::
 
 `ring` measures from his feet, so `feet_x` becomes public. `room.zig`
 imports the two tables, so its own `objects` function becomes `stream`:
