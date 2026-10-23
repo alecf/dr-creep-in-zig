@@ -1,1 +1,3 @@
 _build/
+tools/rb-*/
+tools/outputs.json
