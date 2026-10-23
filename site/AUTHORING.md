@@ -60,6 +60,20 @@ Read "Voice and tone" in the outline in full. A summary:
   64-bit float" assumes they know what a float is. Either give it a
   clause ("a number with a decimal point, stored in 8 bytes") or drop
   the comparison.
+- **Personality is not padding.** After the brevity pass the owner said
+  "you lost all the personality; you overcorrected". Cut repetition, not
+  voice. These stay:
+  - opening a section from the player's experience ("You know that
+    moment when…");
+  - the senior dev's enthusiasm, said out loud ("this is my favourite
+    trick in the whole game");
+  - a joke or a vivid image, at most one or two per section;
+  - celebrating real milestones;
+  - the magazine-guide energy of the boxes;
+  - transitions that carry momentum.
+
+  Revised targets: the prologue is about 1,000–1,200 words, and a
+  chapter's prose is about 5,000–5,500.
 - **Boxes earn their place.** Keep a box only if it adds something the
   main text doesn't. Merge or drop the ones that repeat the prose.
 
