@@ -5,9 +5,14 @@ checkpoint: ch02
 ---
 
 :::mission-briefing
-By the end of this chapter the Comet 64 boots to a title screen, a castle
-by moonlight under twinkling stars. Press fire and you're standing in the
-**Entrance Hall**, with the explorer in full colour, walking the floor.
+By the end of this chapter the Comet 64 boots to a title screen: a
+castle by moonlight under a sky of twinkling stars. Press fire, the
+screen goes dark for a blink, and you're standing in the **Entrance
+Hall**: stone walkways, a ladder, a sliding pole, torches on the walls,
+and the explorer, in full colour now, striding along the floor.
+
+This is the chapter where the Comet 64 stops being a blue screen with a
+sprite on it and starts looking like a game.
 
 ![The Chapter 2 title screen: a starry sky, a round moon, the words THE CASTLES OF DR. CREEP and PRESS FIRE, and a grey castle with two towers and a wooden door](images/02-title.png)
 
@@ -18,10 +23,12 @@ masks), **pointers as addresses you can do arithmetic on**, and
 
 ## Four pixels to a byte
 
-Chapter 1's floor filled 320 bitmap bytes with `$FF`, and the comment
-said "four pixels, code 11". Here's what that meant.
+Remember Chapter 1's floor? We filled 320 bitmap bytes with `$FF`, and
+the comment said "four pixels, code 11". Time to find out what that
+meant, because every picture in the game depends on it.
 
-You know the look: on machines like this one the pixels are wide, and a
+You know the look from the player's side: on machines like this one the
+pixels are wide, and a
 colour never quite ends where you'd like it to. That's the multicolour
 bitmap (card section 3). The display is 320 × 200, but a pixel takes
 **two bits**, so each one is two dots wide: 160 **fat pixels** across.
@@ -44,8 +51,8 @@ browser canvas spends four bytes on *each* pixel.)
 
 The screen-plane byte holds *two* colours: a palette number is 0–15,
 four bits, and a byte has room for two. That's the
-chapter's first new idea, **packing several values into one byte**, and
-this machine does it everywhere.
+chapter's first new idea, **packing several values into one byte**. Once
+you start looking for it, you'll see it everywhere on this machine.
 
 :::widget byte-diagram
 A bitmap byte as four fat pixels: click to cycle codes and set the cell's colours.
@@ -53,8 +60,9 @@ A bitmap byte as four fat pixels: click to cycle codes and set the cell's colour
 
 ## Claiming the memory
 
-This chapter needs more memory: tables, a text buffer, a home for the
-pictures. New rows in bold:
+Time to stake out some territory. This chapter needs a lot more memory
+than the last: tables, a text buffer, a home for the pictures. New rows
+in bold:
 
 | Address | Bytes | What |
 |---|---|---|
@@ -181,7 +189,8 @@ Chapter 1's cell layout. A row of pixels isn't one run of bytes: fat pixel (6, 3
 
 Here's the first version, straight from the card. The machine has no
 multiply instruction, so `× 40` is a call to `m.mul8`, the card's multiply
-routine, at **120 cycles**. Keep an eye on that number.
+routine, at **120 cycles**. Keep an eye on that number. It's about to
+cause trouble.
 
 **`src/screen.zig`** (new file)
 
@@ -257,7 +266,7 @@ test "plot sets one fat pixel and leaves its neighbours alone" {
 ### Shifts: sliding bits along
 
 **`<<` and `>>` shift a number's bits** left or right, as in JavaScript.
-`0b11 << 4` is `0b0011_0000`; bits that fall off the end are gone, and
+`0b11 << 4` slides the two 1s four places left: `0b0011_0000`. Bits that fall off the end are gone, and
 the gaps fill with 0s. Shifting left by one doubles a number and right
 halves it, so `x / 4` is `x >> 2` and `× 8` is `<< 3`: a few cycles each,
 no multiply. Zig turns `/ 4` into a shift for you.
@@ -285,7 +294,8 @@ AND keeps a bit only where both sides have a 1, so `& ~mask` clears the
 pixel's two bits. OR (`|`) sets a bit where *either* side has a 1, so it
 drops the new code in without disturbing anything else. **Clear with AND,
 set with OR**: that's how you change one value packed among others, on
-any machine, in any language. `codeAt` goes the other way: shift the
+any machine, in any language. If you keep one line from this chapter,
+keep that one. `codeAt` goes the other way: shift the
 pixel's bits to the bottom and keep those two.
 
 :::pro-tip Zig sizes your shifts
@@ -298,11 +308,15 @@ same way: `@intFromEnum(Color.dark_grey)` is a `u4`, so widen it before
 :::
 
 `clear` writes 10,000 bytes at 8 cycles each: **80,000 cycles**, four
-whole frames. Remember that price tag.
+whole frames. Remember that price tag; it comes due in a few sections.
 
 ## A sky full of stars
 
-Let's give `plot` something to do *every frame*: 128 stars, one fat pixel
+Every good title screen has something moving on it, so the player knows
+the machine hasn't crashed while they go and find the joystick. Ours
+gets a night sky, and a night sky needs stars that twinkle.
+
+That gives `plot` something to do *every frame*: 128 stars, one fat pixel
 each. Every cell gets the same three colours (dark grey, light grey,
 white), and every eighth frame each star steps through codes 00, 01, 10,
 11 (off, dim, bright, brightest) one step behind the last.
@@ -444,7 +458,9 @@ stop the game, where JavaScript would hand you `undefined` and carry on.
 
 ### Drawing a screen is a loading pause
 
-`title.draw` costs 96,000 cycles, nearly five frames. So `draw_title`
+Chapter 1 promised that once we started drawing, the meter would have
+something to say. It's about to say a lot. `title.draw` clears 10,000
+bytes and fills 2,000 more: 96,000 cycles, nearly five frames. So `draw_title`
 follows the card's advice (section 6): switch the display off first
 thing, while the beam is still above the display, and do the work. The
 meter shows a grey bar instead of a red one.
@@ -453,8 +469,9 @@ Then the satisfying part: **leave the display off**. A long frame ends
 partway through a sweep of the beam, and switching on there would show
 the picture appearing from the middle down. Instead the *next* frame
 switches it on first thing, before the beam reaches the display, and the
-player sees one clean cut from blank to finished. Every room change will
-work this way.
+player sees one clean cut from blank to finished. Four cycles a frame
+buys a perfect reveal, and every room change in the game will work this
+way.
 
 `m.bucket(id)` sends the cycles that follow to one of the meter's
 buckets: from now on 1 is drawing, 2 sprites, 0 everything else. Run it:
@@ -473,18 +490,23 @@ last frame: frames/frame_00099.ppm
 ```
 
 **48 overruns**, and only 49 calls to `frame` in 100 frames: each one
-spills into a second frame slot, so the sky twinkles at half speed over
-a **red** meter.
+spills into a second frame slot, so the sky twinkles at half speed. Open
+it in the browser and there are the stars, twinkling away over a **red**
+meter and a red stripe across the border. That's not a title screen;
+that's a slideshow.
 
-Add it up for one star: about 40 cycles of peeks, pokes, shifts and
+So who's eating the frame? Add it up for one star: about 40 cycles of peeks, pokes, shifts and
 looping, then `rowAddress` charges **132**, 120 of it the multiply.
 172 cycles a star, 22,020 for 128, more than the whole frame's 19,656.
 Seven tenths of it is one `mul8` per star.
 
 ## The Lookup Table Power-Up
 
-`y` has only 200 possible values. The game asks the same 200 questions
-over and over, and the answers never change. So answer each once, at
+Okay, this is my favourite trick in the whole chapter.
+
+Here's the thing about `(y / 8) × 320`: `y` has only 200 possible
+values. The game asks the same 200 questions over and over, fifty times a
+second, and the answers never change. So answer each once, at
 boot, and from then on **look them up**.
 
 That's the **row table**: 200 two-byte addresses at `$BB00`. We can build
@@ -575,14 +597,16 @@ last frame: frames/frame_00099.ppm
 ```
 
 No overruns, full speed. A title frame is now **6,676 cycles, 34%**, and
-the meter is green. Same stars, same pixels, same picture. We only
+the meter is green and a third of the way across. Same stars, same
+pixels, same picture. We didn't make the stars any cleverer. We only
 stopped working out the same 200 answers fifty times a second.
 
 :::power-up The Lookup Table Power-Up
 When a calculation has few possible inputs and answers that never
 change, work out every answer once and keep them in a table. Here 12
-cycles replace 132, for 400 bytes. On a machine with no multiply, a
-table almost always wins.
+cycles replace 132, eleven times faster, for 400 bytes. On a machine with
+no multiply instruction, a table of answers almost always wins, and the
+1984 disk is full of them.
 :::
 
 :::widget toggle
@@ -593,13 +617,16 @@ The title screen live, with a "row table" switch: off, the meter goes red.
 The 1984 disk keeps two 256-byte tables at `$BB00` and `$BC00`, high
 bytes in one and low bytes in the other, built at start-up with the same
 1-and-313 walk. Its shape drawer goes one better: it looks up only a
-shape's *top* row, then walks down the screen itself.
+shape's *top* row, then walks down the screen itself, adding 1, or 313
+at a cell boundary. We look up every row: it reads better and costs only
+12 cycles.
 :::
 
 ## One table for every picture
 
-Every walkway is the same few bricks repeated, every ladder the same
-rung. You don't store rooms as pictures.
+Every walkway is the same few bricks repeated; every ladder is the same
+rung, over and over; every door is the same door, in every castle. You
+don't store rooms as pictures.
 You store **pieces**, once, and a room says where to put them.
 
 The **shape table** holds every piece and gives each a number, its
@@ -651,7 +678,9 @@ pub const walkway = room(stone, &.{
 });
 ```
 
-`room` attaches the three colours you saw above. The rest of `art.zig` is about 370 lines of pictures; copy it
+`room` attaches the three colours: brown mortar, pink brick, a light grey
+top edge. Squint and you can see the brickwork, the bricks offset row to
+row. The rest of `art.zig` is about 370 lines of pictures; copy it
 from the checkpoint (`code/ch02/src/art.zig`, see the Warp Zone) into
 your `src/`. Now the code that turns strings into the table:
 
@@ -829,6 +858,8 @@ test "a picture packs into width, height, flags, pixels and colours" {
 }
 ```
 
+This file does all its real work while the game compiles.
+
 **`Id`** numbers every shape from 0: `walkway` is 1, `explorer_left_3`
 is 19.
 
@@ -866,7 +897,9 @@ src/shapes.zig:96:17: error: shape explorer_right_1: row 20 is 9 fat pixels wide
 ```
 
 A stray character, or a sprite frame over 12 × 21, is named just as
-precisely. On a machine that didn't check, each would be a garbled picture.
+precisely: the shape, the row, the culprit. On a machine that didn't
+check, each one would be a garbled picture and an evening spent finding
+out why.
 :::
 
 Copy the table into place at boot:
@@ -885,8 +918,10 @@ const shapes = @import("shapes.zig");
 
 ## The blitter
 
-Now the routine that stamps a shape onto the screen, a **blitter**
-("bit-block transfer"). It takes a shape ID and the top-left corner:
+Now the heart of the chapter: the routine that stamps a shape onto the
+screen. Programmers of the era called it a **blitter** ("bit-block
+transfer"), and every room, every letter and every piece of the castle
+goes through it. It takes a shape ID and the top-left corner:
 **x in fat pixels (0–159), y in rows (0–199)**. x is rounded down to a
 multiple of 4, as in the 1984 game, so every shape byte lands on exactly
 one screen byte, with no shifting.
@@ -954,7 +989,8 @@ pub fn drawShape(m: *Machine, id: shapes.Id, x: u8, y: u8) void {
 Walk through it with a pointer in each hand. `src` starts at the shape,
 reads the width and height, and steps past the header. For each row,
 `dst` is that row's screen address, and each byte copies from `src` to
-`dst`, stepping `dst` by 8 to the same line of the next cell.
+`dst`, stepping `dst` by 8 to the same line of the next cell. Both pointers
+only ever move forward through memory.
 
 The pixels are **ORed** on, not copied, so a ladder drawn through a
 walkway lands on the bricks instead of punching holes in them (which is
@@ -972,8 +1008,8 @@ spills into one more row of cells, and anything past the edges is cut off.
 
 Look at what that code did with addresses. It read one out of a table,
 added to it, and stepped along memory with it. An address you can store,
-pass around and do sums on: **that's a pointer.** Chapter 1's promise,
-kept.
+pass around and do sums on: **that's a pointer.** That's the whole
+secret, and Chapter 1's promise is kept.
 
 Zig's pointers are the same idea, built into the language: `m: *Machine`
 is the address of the machine's state. A Zig pointer carries a type, so
@@ -992,7 +1028,8 @@ same.x = 4;          // room.x is 4 now too
 
 But JavaScript never lets you *see* the address, because the engine
 moves objects around whenever it likes. On the Comet 64 nothing moves
-unless you move it, so an address is a plain number.
+unless you move it, so an address is a plain number: data that knows
+where other data is.
 :::
 
 Now the castle:
@@ -1013,21 +1050,25 @@ Now the castle:
     screen.drawShape(m, .door, 76, 168);
 ```
 
-Build and reload: a moon over the stars, and a grey castle with lit
-windows. The wall leaves a gap for its door because they have different
-colours, and a door drawn over wall would repaint the wall's pixels in
-its cells. It's the 4-colours-per-cell rule again.
+Build and reload. A moon hangs over the stars, and a grey castle with lit
+windows stands along the bottom of the screen. Look closely at the wall:
+it leaves a gap for its door, and not only for looks. They have
+different colours, and a door drawn over wall would repaint the wall's
+pixels in its cells. It's the 4-colours-per-cell rule made visible, and
+it's why the room's walkways, ladders and poles all share one set of
+colours: they cross each other.
 
 ## Words in the bitmap
 
-The display is always the bitmap, so letters are drawn into it like
-everything else. The **character ROM** (card section 7) has 256 glyphs,
+The title needs a title. The display is always the bitmap, so letters
+are drawn into it like everything else. The **character ROM** (card section 7) has 256 glyphs,
 8 × 8, one bit per pixel. `m.charRom('A')` returns a `*const [8]u8`, a
 pointer to the letter's eight bytes.
 
 As in the 1984 game, **each glyph bit becomes one fat pixel** (1 to code
 01, 0 to 00), so each glyph row becomes two bitmap bytes and the letters
-come out broad and chunky. Four glyph bits make one bitmap byte, and four
+come out broad and chunky. Expanding bits one at a time would be 64
+shifts and tests a letter. But four glyph bits make one bitmap byte, and four
 bits have only 16 values. Another table:
 
 ```
@@ -1049,8 +1090,9 @@ colours as every other picture.
 
 How does a string end? JavaScript strings carry their length. The 1984
 game spends no bytes at all: printable characters are all below `$80`,
-so **the last letter has bit 7 set.** The castle file stores all its
-text this way.
+so **the last letter has bit 7 set.** A free bit, put to work, and the
+end of the string costs nothing. I love this one. The castle file stores
+all its text this way.
 
 **`src/text.zig`** (new file)
 
@@ -1171,7 +1213,8 @@ byte = byte << 2 | (n >> bit) & 1;
 In JavaScript, `&` binds tighter than `|`. In Zig, `&`, `^` and `|`
 share one precedence and run left to right, so this meant
 `(byte << 2 | (n >> bit)) & 1`, and every letter came out as a few stray
-dots. When you mix them, add the parentheses.
+dots. We stared at that for longer than we'd like to admit. When you mix
+them, add the parentheses.
 :::
 
 Build the widen table at boot, and put the words on the title:
@@ -1203,12 +1246,16 @@ const text = @import("text.zig");
 ```
 
 Build and reload. **There's your title screen!** The stars keep clear of
-the words because `star_map` steered round them from the start.
+the words because `star_map` steered round them from the start. Take a
+moment with it: the moon, the castle, every letter and every star went
+through code you wrote in this chapter.
 
 ## Into the Entrance Hall
 
-Fire should take us into the castle. For now the room is shapes placed by
-hand; the castle file takes over in Chapter 3.
+Press fire and the castle doors should open. For now the room is shapes
+placed by hand; the castle file takes over in Chapter 3. A walkway is a
+left end, some middle pieces and a right end; a ladder or a pole is one
+piece stacked every eight rows.
 
 **`src/room.zig`** (replace the whole file)
 
@@ -1338,9 +1385,11 @@ pub fn frame(m: *Machine) void {
 }
 ```
 
-Build, reload and press Space: a blink, then the Entrance Hall, all at
-once, with Chapter 1's explorer floating, flashing and never moving his
-legs. Let's fix that.
+Build, reload and press Space: a blink under a grey meter bar, then the
+Entrance Hall, all at once. And there's Chapter 1's explorer on its
+floor. He still floats up and down if you push the stick, still flashes
+through colours when you press fire, and never moves his legs. Let's fix
+all three.
 
 ## A walk cycle
 
@@ -1393,7 +1442,8 @@ compile time. Eight frames from four drawings.
 
 ### The flags byte
 
-A sprite frame's third byte, its **flags**, packs five values:
+A sprite frame's third byte, its **flags**, is the most tightly packed
+byte in the game so far. It holds five values:
 
 ```
   bit:   7      6      5        4        3   2   1   0
@@ -1456,9 +1506,11 @@ table, and only the one on screen needs a block.
 ### The Double Buffer Power-Up
 
 Here's the catch. Unpacking a frame is about 630 cycles of writes, and
-the VIDEO chip reads the block as the beam passes the explorer. Today
-the unpack is done long before that, but a room full of monsters will
-push it later. So each sprite gets **two blocks**:
+the VIDEO chip reads the block as the beam passes the explorer. Unpack
+into the block on screen while the beam is crossing him, and the top of
+him shows the old frame and the bottom the new. Today the unpack is done
+long before the beam gets there, but a room full of monsters will push
+it later and later. So each sprite gets **two blocks**:
 
 :::diagram ch02-double-buffer
 Unpack into the block the beam isn't reading, and flip the pointer, one byte, at the top of the next frame.
@@ -1593,11 +1645,13 @@ What's new:
 - **`show`** copies the sprite pointer too: that's the flip.
 - **`steer`** walks left or right only. The walk frame comes straight
   out of `x`: `(x >> 2) & 0b11` counts 0, 1, 2, 3 as `x` goes up by
-  four, so his feet keep pace with the floor, in either direction.
+  four, so his feet keep pace with the floor. Walking left they count
+  down, and a loop of steps looks like walking whichever way it plays.
 - **`setFrame`** is the double buffer: `^ 8` finds the hidden block,
   `unpack` fills it, and it becomes the shown one.
 
-The fire colour cycle is gone. Last, `main.zig`:
+The fire colour cycle is gone: in the castle, fire is for doorbells and
+gun panels. Last, `main.zig`:
 
 **`src/main.zig`** (at the end of `boot`, after the star map's `m.load`)
 
@@ -1611,11 +1665,15 @@ The fire colour cycle is gone. Last, `main.zig`:
             player.enter(m);
 ```
 
-Build and reload, press fire, and walk. **He walks!**
+Build and reload, press fire, and walk. **He walks!** Arms swinging, legs
+striding, turning to face whichever way you push. Take him up and down
+the hall a few times.
 
 :::power-up The Double Buffer Power-Up
 Never change what the hardware is showing. Build the next picture where
 it can't see, then switch to it with one small write at a safe moment.
+For a sprite that's a second 64-byte block and a pointer flip, and in
+exchange the frame can be unpacked as late as you like and never tears.
 :::
 
 :::widget toggle
@@ -1635,13 +1693,18 @@ and look at `frames/frame_00071.ppm`:
 ![Two close-ups of the explorer. Left: torn, his hips in a wide stride and his feet together below them. Right: the same frame with double buffering, whole.](images/02-tear.png)
 
 On the left, the unpack overtook the beam at his knees: above, the old
-frame; below, the new. That's the ghost in the bitmap, half of one frame
+frame; below, the new. His hips are mid-stride and his feet are standing
+still. That's the ghost in the bitmap, half of one frame
 haunting the next. Put the `^ 8` back and he's whole (right), even though
 the frame is just as busy. Then take the `m.work` out.
 :::
 
 :::inside-the-disk Two blocks per sprite
-The 1984 disk double-buffers every sprite with the same `^ 8`, and its
+The 1984 disk double-buffers every sprite our way: it unpacks into the
+other block of the pair, found with the same `^ 8`, and only then hands
+the flipped pointer to the frame interrupt. Its shape table
+holds about 155 shapes, close to 6 KB: room pieces, monsters, the
+explorer, and the scratch shape letters are built in. Its
 text goes one step further than ours: it stamps a mask over a letter's
 cells first, so words can sit over a picture without ORing into it.
 :::
@@ -1691,19 +1754,26 @@ imports.
 
 :::byte-budget Chapter 2
 **Memory.** The shape table is 1,044 bytes: a walkway piece is 12, and
-the room's floor is forty of that one piece. The row table is 400.
+the room's floor is forty of that one piece. The table holds it once.
+The 4 KB region lets the table nearly quadruple before `build` refuses
+it. The row table is 400.
 
 **Time.** The title draws in **156,200 cycles** and the room in
 **126,172**, more than half of each `clear`. A title frame costs
 **6,698**; a room frame **104**, or 732 when the walk changes frame. The
-room has room for monsters.
+meter has plenty to say now, and what it's saying is that the room has
+room for monsters.
 :::
 
 :::game-over Common mistakes
 - **A cell in the wrong colours.** Two shapes share a cell and the second
   one's colours win. Give crossing shapes the same colours, or keep them
   apart.
-- **No words at all.** `boot` never called `text.start`.
+- **Text that's a few stray dots.** The widen table is wrong, usually `&`
+  and `|` without parentheses. **No words at all:** `boot` never called
+  `text.start`.
+- **A red meter on the title.** Something in the per-frame path is doing
+  a multiply. The `bucket 1` line of the headless summary says how much.
 - **Words cut short.** A line holds 20 letters; the rest are left out.
 - **The room appears from the middle down.** The display came back on at
   the end of the long frame, not the top of the next.
@@ -1747,7 +1817,8 @@ python3 -m http.server -d web
 Open <http://localhost:8000>, press Space, and walk the hall with the
 arrow keys. The meter is a sliver of green.
 
-**You've drawn a castle.** Next chapter, the rooms stop being code and
+**You've drawn a castle.** Every room from here on is stamped by that
+blitter from that table. Next chapter, the rooms stop being code and
 become data.
 :::
 
@@ -1769,6 +1840,8 @@ rm -rf my-creep/.zig-cache my-creep/zig-out my-creep/web
 - **Redecorate.** Add a shape to `art.zig` and its name **at the end of**
   `Id`: a portrait, a cobweb. (Make it a room shape: `drawShape`
   has no colours to copy for a sprite frame.)
+- **Design your own room.** Rearrange `room.draw`: more walkways, a
+  longer ladder, a door on every floor.
 - **Blink PRESS FIRE.** Change its 20 screen-plane bytes every few frames:
   the words flash without redrawing a pixel.
 - **Twinkle for less.** Seven frames in eight, `twinkle` replots the
