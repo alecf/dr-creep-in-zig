@@ -526,3 +526,119 @@ Keep a running list of rooms and their room numbers in the Decision log.
   internals get a Secret Passage" is superseded: the shells are part of
   the provided machine (§2), and ch1 doesn't look inside them. Don't flag
   its absence.
+- **Chapter 2 file, title, images.** `site/chapters/02-ghosts-in-the-bitmap.md`,
+  `title: "Ghosts in the Bitmap"`. Screenshots: `02-title.png` and
+  `02-room.png` (full frames at 2×, 768×544) and `02-tear.png` (a zoomed
+  two-panel close-up of the explorer, torn vs. double-buffered, 656×256;
+  close-ups are fine when a full frame would hide the point).
+- **Game source layout (from ch02).** Adds `screen.zig` (row table,
+  `plot`/`codeAt`, `clear`, `drawShape`), `shapes.zig` (shape-table
+  format, `Id`, comptime packer, `address`), `art.zig` (all pictures, bulk
+  data), `text.zig` (widen table, `draw`, `say`, `terminated`),
+  `sprites.zig` (`unpack`, flag masks), `title.zig`. `main.zig` keeps only
+  imports, `Mode`, bucket ids, `boot`, `frame`, `mode`/`setMode` and
+  whole-game tests. Tests in imported files run automatically under `zig
+  build test` (no `test { _ = file; }` needed; verified on 0.16).
+- **Memory map at ch02.** player `$0200–$0205` (adds `player_block`
+  `$0204` = sprite block shown, 0 or 8; `player_frame` `$0205` = shape ID
+  in that block); game `$0206–$0207` (`game_mode` = `main.Mode`,
+  `game_tick` +1 per frame, wrapping); text `$0300–$035F`
+  (`text_widen` 16 B at `$0300`, `text_glyph` scratch shape 23 B at
+  `$0310`, `text_buffer` 48 B at `$0330`, `text_buffer_size`); program
+  image `$0800–$66FF` (last = `stars.first - 1`); star map `$6700–$67FF`;
+  shape table `$6800–$77FF` (4 KB region, 1,059 B used); row table
+  `$BB00–$BC8F` (200 × u16 LE); new hardware row: screen plane
+  `$CC00–$CFE7`.
+- **Modes and loading pauses.** `const Mode = enum(u8) { draw_title,
+  title, draw_room, room }` in `main.zig`; power-on 0 = `draw_title`.
+  Every whole-screen draw is a `draw_*` mode whose branch starts with
+  `m.poke(hw.control, 0)`, draws, re-enables, and sets the next mode (a
+  loading pause; ch1's "the meter will finally have something to say" is
+  paid off here). Title draw 156,428 cycles (8 slots), room 125,476 (7);
+  `clear` alone is 80,000.
+- **Meter buckets (stable).** 0 = everything else (frame glue, input),
+  1 = drawing into the bitmap/planes, 2 = sprites (player show/steer and
+  frame unpacking). Constants `bucket_drawing = 1`, `bucket_sprites = 2`
+  in `main.zig`. 3–7 are free for later chapters (suggest 3 = actors,
+  4 = room objects, 5 = sound).
+- **Shape table format.** At `$6800`: a directory of 2-byte little-endian
+  *absolute* Comet addresses, one per `shapes.Id` (enum order = shape
+  ID), computed at comptime; then entries `[width bytes][height rows][flags]
+  [width*height pixel bytes]`. Room shapes then carry `width*ceil(h/8)`
+  screen-plane bytes and `width*ceil(h/8)` colour-RAM bytes (the castle
+  Image layout); the `room()` builder fills every cell with one colour
+  triple, but the format is per cell. Sprite frames carry no colour data;
+  flags low nibble = sprite colour, bit 4 hires (clear = multicolour),
+  bit 5 behind, bit 6 double height, bit 7 double width (`sprites.flag_*`);
+  at most 3 bytes × 21 rows; `unpack` zero-pads. ID 0 `glyph` points at
+  `map.text_glyph` (RAM), not into the table. Art is `art.zig` strings
+  (`.`/`1`/`2`/`3` per fat pixel), each `pub const` named exactly like its
+  `Id` tag (`@field(art, @tagName(id))`); builders `shapes.room(colors,
+  rows)`, `shapes.frame(color, rows)`, `shapes.mirror(art)`. Bad widths,
+  stray characters and oversize sprite frames are compile errors. **Add
+  new shapes at the end of `Id`** so existing IDs (and the hex inspector)
+  stay stable. ch02 IDs: 0 glyph, 1 walkway, 2 walkway_left,
+  3 walkway_right, 4 ladder, 5 pole, 6 door, 7 window, 8 torch, 9 moon,
+  10 tower, 11 wall, 12–15 explorer_right_0–3, 16–19 explorer_left_0–3.
+- **Blitter.** `screen.drawShape(m, id, x, y)`: x = fat pixel 0–159,
+  rounded down to a multiple of 4 (x/4 = byte column), y = pixel row
+  0–199. Pixels are ORed (the room is cleared first, as in 1984); colour
+  cells are copied; a shape starting mid-cell spills one extra cell row
+  that repeats its last colour row (the 1984 behaviour); clipped at column
+  40 and row 200; no left clipping. Row lookups go through
+  `screen.rowAddress` (row table: 12 cycles; the chapter's naive
+  `mul8` version: 132). Cell number = `(rowAddress(y & 0xF8) - $E000) / 8`.
+  **Promise for ch3:** the castle's object X is fat pixel + 16; ch3 adds
+  the conversion (and off-left handling for X < 16) when it reads the
+  castle (the ch2 Secret Passage says "We'll add a small conversion when
+  we read the castle; the blitter itself keeps the plain 0–159 fat
+  pixel"). Room shapes share colour triples when they cross (`stone`:
+  brown / pink / light grey).
+- **Text.** `text.draw(m, x, y, color, addr)` prints a bit-7-terminated
+  string from RAM: each glyph bit → one fat pixel of code 01 (two bytes
+  per glyph row via the 16-entry widen table), colour = screen-plane high
+  nibble, colour RAM 0, drawn by writing the `glyph` scratch shape and
+  calling `drawShape`; 8 fat pixels per letter. `text.say(m, x, y, color,
+  comptime words)` copies `terminated(words)` into `text_buffer` and
+  draws it. No AND mask (letters OR onto what's there) and no font/size
+  byte yet: **ch3** must decide how the castle Text object's font byte is
+  handled. ch2 told readers "Chapter 3 points `draw` straight at text
+  inside the castle file".
+- **Sprites.** Player = sprite 0, multicolour (`$D01C` bit 0 at boot);
+  shared colours set once at boot: `$D025` pink (skin), `$D026` orange
+  (hat/belt/boots) — every later multicolour sprite shares them. Double
+  buffer: sprite *n* should use blocks *n* and *n*+8, flipped with `^ 8`;
+  unpack into the hidden block, then store it in the player's block byte;
+  `show` copies it to `$CFF8+n` at the top of the frame. Explorer frames:
+  8 fat px × 21 rows, coat = own colour white (flags), four right-facing
+  drawings plus `mirror` for left. Walk frame = `(x >> 2) & 0b11`; standing
+  = frame 0 of the facing direction (derived from `player_frame`).
+  Unpack ≈ 630 cycles; room frame 100 cycles idle, 728 on a frame change.
+- **Player API at ch02.** `start` (boot: multicolour, shared colours,
+  `player_last_stick = $FF`, `player_block = 8`), `enter` (room drawn:
+  x 160, y on floor, first frame, enable), `show`, `steer` (left/right
+  only; up/down and the fire colour cycle removed), `pressedFire` (edge
+  detector, now `pub`, used by the title), private `held` (still the only
+  place active-low is spelled out). `room.floor_top` = 184. The X wall at
+  255 remains (ch4 promise unchanged).
+- **Ladder bookkeeping (ch02).** Taught: shifts/masks (plot, packing two
+  colours in a screen byte, the flags byte), pointers (row table, shape
+  directory, string walking; Zig `*T` = typed address), lookup tables vs
+  `mul8` (title stars: 6,672 vs 22,020 cycles/frame, the latter overruns).
+  Used in passing with forward pointers: `^` (flip bit 3; "Chapter 8 has a
+  lot more to say about `^`"), `+%` wrapping add (ch4 covers overflow),
+  a comptime LCG for star positions ("Chapter 8 has the proper story of
+  making numbers look random"), `comptime` blocks, `@field`/`@tagName`
+  (ch3 teaches comptime properly; it can refer back to `shapes.zig`).
+- **Zig 0.16 gotchas found in ch02.** `&`, `^` and `|` share one
+  precedence level (left to right), unlike C/JS: always parenthesise mixed
+  bitwise expressions (the chapter has a Pro Tip). A `comptime { ... return
+  x; }` block inside a function that may be called at runtime is an error
+  ("function called at runtime cannot return value at comptime"); put the
+  checks in the comptime block and return outside it. Shifting
+  `@intFromEnum(Color.x)` (a `u4`) by 4 fails ("type 'u2' cannot
+  represent integer value '4'"): widen with `@as(u8, ...)` first.
+- **Bulk-data listings.** Excerpts of `art.zig` are fenced ```zig snippet
+  (the reader copies the whole file from the Warp Zone, `code/chNN/src/art.zig`);
+  `shapes.zig` (the converter) and at least one complete shape of each kind
+  (walkway, `explorer_right_0`) are shown.

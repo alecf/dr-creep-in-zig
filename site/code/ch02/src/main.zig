@@ -78,12 +78,6 @@ fn setMode(m: *Machine, new: Mode) void {
     m.poke(map.game_mode, @intFromEnum(new));
 }
 
-test {
-    _ = screen;
-    _ = shapes;
-    _ = text;
-}
-
 test "fire on the title screen opens the room, and the explorer walks" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);

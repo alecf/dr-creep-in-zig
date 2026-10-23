@@ -270,6 +270,7 @@ pub const wall = room(.{ .dark_grey, .grey, .yellow }, &.{
 /// The explorer's coat is the sprite's own colour (code 10). Code 01 is
 /// skin and code 11 is his hat, belt and boots: the two shared colours.
 pub const explorer_right_0 = frame(.white, &.{
+    "........",
     "...33...",
     "..3333..",
     ".333333.",
@@ -293,6 +294,7 @@ pub const explorer_right_0 = frame(.white, &.{
 });
 
 pub const explorer_right_1 = frame(.white, &.{
+    "........",
     "...33...",
     "..3333..",
     ".333333.",
@@ -316,6 +318,7 @@ pub const explorer_right_1 = frame(.white, &.{
 });
 
 pub const explorer_right_2 = frame(.white, &.{
+    "........",
     "...33...",
     "..3333..",
     ".333333.",
@@ -339,6 +342,7 @@ pub const explorer_right_2 = frame(.white, &.{
 });
 
 pub const explorer_right_3 = frame(.white, &.{
+    "........",
     "...33...",
     "..3333..",
     ".333333.",
