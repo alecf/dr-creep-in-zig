@@ -13,6 +13,9 @@ const text = @import("text.zig");
 const title = @import("title.zig");
 const room = @import("room.zig");
 const player = @import("player.zig");
+const castle = @import("castle.zig");
+const author = @import("author.zig");
+const training = @import("training.zig");
 
 /// What the game is doing. Power-on memory is 0, so it starts by drawing
 /// the title screen.
@@ -29,6 +32,7 @@ pub fn boot(m: *Machine) void {
     text.start(m);
     m.load(map.shape_table.first, shapes.table);
     m.load(map.stars.first, &title.star_map);
+    m.load(map.castle.first, training.bytes);
     player.start(m);
 }
 
@@ -45,7 +49,10 @@ pub fn frame(m: *Machine) void {
             m.bucket(bucket_drawing);
             title.twinkle(m);
             m.bucket(0);
-            if (player.pressedFire(m)) setMode(m, .draw_room);
+            if (player.pressedFire(m)) {
+                room.start(m);
+                setMode(m, .draw_room);
+            }
         },
         .draw_room => {
             m.poke(hw.control, 0);
@@ -64,6 +71,8 @@ pub fn frame(m: *Machine) void {
 
             // Then the game itself. What it decides shows up next frame.
             player.steer(m);
+            m.bucket(0);
+            if (room.flip(m)) setMode(m, .draw_room);
         },
     }
     m.bucket(0);
@@ -101,4 +110,71 @@ test "fire on the title screen opens the room, and the explorer walks" {
     try std.testing.expectEqual(x + 4, m.ram[map.player_x]);
     try std.testing.expect(m.ram[map.player_block] != block);
     try std.testing.expectEqual(@intFromEnum(shapes.Id.explorer_right_1), m.ram[map.player_frame]);
+}
+
+test "N and P flip through the castle's rooms, with a loading pause" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    m.boot(@This());
+    _ = m.runFrame(@This()); // draws the title
+    m.input = .{ .joy1 = machine.joy.fire };
+    _ = m.runFrame(@This());
+    m.input = .{};
+    _ = m.runFrame(@This()); // draws room 0
+    try std.testing.expectEqual(0, m.ram[map.room_number]);
+
+    m.input = .{ .key = 'N' };
+    _ = m.runFrame(@This()); // the key
+    m.input = .{};
+    try std.testing.expectEqual(0, m.ram[hw.key]); // acknowledged
+    _ = m.runFrame(@This()); // draws room 1
+    try std.testing.expectEqual(machine.FrameKind.loading, m.last.kind);
+    try std.testing.expectEqual(1, m.ram[map.room_number]);
+
+    // P twice: back to room 0, then round to the final room.
+    for (0..2) |_| {
+        m.input = .{ .key = 'P' };
+        _ = m.runFrame(@This());
+        m.input = .{};
+        _ = m.runFrame(@This());
+    }
+    try std.testing.expectEqual(@typeInfo(training.Room).@"enum".fields.len, m.ram[map.room_number]);
+}
+
+test "the Training Castle reads back: every room walks to its end tag" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    m.* = .{};
+    m.load(map.castle.first, training.bytes);
+    try std.testing.expectEqual(castle.magic_value, m.ram[castle.magic]);
+    try std.testing.expectEqual(training.bytes.len, m.peek16(castle.size));
+    try std.testing.expectEqual(std.enums.values(training.Room).len, castle.roomCount(m));
+
+    // The streams sit end to end after the directory, the final room last.
+    var at: u16 = castle.directory + std.enums.values(training.Room).len * @sizeOf(castle.Entry) + 1;
+    inline for (comptime std.enums.values(training.Room), 0..) |name, n| {
+        try std.testing.expectEqual(at, m.peek16(castle.entry(m, n) + @offsetOf(castle.Entry, "objects")));
+        at = try walkRoom(m, at, @field(training.plan.rooms, @tagName(name)));
+    }
+    try std.testing.expectEqual(at, m.peek16(castle.final_room));
+    at = try walkRoom(m, at, training.plan.final.?);
+    try std.testing.expectEqual(castle.header + training.bytes.len, at);
+
+    // And a door says where it goes: the gatehouse's leads to the gallery.
+    const first = m.view(castle.Door, m.peek16(castle.entry(m, 0) + @offsetOf(castle.Entry, "objects")) + 3);
+    try std.testing.expectEqual(@intFromEnum(training.Room.gallery), first.to_room);
+}
+
+/// Walk one room's stream, check it holds what the plan says, and return
+/// the address just past its end tag.
+fn walkRoom(m: *Machine, at: u16, plan: author.Room(training.Room)) !u16 {
+    var found = std.enums.EnumArray(castle.Kind, usize).initFill(0);
+    var walk = castle.Walker{ .at = at };
+    while (walk.next(m)) |r| found.getPtr(r.kind).* += 1;
+    inline for (comptime std.enums.values(castle.Kind)) |kind| {
+        const list = @field(plan, @tagName(kind));
+        const planned = if (kind == .teleport) @intFromBool(list != null) else list.len;
+        try std.testing.expectEqual(planned, found.get(kind));
+    }
+    return walk.at;
 }

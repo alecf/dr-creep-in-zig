@@ -8,6 +8,8 @@ const shapes = @import("shapes.zig");
 const text = @import("text.zig");
 const map = @import("map.zig");
 
+// ---- what you write -------------------------------------------------------
+
 /// Where a room sits on the castle map: x and y like an object's, and
 /// its size in map cells of 4 fat pixels by 8 rows.
 pub const Map = struct { x: u8 = 0, y: u8 = 0, width: u3 = 0, height: u3 = 0 };
@@ -21,16 +23,15 @@ pub fn Door(comptime Name: type) type {
         to: Name,
         to_door: u8 = 0,
         open: bool = false,
-        exit: bool = false, // the way out: it leads nowhere
+        exit: bool = false, // the way out of the castle: it needs no partner
     };
 }
 
-/// A doorbell, and which of the room's doors it opens (0 is the first).
-pub const Bell = castle.Bell;
-/// A walkway, ladder or pole: `length` pieces from (x, y).
+/// Walkways, ladders, poles and doorbells are written as their records.
 pub const Run = castle.Run;
+pub const Bell = castle.Bell;
 
-/// A line of text. `height` is 1, 2 or 3 times the usual 8 rows.
+/// A line of text, 1 to 3 times the usual 8 rows tall.
 pub const Line = struct { x: u8, y: u8, color: Color = .white, height: u2 = 1, words: []const u8 };
 
 pub const Spot = struct { x: u8, y: u8 };
@@ -39,7 +40,7 @@ pub const Teleport = struct { x: u8, y: u8, target: u8 = 0, pads: []const Spot }
 /// A picture stored in the castle, and everywhere it's drawn.
 pub const Image = struct { art: shapes.Art, at: []const Spot };
 
-/// Everything one room holds. Each field is named after its `castle.Kind`.
+/// Everything one room holds. Each list is named after its `castle.Kind`.
 pub fn Room(comptime Name: type) type {
     return struct {
         color: Color = .black,
@@ -65,8 +66,8 @@ pub fn Room(comptime Name: type) type {
     };
 }
 
-/// A whole castle: one field in `rooms` for every tag of `Name`, in
-/// `Name`'s order, and an optional final room that isn't on the map.
+/// A whole castle: a field in `rooms` for every name in `Name`, in the
+/// enum's order, and a final room that isn't on the map.
 pub fn Castle(comptime Name: type) type {
     return struct {
         start: struct { room: Name, door: u8 = 0 },
@@ -76,32 +77,30 @@ pub fn Castle(comptime Name: type) type {
     };
 }
 
+// ---- what you get ---------------------------------------------------------
+
 /// The castle file: header, room directory, then every room's objects.
 pub fn build(comptime Name: type, comptime c: Castle(Name)) []const u8 {
     comptime {
         @setEvalBranchQuota(2_000_000);
         const names = std.enums.values(Name);
-        if (names.len == 0 or names.len > castle.max_rooms)
-            fail("a castle has 1 to {d} rooms, not {d}", .{ castle.max_rooms, names.len });
+        if (names.len > castle.max_rooms)
+            fail("a castle has at most {d} rooms, not {d}", .{ castle.max_rooms, names.len });
+        const start = @field(c.rooms, @tagName(c.start.room));
+        if (c.start.door >= start.door.len)
+            fail("the start room, {s}, has no door {d}", .{ @tagName(c.start.room), c.start.door });
 
-        // Each room's object stream, checked as it's built.
-        var streams: [names.len][]const u8 = undefined;
-        for (names, 0..) |name, n| {
+        // The streams go after the directory and its end byte, one after
+        // another, so each room's address is the sum of the ones before.
+        var at: u16 = castle.directory + names.len * @sizeOf(castle.Entry) + 1;
+        var directory: []const u8 = &.{};
+        var streams: []const u8 = &.{};
+        for (names) |name| {
             const room = @field(c.rooms, @tagName(name));
             if (room.map.width == 0 or room.map.height == 0)
                 fail("room {s}: give it a place and a size on the castle map", .{@tagName(name)});
             if (room.color == .black)
-                fail("room {s}: a black room has invisible walkways", .{@tagName(name)});
-            streams[n] = stream(Name, c, room, @tagName(name));
-        }
-        const final = if (c.final) |room| stream(Name, c, room, "final") else "";
-
-        // Then lay them out: the directory and its end byte, then the
-        // streams one after another.
-        var at: u16 = castle.directory + names.len * @sizeOf(castle.Entry) + 1;
-        var directory: []const u8 = &.{};
-        for (names, 0..) |name, n| {
-            const room = @field(c.rooms, @tagName(name));
+                fail("room {s}: a black room has black walkways", .{@tagName(name)});
             const entry = castle.Entry{
                 .color = @intFromEnum(room.color),
                 .map_x = room.map.x,
@@ -111,138 +110,131 @@ pub fn build(comptime Name: type, comptime c: Castle(Name)) []const u8 {
                 .objects = le(at),
             };
             directory = directory ++ std.mem.asBytes(&entry);
-            at += streams[n].len;
+            const objects = stream(Name, c, room, @tagName(name));
+            streams = streams ++ objects;
+            at += objects.len;
         }
         directory = directory ++ [_]u8{if (c.final == null) castle.end_plain else castle.end_with_final};
-        const final_at: u16 = if (c.final == null) 0 else at;
-        const total = castle.header_size + directory.len + streams_len(&streams) + final.len;
+        const final_at = if (c.final == null) 0 else at;
+        if (c.final) |room| streams = streams ++ stream(Name, c, room, "final");
 
-        const start = @intFromEnum(c.start.room);
-        if (c.start.door >= @field(c.rooms, @tagName(c.start.room)).door.len)
-            fail("the start room {s} has no door {d}", .{ @tagName(c.start.room), c.start.door });
+        const total = castle.header_size + directory.len + streams.len;
         if (total > map.castle.last - map.castle.first + 1)
-            fail("the castle is {d} bytes; its region holds {d}", .{ total, map.castle.last - map.castle.first + 1 });
+            fail("the castle is {d} bytes, and its region holds {d}", .{ total, map.castle.last - map.castle.first + 1 });
 
         var head = [_]u8{0} ** castle.header_size;
         head[0..2].* = le(total);
         head[2] = castle.magic_value;
-        head[3..9].* = .{ start, start, c.start.door, c.start.door, c.lives, c.lives };
+        const first = @intFromEnum(c.start.room);
+        head[3..9].* = .{ first, first, c.start.door, c.start.door, c.lives, c.lives };
         head[0x5F..0x61].* = le(final_at);
 
-        var all: []const u8 = &head;
-        all = all ++ directory;
-        for (streams) |s| all = all ++ s;
-        all = all ++ final;
-        const done = all[0..all.len].*;
-        return &done;
+        const all = head ++ directory[0..directory.len].* ++ streams[0..streams.len].*;
+        return &all;
     }
 }
 
-fn streams_len(streams: []const []const u8) usize {
-    var n: usize = 0;
-    for (streams) |s| n += s.len;
-    return n;
-}
-
-/// One room's object stream, in tag order, which is also a good order
-/// to draw in: doors and floors first, text and pictures last.
+/// One room's object stream: each kind's group in tag order (doors and
+/// floors first, text and pictures last, a good order to draw in), then
+/// the end tag.
 fn stream(comptime Name: type, comptime c: Castle(Name), comptime room: Room(Name), comptime name: []const u8) []const u8 {
     var out: []const u8 = &.{};
     var boxes: []const Box = &.{};
-    for (std.enums.values(castle.Kind)) |kind| {
+    inline for (comptime std.enums.values(castle.Kind)) |kind| {
         const list = @field(room, @tagName(kind));
         const tag = le(castle.code(kind));
         switch (kind) {
-            .door => if (list.len > 0) {
+            // Counted: the tag, how many, then the records.
+            .door, .bell => if (list.len > 0) {
                 out = out ++ tag ++ [_]u8{list.len};
-                for (list, 0..) |d, i| {
-                    const where = std.fmt.comptimePrint("room {s}: door {d}", .{ name, i });
-                    spot(where, d.x, d.y, 20, 32);
-                    if (d.y % 8 != 0) fail("{s} has y {d}; doors sit on cell rows (a multiple of 8)", .{ where, d.y });
-                    boxes = boxes ++ [_]Box{.{ .what = where, .x = d.x, .y = d.y, .w = 20, .h = 32 }};
-                    out = out ++ std.mem.asBytes(&door(Name, c, room, name, d, i));
+                for (list, 0..) |thing, i| {
+                    const what = std.fmt.comptimePrint("{s} {d}", .{ @tagName(kind), i });
+                    const w, const h = if (kind == .door) .{ 20, 32 } else .{ 8, 16 };
+                    onScreen(name, what, thing.x, thing.y, w, h);
+                    boxes = boxes ++ [_]Box{.{ .what = what, .x = thing.x, .y = thing.y, .w = w, .h = h }};
+                    const record = if (kind == .door) door(Name, c, room, name, thing, i) else bell(room, name, thing, i);
+                    out = out ++ std.mem.asBytes(&record);
                 }
             },
-            .bell => if (list.len > 0) {
-                out = out ++ tag ++ [_]u8{list.len};
-                for (list, 0..) |b, i| {
-                    const where = std.fmt.comptimePrint("room {s}: bell {d}", .{ name, i });
-                    spot(where, b.x, b.y, 8, 16);
-                    if (b.door >= room.door.len) fail("{s} rings door {d}, and the room has {d}", .{ where, b.door, room.door.len });
-                    boxes = boxes ++ [_]Box{.{ .what = where, .x = b.x, .y = b.y, .w = 8, .h = 16 }};
-                    out = out ++ std.mem.asBytes(&b);
-                }
-            },
+            // Runs of pieces, ended by a length of 0.
             .walkway, .pole, .ladder => if (list.len > 0) {
                 out = out ++ tag;
                 for (list, 0..) |r, i| {
-                    const where = std.fmt.comptimePrint("room {s}: {s} {d}", .{ name, @tagName(kind), i });
-                    if (r.length == 0) fail("{s} has length 0, which is the end marker", .{where});
+                    const what = std.fmt.comptimePrint("{s} {d}", .{ @tagName(kind), i });
+                    if (r.length == 0) fail("room {s}: {s} has length 0, which is the end marker", .{ name, what });
                     if (kind == .walkway) {
-                        spot(where, r.x, r.y, 4 * @as(u16, r.length), 7);
+                        onScreen(name, what, r.x, r.y, 4 * @as(u16, r.length), 7);
                     } else {
-                        spot(where, r.x, r.y, 4, 8 * @as(u16, r.length));
                         const bottom = r.y + 8 * (r.length - 1);
+                        onScreen(name, what, r.x, r.y, if (kind == .ladder) 8 else 4, bottom + 8 - r.y);
                         if (!onWalkway(room, r.x, r.y) or !onWalkway(room, r.x, bottom))
-                            fail("{s} must start and end on a walkway (rows {d} and {d})", .{ where, r.y, bottom });
+                            fail("room {s}: {s} must start and end on a walkway (rows {d} and {d})", .{ name, what, r.y, bottom });
                     }
                     out = out ++ std.mem.asBytes(&r);
                 }
                 out = out ++ [_]u8{0};
             },
+            // Lines of text, each ending on a letter with bit 7 set; a 0 ends them all.
             .text => if (list.len > 0) {
                 out = out ++ tag;
                 for (list, 0..) |line, i| {
-                    const where = std.fmt.comptimePrint("room {s}: text {d} (\"{s}\")", .{ name, i, line.words });
-                    if (line.height == 0) fail("{s} has height 0", .{where});
-                    spot(where, line.x, line.y, 8 * @as(u16, line.words.len), 8 * @as(u16, line.height));
-                    boxes = boxes ++ [_]Box{.{ .what = where, .x = line.x, .y = line.y, .w = 8 * line.words.len, .h = 8 * @as(u16, line.height) }};
+                    const what = std.fmt.comptimePrint("text {d} (\"{s}\")", .{ i, line.words });
+                    if (line.height == 0) fail("room {s}: {s} has height 0", .{ name, what });
+                    const w, const h = .{ 8 * line.words.len, 8 * @as(u16, line.height) };
+                    onScreen(name, what, line.x, line.y, w, h);
+                    boxes = boxes ++ [_]Box{.{ .what = what, .x = line.x, .y = line.y, .w = w, .h = h }};
                     const record = castle.Text{ .x = line.x, .y = line.y, .color = @intFromEnum(line.color), .style = text.style_letters | line.height };
                     out = out ++ std.mem.asBytes(&record) ++ &text.terminated(line.words);
                 }
                 out = out ++ [_]u8{0};
             },
+            // One booth, then its pads up to a 0.
             .teleport => if (list) |t| {
                 out = out ++ tag ++ [_]u8{ t.x, t.y, t.target };
                 for (t.pads) |p| out = out ++ [_]u8{ p.x, p.y };
                 out = out ++ [_]u8{0};
             },
+            // A tag for every picture: the shape, then where it goes, up to a 0.
             .image => for (list, 0..) |picture, i| {
                 const bytes = shapes.pack(std.fmt.comptimePrint("{s} image {d}", .{ name, i }), picture.art);
                 out = out ++ tag ++ bytes;
                 for (picture.at) |p| {
-                    const where = std.fmt.comptimePrint("room {s}: image {d} at ({d}, {d})", .{ name, i, p.x, p.y });
-                    spot(where, p.x, p.y, 4 * @as(u16, bytes[0]), bytes[1]);
-                    boxes = boxes ++ [_]Box{.{ .what = where, .x = p.x, .y = p.y, .w = 4 * @as(u16, bytes[0]), .h = bytes[1] }};
+                    const what = std.fmt.comptimePrint("image {d} at ({d}, {d})", .{ i, p.x, p.y });
+                    const w, const h = .{ 4 * @as(u16, bytes[0]), bytes[1] };
+                    onScreen(name, what, p.x, p.y, w, h);
+                    boxes = boxes ++ [_]Box{.{ .what = what, .x = p.x, .y = p.y, .w = w, .h = h }};
                     out = out ++ [_]u8{ p.x, p.y };
                 }
                 out = out ++ [_]u8{0};
             },
-            // The machines and monsters: their records go in as written.
+            // The machines and monsters: records as written, then the end marker.
             else => if (list.len > 0) {
-                const f = castle.framing(kind).marked;
+                const end = castle.framing(kind).marked.end;
                 out = out ++ tag;
-                for (list, 0..) |r| {
+                for (list) |r| {
                     const bytes = std.mem.asBytes(&r);
-                    if (castle.isEnd(bytes[0], f.end))
-                        fail("room {s}: a {s} whose first byte is {d} reads as the end marker", .{ name, @tagName(kind), bytes[0] });
+                    if (castle.isEnd(bytes[0], end))
+                        fail("room {s}: a {s} starting with {d} would read as the end marker", .{ name, @tagName(kind), bytes[0] });
                     out = out ++ bytes;
                 }
-                out = out ++ [_]u8{if (f.end == 0) 0 else f.end};
+                out = out ++ [_]u8{end};
             },
         }
     }
     for (boxes, 0..) |a, i| {
         for (boxes[i + 1 ..]) |b| {
             if (a.x < b.x + b.w and b.x < a.x + a.w and a.y < b.y + b.h and b.y < a.y + a.h)
-                fail("{s} overlaps {s}", .{ a.what, b.what });
+                fail("room {s}: {s} overlaps {s}", .{ name, a.what, b.what });
         }
     }
     return out ++ le(castle.end_code);
 }
 
-/// The 8 bytes of door `i`: where it leads, and where it is on the map.
+/// Door `i`'s 8 bytes: check that it leads somewhere that leads back, and
+/// work out where it shows on the castle map, on the wall facing the
+/// room it leads to.
 fn door(comptime Name: type, comptime c: Castle(Name), comptime room: Room(Name), comptime name: []const u8, comptime d: Door(Name), comptime i: usize) castle.Door {
+    if (d.y % 8 != 0) fail("room {s}: door {d} has y {d}; doors sit on cell rows (multiples of 8)", .{ name, i, d.y });
     const there = @field(c.rooms, @tagName(d.to));
     if (!d.exit) {
         if (d.to_door >= there.door.len)
@@ -251,49 +243,55 @@ fn door(comptime Name: type, comptime c: Castle(Name), comptime room: Room(Name)
         if (!std.mem.eql(u8, @tagName(back.to), name) or back.to_door != i)
             fail("room {s}: door {d} leads to {s} door {d}, which doesn't lead back", .{ name, i, @tagName(d.to), d.to_door });
     }
-    // Which wall of the room it's in, on the map: towards the room it leads to.
     const here = room.map;
-    const side: u8 = if (there.map.x >= here.x + 4 * @as(u16, here.width)) 1 // right
+    const width = 4 * @as(u16, here.width);
+    const height = 8 * @as(u16, here.height);
+    const side: u8 = if (there.map.x >= here.x + width) 1 // right
         else if (there.map.x + 4 * @as(u16, there.map.width) <= here.x) 3 // left
         else if (there.map.y + 8 * @as(u16, there.map.height) <= here.y) 0 // up
-        else if (there.map.y >= here.y + 8 * @as(u16, here.height)) 2 // down
-        else if (d.x < 96) 3 else 1; // the exit leads out of its own room
-    const cols = 4 * @as(u16, here.width);
-    const rows = 8 * @as(u16, here.height);
+        else if (there.map.y >= here.y + height) 2 // down
+        else if (d.x < 96) 3 else 1; // the way out: whichever wall it's nearer
     return .{
         .x = d.x,
         .y = d.y,
-        .side = side | (if (d.open) castle.door_open else 0),
+        .side = side | if (d.open) castle.door_open else 0,
         .to_room = @intFromEnum(d.to),
         .to_door = d.to_door,
-        .map_x = if (side == 0 or side == 2) @min(cols - 4, (d.x - 16) * cols / 160) else 0,
-        .map_y = if (side == 1 or side == 3) @min(rows - 3, (@as(u16, d.y) + 16) * rows / 200) else 0,
+        .map_x = if (side % 2 == 0) @min(width - 4, (d.x - 16) * width / 160) else 0,
+        .map_y = if (side % 2 == 1) @min(height - 3, (d.y + 16) * height / 200) else 0,
         .exit = @intFromBool(d.exit),
     };
 }
 
-/// A rectangle something covers on screen, for the overlap check.
-const Box = struct { what: []const u8, x: u16, y: u16, w: u16, h: u16 };
-
-/// Check that something w fat pixels by h rows at (x, y) is on screen
-/// and sits on whole bytes.
-fn spot(comptime where: []const u8, x: u16, y: u16, w: u16, h: u16) void {
-    if (x < 16 or x + w > 16 + 160) fail("{s} runs off the screen (x {d} to {d}; the screen is 16 to 175)", .{ where, x, x + w - 1 });
-    if (x % 4 != 0) fail("{s} has x {d}, which isn't on a byte; use a multiple of 4", .{ where, x });
-    if (y + h > 200) fail("{s} runs off the bottom of the screen (rows {d} to {d})", .{ where, y, y + h - 1 });
+/// A doorbell's 3 bytes, once we know its door exists.
+fn bell(comptime room: anytype, comptime name: []const u8, comptime b: Bell, comptime i: usize) Bell {
+    if (b.door >= room.door.len) fail("room {s}: bell {d} rings door {d}, and the room has {d}", .{ name, i, b.door, room.door.len });
+    return b;
 }
 
-/// Is there a walkway along row `y` under fat pixel `x`?
-fn onWalkway(comptime room: anytype, x: u16, y: u16) bool {
+/// A rectangle something covers on the screen, for the overlap check.
+const Box = struct { what: []const u8, x: u16, y: u16, w: u16, h: u16 };
+
+/// Something `w` fat pixels by `h` rows at (x, y) must be on the screen
+/// and start on a whole byte.
+fn onScreen(comptime name: []const u8, comptime what: []const u8, comptime x: u16, comptime y: u16, comptime w: u16, comptime h: u16) void {
+    if (x < 16 or x + w > 16 + 160)
+        fail("room {s}: {s} runs off the screen (x {d} to {d}; the screen is 16 to 175)", .{ name, what, x, x + w - 1 });
+    if (x % 4 != 0) fail("room {s}: {s} has x {d}, which isn't on a byte; use a multiple of 4", .{ name, what, x });
+    if (y + h > 200) fail("room {s}: {s} runs off the bottom (rows {d} to {d})", .{ name, what, y, y + h - 1 });
+}
+
+/// Is there a walkway along row `y`, under `x`?
+fn onWalkway(comptime room: anytype, comptime x: u16, comptime y: u16) bool {
     for (room.walkway) |w| {
         if (w.y == y and x >= w.x and x < w.x + 4 * @as(u16, w.length)) return true;
     }
     return false;
 }
 
-/// A two-byte value, low byte first.
+/// A two-byte value as the Comet stores it: low byte first.
 fn le(value: u16) [2]u8 {
-    return .{ value & 0xFF, value >> 8 };
+    return .{ @truncate(value), @truncate(value >> 8) };
 }
 
 fn fail(comptime format: []const u8, args: anytype) noreturn {

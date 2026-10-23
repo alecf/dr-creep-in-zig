@@ -17,8 +17,8 @@ const map = @import("map.zig");
 const art = @import("art.zig");
 
 /// Every shape, by ID. Each name except `glyph` and `image` has a picture
-/// of the same name in art.zig. New shapes go at the end: the walk counts on the
-/// explorer's frames being in a row, and IDs will be stored in castles.
+/// of the same name in art.zig. New shapes go at the end: the walk counts
+/// on the explorer's frames being in a row, and IDs are stored in castles.
 pub const Id = enum(u8) {
     glyph, // built by text.zig, one letter at a time
     walkway,
