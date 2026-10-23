@@ -1,0 +1,7 @@
+.{
+    .name = .machine,
+    .version = "1.0.0",
+    .fingerprint = 0x1505df8438af298e,
+    .minimum_zig_version = "0.16.0",
+    .paths = .{ "build.zig", "build.zig.zon", "src", "web", "REFERENCE.md" },
+}

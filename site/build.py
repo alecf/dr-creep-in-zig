@@ -25,7 +25,8 @@ from pygments.lexers import get_lexer_by_name
 from pygments.util import ClassNotFound
 
 SITE = Path(__file__).resolve().parent
-OUT = SITE / "_build"
+import os
+OUT = Path(os.environ["SITE_OUT"]) if os.environ.get("SITE_OUT") else SITE / "_build"
 CODE = SITE / "code"
 REPO_TREE = "https://github.com/alecf/dr-creep-in-zig/tree/claude/zig-game-tutorial-outline-inc3pd/site/code/"
 REPO_BLOB = "https://github.com/alecf/dr-creep-in-zig/blob/claude/zig-game-tutorial-outline-inc3pd/site/code/"
