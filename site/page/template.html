@@ -138,6 +138,11 @@ main { padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-lef
 .box-bonus-stage { --hue: var(--c-green); }
 .box-inside-the-disk { --hue: var(--c-brown); }
 .box-type-in { --hue: var(--c-grey); }
+.box-side-quest { --hue: var(--c-cyan); }
+.box-side-quest > summary { cursor: pointer; list-style: none; }
+.box-side-quest > summary::-webkit-details-marker { display: none; }
+.box-side-quest > summary::after { content: "Open side quest"; margin-left: auto; font: .75rem/1 var(--mono); color: var(--ink-soft); }
+.box-side-quest[open] > summary::after { content: "Close"; }
 .box-type-in > summary { cursor: pointer; list-style: none; }
 .box-type-in > summary::-webkit-details-marker { display: none; }
 .box-type-in > summary::after { content: "Show listing"; margin-left: auto; font: .75rem/1 var(--mono); color: var(--ink-soft); }

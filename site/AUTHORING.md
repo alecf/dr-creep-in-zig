@@ -274,7 +274,7 @@ Box types: `mission-briefing` (opens every chapter), `power-up`,
 `byte-budget`, `pro-tip`, `under-the-hood`, `secret-passage`,
 `game-over` (common mistakes), `warp-zone` (link to `code/chNN`),
 `boss-battle` (ends every chapter: build, run, what you should see),
-`bonus-stage` (optional builds), `inside-the-disk` (lore), `type-in`
+`bonus-stage` (optional builds), `side-quest` (collapsed by default: a self-contained detour whose code is still part of the checkpoint, so the reader types it in from the box, but the main text doesn't stop to teach it), `inside-the-disk` (lore), `type-in`
 (a "Type-In Listing": long bulk code the reader still types, rendered
 collapsed with a "show listing" button; every line stays in the chapter,
 in typing order, so the exhaustiveness rule holds).

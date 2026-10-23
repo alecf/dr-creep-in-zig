@@ -44,6 +44,7 @@ BOXES = {
     "bonus-stage": "Bonus Stage",
     "inside-the-disk": "Inside the Disk",
     "type-in": "Type-In Listing",
+    "side-quest": "Side Quest",
     "widget": "Try it",
 }
 
@@ -135,9 +136,9 @@ def render(md, view, chapter_files):
     def box(kind, title, inner):
         label = BOXES.get(kind, kind.replace("-", " ").title())
         body = to_html(inner)
-        if kind == "type-in":
+        if kind in ("type-in", "side-quest"):
             return stash(
-                f'<details class="box box-type-in"><summary><span class="box-label">{label}</span>'
+                f'<details class="box box-{kind}"><summary><span class="box-label">{label}</span>'
                 f'<span class="box-title">{html.escape(title)}</span></summary><div class="box-body">{body}</div></details>'
             )
         if kind == "widget":
