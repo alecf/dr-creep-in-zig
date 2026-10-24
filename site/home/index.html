@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Castles of Dr. Creep in Zig</title>
+<meta name="description" content="Decompiling the 1984 Commodore 64 game The Castles of Dr. Creep into Zig, plus a tutorial that builds the game from scratch.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="theme.css">
+<style>
+.page { max-width: 58rem; margin: 0 auto; padding: 28px 16px 80px; display: flex; flex-direction: column; gap: 40px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.hero { display: flex; flex-direction: column; gap: 14px; padding-bottom: 28px; border-bottom: 4px solid var(--accent); }
+.hero .brand-top { font-size: .9rem; }
+.hero h1 { margin: 0; font: 400 clamp(2.6rem, 9vw, 5rem)/.98 var(--display); color: var(--accent); }
+.hero h1 small { display: block; font-size: .42em; color: var(--ink-soft); letter-spacing: .06em; margin-top: 10px; }
+.lede { margin: 0; font-size: 1.2rem; max-width: 40em; text-wrap: pretty; }
+.doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 20px; }
+.door { display: flex; flex-direction: column; gap: 12px; text-decoration: none; color: var(--ink); background: var(--sheet); border-radius: 14px; padding: 22px; box-shadow: 0 0 0 1px var(--rule); transition: box-shadow .15s, transform .15s; }
+.door:hover { box-shadow: 0 0 0 2px var(--accent); transform: translateY(-2px); }
+.door img { width: 100%; aspect-ratio: 384 / 272; object-fit: cover; image-rendering: pixelated; border-radius: 8px; background: #352879; }
+.door h2 { margin: 0; font: 400 1.5rem/1.1 var(--display); color: var(--accent); }
+.door p { margin: 0; color: var(--ink-soft); }
+.door .go { margin-top: auto; font: 400 .85rem/1 var(--display); letter-spacing: .06em; color: var(--accent); }
+section h2 { font: 400 1.55rem/1.15 var(--display); margin: 0 0 12px; }
+section p, section li { max-width: 68ch; }
+section ol, section ul { padding-left: 1.4em; }
+section li + li { margin-top: .5em; }
+code { font: .86em/1.4 var(--mono); background: var(--code-bg); padding: .08em .3em; border-radius: 4px; color: var(--code-ink); }
+footer { font: .8rem/1.6 var(--mono); color: var(--ink-soft); border-top: 1px solid var(--rule); padding-top: 18px; }
+</style>
+<body>
+<div class="page">
+  <div class="top">
+    <nav class="site-nav" aria-label="Site"><a href="./" aria-current="page">Home</a><a href="tutorial/">Tutorial</a><a href="game/">Play Dr. Creep</a></nav>
+    <nav class="site-nav"><a href="https://github.com/alecf/dr-creep-in-zig">Source on GitHub</a></nav>
+  </div>
+
+  <header class="hero">
+    <span class="brand-top">The Castles of</span>
+    <h1>Dr. Creep <small>taken apart and rebuilt in Zig</small></h1>
+    <p class="lede">An art project in software archaeology. We took the original 1984 Commodore 64 disk of <em>The Castles of Dr. Creep</em> (Ed Hobbs, Broderbund), pulled it apart byte by byte, and are rebuilding it in Zig: from disk image, to 6502 assembly, to annotated assembly, to code that runs natively and in your browser.</p>
+  </header>
+
+  <div class="doors">
+    <a class="door" href="tutorial/">
+      <img src="tutorial/images/05-doorway.png" alt="A castle room drawn by the tutorial's game: a doorway and a doorbell" loading="lazy">
+      <h2>Read the tutorial</h2>
+      <p>Build your own Dr. Creep from an empty file, in Zig, for the Comet 64: an imaginary 1984 home computer with 64 KB of memory, 8 sprites and a 50 Hz screen. Every chapter ends with the game, as it stands, running right on the page.</p>
+      <span class="go">Start with the prologue →</span>
+    </a>
+    <a class="door" href="game/">
+      <img src="tutorial/images/02-title.png" alt="A title screen in the style of The Castles of Dr. Creep" loading="lazy">
+      <h2>Play Dr. Creep</h2>
+      <p>The original game, unmodified, running on this project's from-scratch C64 emulation core compiled to WebAssembly. The game data is copyrighted, so you bring your own disk image; it never leaves your browser.</p>
+      <span class="go">Power on →</span>
+    </a>
+  </div>
+
+  <section>
+    <h2>How it works</h2>
+    <ol>
+      <li><strong>Extract.</strong> A 1541 filesystem parser reads the 31 files off the disk: the 28 KB engine, a boot loader, a title bitmap, nine music files, and the level data and save files for each castle.</li>
+      <li><strong>Disassemble.</strong> A recursive-descent tracer proves which bytes are code instead of guessing. Routines are named by cross-referencing Robert Crossfield's <a href="https://github.com/segrax/DrCreep">2010 C++ reverse-engineering</a> of the same binary.</li>
+      <li><strong>Run, then lift.</strong> A C64 machine model in Zig (6502, VIC-II, SID, CIAs) runs the original engine. A <em>lift table</em> lets native Zig functions take over 6502 routines one at a time, each one testable against the original, until the whole engine is Zig.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Learned from the binary</h2>
+    <ul>
+      <li>The engine is a <strong>bytecode machine</strong>: castles are data files interpreted by per-object handlers for doors, keys, forcefields, mummies, matter transmitters, trapdoors, conveyors, Frankensteins, lightning machines and ray guns.</li>
+      <li>The game runs with <strong>every ROM banked out</strong> and drives sprites, input and music from its own raster interrupt.</li>
+      <li>The options menu opens on <strong>RUN/STOP</strong>, found the hard way when emulated joystick input kept "pressing" it forever.</li>
+      <li>The castle menu's order is simply the <strong>disk directory order</strong>.</li>
+    </ul>
+  </section>
+
+  <footer>The Castles of Dr. Creep © 1984 Broderbund Software, by Ed Hobbs. This site distributes no original game data.</footer>
+</div>
+</body>
+</html>

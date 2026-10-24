@@ -27,9 +27,12 @@ from pygments.util import ClassNotFound
 SITE = Path(__file__).resolve().parent
 import os
 OUT = Path(os.environ["SITE_OUT"]) if os.environ.get("SITE_OUT") else SITE / "_build"
+# Where "Home" points: the project homepage one level up when deployed by
+# site/build-pages.sh (the tutorial lives at <site>/tutorial/).
+HOME = os.environ.get("SITE_HOME", "../")
 CODE = SITE / "code"
-REPO_TREE = "https://github.com/alecf/dr-creep-in-zig/tree/claude/zig-game-tutorial-outline-inc3pd/site/code/"
-REPO_BLOB = "https://github.com/alecf/dr-creep-in-zig/blob/claude/zig-game-tutorial-outline-inc3pd/site/code/"
+REPO_TREE = "https://github.com/alecf/dr-creep-in-zig/tree/main/site/code/"
+REPO_BLOB = "https://github.com/alecf/dr-creep-in-zig/blob/main/site/code/"
 
 BOXES = {
     "mission-briefing": "Mission Briefing",
@@ -284,10 +287,15 @@ def main():
     page = (
         template.replace("{{NAV}}", "\n".join(nav))
         .replace("{{VIEWS}}", "\n".join(sections))
+        .replace("{{THEME_CSS}}", (SITE / "page" / "theme.css").read_text())
+        .replace("{{HOME}}", HOME)
         .replace("{{PYGMENTS}}", "")
         .replace("{{DIAGRAM_CSS}}", (SITE / "page" / "diagrams.css").read_text())
     )
-    (OUT / "index.html").write_text(page)
+    # the template is a body fragment; give the standalone page a real
+    # document head so browsers render in standards mode
+    head = '<!doctype html>\n<html lang="en">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+    (OUT / "index.html").write_text(head + page)
     size = sum(p.stat().st_size for p in OUT.rglob("*") if p.is_file())
     print(f"built {OUT} ({size / 1024:.0f} KB, {len(views)} chapters)")
 
