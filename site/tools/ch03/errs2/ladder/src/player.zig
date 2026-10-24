@@ -11,9 +11,9 @@ const room = @import("room.zig");
 const shapes = @import("shapes.zig");
 const sprites = @import("sprites.zig");
 
-/// The player is sprite 0. It shows block 0 or block 8, whichever one
-/// isn't being rewritten.
-const sprite = 0;
+/// Which of the VIDEO chip's eight sprite slots (0-7) is the player's.
+/// He shows block 0 or block 8, whichever one isn't being rewritten.
+const player_sprite = 0;
 
 /// How far the sprite may go. X stops at 255 because that's the most a
 /// byte can hold; the right-hand strip of the screen needs a ninth bit.
@@ -48,10 +48,10 @@ pub fn enter(m: *Machine) void {
 
 /// Copy the player's position, colour and frame into the VIDEO chip.
 pub fn show(m: *Machine) void {
-    m.poke(hw.spriteX(sprite), m.peek(map.player_x));
-    m.poke(hw.spriteY(sprite), m.peek(map.player_y));
-    m.poke(hw.spriteColor(sprite), m.peek(map.player_color));
-    m.poke(hw.sprite_pointers + sprite, m.peek(map.player_block));
+    m.poke(hw.spriteX(player_sprite), m.peek(map.player_x));
+    m.poke(hw.spriteY(player_sprite), m.peek(map.player_y));
+    m.poke(hw.spriteColor(player_sprite), m.peek(map.player_color));
+    m.poke(hw.sprite_pointers + player_sprite, m.peek(map.player_block));
 }
 
 /// Walk left or right along the floor, a pixel a frame, stepping through

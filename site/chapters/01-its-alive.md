@@ -365,9 +365,8 @@ address.
 Why so strict? A Zig `var` lives at an address the compiler picks, and
 you never see it. On a 64 KB machine that's dangerous: if a byte isn't
 listed in the memory map, sooner or later you'll put something else in
-the same byte, and the two will quietly overwrite each other. There's no
-"somewhere else" on this machine: there's the 64 KB, and you decide what
-goes where. The rule has a bonus, too. With
+the same byte, and the two will quietly overwrite each other. The rule
+has a bonus, too. With
 all the state in `m.ram`, the widgets can show it live, tests can check
 it, and you never wonder where something is: it's wherever the map says.
 
@@ -497,11 +496,19 @@ Now for the star of the show.
 
 You know sprites from the player's side: figures that glide over the
 background without smudging it, and flicker when too many crowd onto one
-line. The VIDEO chip draws up to **eight**. You don't draw them into the
-bitmap: you hand the chip a picture and a position, and it draws them
-every frame, for free. Change the position, and next frame the sprite is
-somewhere else. No wonder every game of the era used them for whatever
-moved.
+line. You don't draw them into the bitmap: you hand the VIDEO chip a
+picture and a position, and it draws them every frame, for free. Change
+the position, and next frame the sprite is somewhere else. No wonder
+every game of the era used them for whatever moved.
+
+Here's the catch, and it's a big one: **the VIDEO chip has exactly eight
+sprites**, for the whole machine. Think of them as eight **slots**,
+numbered 0 to 7, each a fixed set of registers: X, Y, colour, one bit of
+the "on" byte at `$D015`, and a **sprite pointer** that picks its
+picture. Anything that moves on the screen has to be in one of them, and
+our explorer takes slot 0. That limit shapes the whole game: everything
+in the castle that moves shares those eight, and later chapters budget
+them as carefully as time.
 
 A sprite's picture (card section 5) is **24 × 21 pixels**. In a **hires**
 sprite each pixel is **one bit**: 1 is the sprite's colour, 0 is
@@ -510,6 +517,16 @@ switch**. Three bytes a row, 21 rows: **63 bytes**. And here's a lovely
 consequence: because each bit is a pixel, we can write the picture so
 you can *see* it. Zig has binary literals (`0b00111100` is `$3C`), so if
 we write three of them per line, one line per row, the 1s draw him.
+
+The picture doesn't go in the slot. It goes in **sprite memory**
+(`$C000`–`$C7FF`), cut into 64-byte **blocks**: 63 bytes rounded up, 32 blocks numbered 0 to 31.
+A slot's sprite pointer, at `$CFF8` plus the slot number, holds the
+*number* of the block to show. Change that one byte and the slot shows a
+different picture: that's how sprites animate.
+
+:::diagram ch01-sprite-slots
+The VIDEO chip's eight sprite slots. Slot 0 is the player's, and its pointer at `$CFF8` holds 0, so it shows block 0.
+:::
 
 **`src/player.zig`** (new file)
 
@@ -551,9 +568,12 @@ const picture = [63]u8{
     0b00000000, 0b11100111, 0b00000000,
 };
 
-/// The player is sprite 0, showing sprite block 0.
-const sprite = 0;
-const block = 0;
+/// Which of the VIDEO chip's eight sprite slots (0-7) is the player's.
+const player_sprite = 0;
+
+/// Which sprite block (0-31) holds his picture. Block 0 is the 64 bytes
+/// at $C000.
+const player_block = 0;
 
 /// How far the sprite may go. X stops at 255 because that's the most a
 /// byte can hold; the right-hand strip of the screen needs a ninth bit.
@@ -563,8 +583,8 @@ const min_y = video.sprite_origin_y;
 const max_y = video.sprite_origin_y + room.floor_top - 21; // boots on the floor
 
 pub fn start(m: *Machine) void {
-    m.load(hw.sprite_data + block * 64, &picture);
-    m.poke(hw.sprite_pointers + sprite, block);
+    m.load(hw.sprite_data + player_block * 64, &picture);
+    m.poke(hw.sprite_pointers + player_sprite, player_block);
     m.poke(hw.sprite_enable, 0b0000_0001); // bit 0 on: sprite 0 is shown
 
     m.poke(map.player_x, 160);
@@ -580,15 +600,13 @@ Squint at `picture` and you can see him: a brimmed hat, two eyes (the 0s in row 
 
 `start` sets everything up once, at power-on:
 
-- **`m.load`** copies a `const` table into sprite block 0 at `$C000`.
-  `&picture` passes the table's address rather than a copy: in front of
-  a name, `&` means "address of". (Between two values it means bitwise
-  AND, which we'll need for the joystick.) Blocks are 64 bytes, 63 plus a spare,
-  so block *N* starts at `$C000 + N × 64`.
-- **The sprite pointer** at `$CFF8` says which block sprite 0 shows.
-  Swapping that byte is how sprites animate.
-- **`$D015` turns sprites on**, one bit per sprite. `0b0000_0001` sets
-  bit 0: sprite 0 on, the rest off. Eight sprites, eight bits, one byte:
+- **`m.load`** copies `picture` into block 0 (block *N* starts at
+  `$C000 + N × 64`), and the next line puts that block's number in slot
+  0's pointer. `&picture` passes the table's address rather than a copy:
+  in front of a name, `&` means "address of". (Between two values it
+  means bitwise AND, which we'll need for the joystick.)
+- **`$D015` switches slots on**, one bit per slot. `0b0000_0001` sets
+  bit 0: slot 0 on, the rest off. Eight slots, eight bits, one byte:
   many of the VIDEO chip's registers work this way. (Zig ignores `_` inside a number;
   it's there so you can read the bits.)
 - Then the player's four bytes, including `player_last_stick`, which
@@ -621,7 +639,7 @@ pub fn boot(m: *Machine) void {
 
 Build and reload. The floor's there. The explorer isn't.
 
-That's not a bug in the picture. `start` never told the VIDEO chip *where* to draw sprite 0, or in what
+That's not a bug in the picture. `start` never told the VIDEO chip *where* to draw slot 0, or in what
 colour. Its position registers at `$D000` and `$D001` are still 0, off in
 the border where sprites don't show (and his colour is 0: black on
 black). His position is in *our* memory, at `$0200`. Something has to
@@ -633,36 +651,37 @@ The copying happens every frame, and there's one rule about *when* it
 happens. The reason is one of my favourite things about these machines:
 the picture on the screen isn't a photo. It's painted while you watch.
 
-It's drawn by a beam sweeping down the tube a line at a time,
-and the VIDEO chip draws each line from memory **as it is when the beam
-passes**. Your `frame` starts with the beam up in the top border, and
-the more work your code does, the further down it gets. It takes a
-little while to cross the top border before it reaches the display, so
-your code gets a head start: anything it writes in that time is in place
-before the beam draws it.
+A beam sweeps down the tube one line at a time, 312 lines from top to
+bottom, fifty times a second, and the VIDEO chip draws each line from
+memory **as it is when the beam passes**. Your `frame` starts with the
+beam at the very top, and the more work your code does, the further down
+the beam gets:
 
-So: **write hardware registers at the start of `frame`.** Write a
-sprite's registers while the beam is halfway down it, and the top half
-is drawn the old way and the bottom half the new. That's a **tear**: the
-figure you've seen split in two for a frame as it moves, like a magic
-trick gone wrong. The habit that prevents it fits in four words:
-hardware first, then think. Write the registers first, then do the
-game's thinking.
+:::diagram ch01-beam
+Slowed right down: the real beam makes each trip in a fiftieth of a second. Pause it anywhere to look.
+:::
+
+So: **write hardware registers at the start of `frame`.** Anything
+written before the beam reaches the display is in place for the whole
+picture. Write late and you get the second lap: a **tear**, the figure
+you've seen split in two for a frame, like a magic trick gone wrong. The
+habit that prevents it fits in four words: hardware first, then think.
+Write the registers, then do the game's thinking.
 
 **`src/player.zig`** (add below `start`)
 
 ```zig
 /// Copy the player's position and colour into the VIDEO chip.
 pub fn show(m: *Machine) void {
-    m.poke(hw.spriteX(sprite), m.peek(map.player_x));
-    m.poke(hw.spriteY(sprite), m.peek(map.player_y));
-    m.poke(hw.spriteColor(sprite), m.peek(map.player_color));
+    m.poke(hw.spriteX(player_sprite), m.peek(map.player_x));
+    m.poke(hw.spriteY(player_sprite), m.peek(map.player_y));
+    m.poke(hw.spriteColor(player_sprite), m.peek(map.player_color));
 }
 ```
 
-`hw.spriteX(n)` and friends give sprite *n*'s register addresses. Three
-peeks and three pokes are done long before the beam gets anywhere near
-him.
+`hw.spriteX(n)` and friends give slot *n*'s register addresses, so
+`hw.spriteX(player_sprite)` is `$D000`. Three peeks and three pokes are
+done long before the beam gets anywhere near him.
 
 **`src/main.zig`** (replace `frame`)
 
@@ -869,27 +888,23 @@ Build and reload. Tap Space: white, red, cyan, purple, one colour per
 tap, however long you hold it. The disco is closed.
 
 :::secret-passage Make it tear
-Now that he moves and changes colour, you can break him on purpose.
-In `frame`, put `m.work(6000);` before
-`player.show(m);`. That tells the meter the game did a big pile of work
-first, so the registers get written late, with the beam well down the
-screen. The tear lasts only the frame his colour changes, so let the
-headless runner catch it:
+Now that he changes colour, you can make the beam's second lap happen
+for real. In `frame`, put `m.work(6000);` before `player.show(m);`. The
+meter now thinks the game did a big job first, so the colour gets written
+with the beam well down the screen. The tear lasts only the frame his
+colour changes, so let the headless runner catch it:
 
 ```
 zig build run -- --frames 152 --press 0:u:134 --press 150:f:5
 ```
 
-That walks him up near the top of the display, where the late beam
-reaches him partway down his body, then presses fire on frame 150. `show` writes the new colour on frame 151, after the beam has
-drawn the top of him, so `frames/frame_00151.ppm` looks like this:
+That walks him up near the top of the display and presses fire on frame
+150. On frame 151, `show` writes the new colour after the beam has drawn
+his hat and face, and `frames/frame_00151.ppm` shows it:
 
 ![The explorer torn across the middle: a white hat and face, and a red body below them](images/01-tear.png)
 
-His hat and face are still white; the rest of him is already red. In a
-game where sprites move every frame and the logic runs long, tears like
-this happen all the time, and the screen shimmers. Move the `m.work(6000);` below `player.show(m);` and
-frame 151 is clean, with exactly the same work. Take the line out when you're done; the
+Move the `m.work(6000);` below `player.show(m);` and frame 151 is clean, with exactly the same work. Take the line out when you're done; the
 checkpoint doesn't have it.
 :::
 
@@ -1099,6 +1114,6 @@ copy.
 - **Cross the wall.** Bit 0 of `$D010` (`hw.sprite_x_msb`) is the ninth
   bit of sprite 0's X. You'll need a little more state in the memory map.
 - **Player 2.** Joystick 2 is at `$DC00` (`hw.joy2`), I J K L and Return
-  in the browser. Sprite 1 is waiting for its own bytes, and the overlap
+  in the browser. Slot 1 is waiting for its own bytes, and the overlap
   check will tell you if they land on player 1's.
 :::

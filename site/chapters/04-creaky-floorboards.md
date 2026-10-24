@@ -245,9 +245,9 @@ pub fn enter(m: *Machine) void {
 ```zig
 /// Copy the player's position, colour and frame into the VIDEO chip.
 pub fn show(m: *Machine) void {
-    sprites.place(m, sprite, m.peek(map.player_x), m.peek(map.player_y));
-    m.poke(hw.spriteColor(sprite), m.peek(map.player_color));
-    m.poke(hw.sprite_pointers + sprite, m.peek(map.player_block));
+    sprites.place(m, player_sprite, m.peek(map.player_x), m.peek(map.player_y));
+    m.poke(hw.spriteColor(player_sprite), m.peek(map.player_color));
+    m.poke(hw.sprite_pointers + player_sprite, m.peek(map.player_block));
 }
 ```
 

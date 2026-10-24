@@ -1,0 +1,99 @@
+<style>
+.ch01-beam { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: flex-start; }
+.ch01-beam .ch01-beam-tube { flex: 1 1 340px; max-width: 480px; }
+.ch01-beam-off { fill: var(--code-bg); }
+.ch01-beam-veil { fill: var(--sheet); opacity: .5; }
+.ch01-beam-ray { stroke: var(--c7); stroke-width: 2; }
+.ch01-beam-glow { stroke: var(--c7); stroke-width: 7; opacity: .35; }
+.ch01-beam-write { stroke: var(--c13); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.ch01-beam-busy { fill: var(--c13); }
+.ch01-beam-pill rect { fill: var(--sheet); stroke: var(--c13); stroke-width: 1; }
+.ch01-beam-pill text { fill: var(--ink); }
+.ch01-beam-sweep { animation: ch01-beam-down 6s linear infinite; }
+.ch01-beam-back { animation: ch01-beam-up 6s linear infinite; }
+@keyframes ch01-beam-down { from { transform: translateY(0); } to { transform: translateY(312px); } }
+@keyframes ch01-beam-zdown { 0%, 28.205% { transform: translateY(0); } 34.936%, 100% { transform: translateY(84px); } }
+@keyframes ch01-beam-zup { 0%, 28.205% { transform: translateY(0); } 34.936%, 100% { transform: translateY(-84px); } }
+.ch01-beam-zsweep { animation: ch01-beam-zdown 6s linear infinite; }
+.ch01-beam-zback { animation: ch01-beam-zup 6s linear infinite; }
+@keyframes ch01-beam-up { from { transform: translateY(0); } to { transform: translateY(-312px); } }
+.ch01-beam-lap1 { animation: ch01-beam-one 12s linear infinite; }
+.ch01-beam-lap2 { animation: ch01-beam-two 12s linear infinite; }
+@keyframes ch01-beam-one { 0%, 49.9% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes ch01-beam-two { 0%, 49.9% { opacity: 0; } 50%, 100% { opacity: 1; } }
+.ch01-beam-notes { flex: 1 1 220px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ch01-beam-lap { padding: 8px 10px; border-radius: 6px; box-shadow: inset 0 0 0 1.5px var(--rule); }
+.ch01-beam-lap b { display: block; font: 400 .66rem/1.3 var(--display); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 3px; }
+.ch01-beam-lap p { margin: 0; font: .78rem/1.45 var(--body); color: var(--ink-soft); }
+.ch01-beam-notes .ch01-beam-lap1, .ch01-beam-notes .ch01-beam-lap2 { animation-name: ch01-beam-card1; }
+.ch01-beam-notes .ch01-beam-lap2 { animation-name: ch01-beam-card2; }
+@keyframes ch01-beam-card1 { 0%, 49.9% { opacity: 1; box-shadow: inset 0 0 0 2px var(--c13); } 50%, 100% { opacity: .45; box-shadow: inset 0 0 0 1.5px var(--rule); } }
+@keyframes ch01-beam-card2 { 0%, 49.9% { opacity: .45; box-shadow: inset 0 0 0 1.5px var(--rule); } 50%, 100% { opacity: 1; box-shadow: inset 0 0 0 2px var(--c13); } }
+.ch01-beam-key { display: flex; flex-direction: column; gap: 4px; font: .74rem/1.4 var(--body); color: var(--ink-soft); }
+.ch01-beam-key span { display: flex; gap: 8px; align-items: center; }
+.ch01-beam-key i { flex: none; width: 18px; height: 10px; border-radius: 2px; }
+</style>
+<div class="ch01-beam">
+<svg class="ch01-beam-tube" viewBox="0 -8 384 338" width="384" role="img" aria-labelledby="ch01-beam-t">
+<title id="ch01-beam-t">The picture drawn by a beam sweeping 312 raster lines from top to bottom: off the tube, the top border, the display from line 51, the bottom border. In the first lap frame() writes the explorer's new colour at line 0 and he is drawn red all over; in the second it writes at line 95, while the beam is partway down him, so his top rows are drawn white and the rest red.</title>
+<defs><clipPath id="ch01-beam-clip"><rect x="0" y="2" width="384" height="312"/></clipPath>
+<clipPath id="ch01-beam-zclip"><rect x="240" y="148" width="104" height="88"/></clipPath></defs>
+<g class="ch01-beam-lap1"><rect class="ch01-beam-off" x="0" y="2" width="384" height="15"/>
+<rect class="ch01-beam-off" x="0" y="289" width="384" height="25"/>
+<rect style="fill:var(--c6)" x="0" y="17" width="384" height="272"/>
+<rect style="fill:var(--c0)" x="32" y="53" width="320" height="200"/>
+<rect style="fill:var(--c12)" x="32" y="245" width="320" height="8"/>
+<path style="fill:var(--c2)" d="M178 91h4v1h-4zM177 92h6v1h-6zM175 93h10v1h-10zM177 94h6v1h-6zM177 95h1v1h-1zM179 95h2v1h-2zM182 95h1v1h-1zM177 96h6v1h-6zM178 97h4v1h-4zM179 98h2v1h-2zM175 99h10v1h-10zM174 100h2v1h-2zM177 100h6v1h-6zM184 100h2v1h-2zM174 101h2v1h-2zM177 101h6v1h-6zM184 101h2v1h-2zM174 102h2v1h-2zM177 102h6v1h-6zM184 102h2v1h-2zM177 103h6v1h-6zM177 104h6v1h-6zM177 105h2v1h-2zM181 105h2v1h-2zM177 106h2v1h-2zM181 106h2v1h-2zM177 107h2v1h-2zM181 107h2v1h-2zM177 108h2v1h-2zM181 108h2v1h-2zM177 109h2v1h-2zM181 109h2v1h-2zM176 110h3v1h-3zM181 110h3v1h-3z"/><rect style="fill:var(--c0);stroke:var(--c15)" x="240" y="144" width="104" height="92"/><path style="fill:var(--c2)" d="M284 152h16v4h-16zM280 156h24v4h-24zM272 160h40v4h-40zM280 164h24v4h-24zM280 168h4v4h-4zM288 168h8v4h-8zM300 168h4v4h-4zM280 172h24v4h-24zM284 176h16v4h-16zM288 180h8v4h-8zM272 184h40v4h-40zM268 188h8v4h-8zM280 188h24v4h-24zM308 188h8v4h-8zM268 192h8v4h-8zM280 192h24v4h-24zM308 192h8v4h-8zM268 196h8v4h-8zM280 196h24v4h-24zM308 196h8v4h-8zM280 200h24v4h-24zM280 204h24v4h-24zM280 208h8v4h-8zM296 208h8v4h-8zM280 212h8v4h-8zM296 212h8v4h-8zM280 216h8v4h-8zM296 216h8v4h-8zM280 220h8v4h-8zM296 220h8v4h-8zM280 224h8v4h-8zM296 224h8v4h-8zM276 228h12v4h-12zM296 228h12v4h-12z"/></g>
+<g class="ch01-beam-lap2"><rect class="ch01-beam-off" x="0" y="2" width="384" height="15"/>
+<rect class="ch01-beam-off" x="0" y="289" width="384" height="25"/>
+<rect style="fill:var(--c6)" x="0" y="17" width="384" height="272"/>
+<rect style="fill:var(--c0)" x="32" y="53" width="320" height="200"/>
+<rect style="fill:var(--c12)" x="32" y="245" width="320" height="8"/>
+<path style="fill:var(--c1)" d="M178 91h4v1h-4zM177 92h6v1h-6zM175 93h10v1h-10zM177 94h6v1h-6zM177 95h1v1h-1zM179 95h2v1h-2zM182 95h1v1h-1zM177 96h6v1h-6z"/><path style="fill:var(--c2)" d="M178 97h4v1h-4zM179 98h2v1h-2zM175 99h10v1h-10zM174 100h2v1h-2zM177 100h6v1h-6zM184 100h2v1h-2zM174 101h2v1h-2zM177 101h6v1h-6zM184 101h2v1h-2zM174 102h2v1h-2zM177 102h6v1h-6zM184 102h2v1h-2zM177 103h6v1h-6zM177 104h6v1h-6zM177 105h2v1h-2zM181 105h2v1h-2zM177 106h2v1h-2zM181 106h2v1h-2zM177 107h2v1h-2zM181 107h2v1h-2zM177 108h2v1h-2zM181 108h2v1h-2zM177 109h2v1h-2zM181 109h2v1h-2zM176 110h3v1h-3zM181 110h3v1h-3z"/><rect style="fill:var(--c0);stroke:var(--c15)" x="240" y="144" width="104" height="92"/><path style="fill:var(--c1)" d="M284 152h16v4h-16zM280 156h24v4h-24zM272 160h40v4h-40zM280 164h24v4h-24zM280 168h4v4h-4zM288 168h8v4h-8zM300 168h4v4h-4zM280 172h24v4h-24z"/><path style="fill:var(--c2)" d="M284 176h16v4h-16zM288 180h8v4h-8zM272 184h40v4h-40zM268 188h8v4h-8zM280 188h24v4h-24zM308 188h8v4h-8zM268 192h8v4h-8zM280 192h24v4h-24zM308 192h8v4h-8zM268 196h8v4h-8zM280 196h24v4h-24zM308 196h8v4h-8zM280 200h24v4h-24zM280 204h24v4h-24zM280 208h8v4h-8zM296 208h8v4h-8zM280 212h8v4h-8zM296 212h8v4h-8zM280 216h8v4h-8zM296 216h8v4h-8zM280 220h8v4h-8zM296 220h8v4h-8zM280 224h8v4h-8zM296 224h8v4h-8zM276 228h12v4h-12zM296 228h12v4h-12z"/></g>
+<g class="ch01-beam-sweep" clip-path="url(#ch01-beam-clip)"><g class="ch01-beam-back">
+<rect class="ch01-beam-off" x="0" y="2" width="384" height="15"/>
+<rect class="ch01-beam-off" x="0" y="289" width="384" height="25"/>
+<rect style="fill:var(--c6)" x="0" y="17" width="384" height="272"/>
+<rect style="fill:var(--c0)" x="32" y="53" width="320" height="200"/>
+<rect style="fill:var(--c12)" x="32" y="245" width="320" height="8"/>
+<path style="fill:var(--c1)" d="M178 91h4v1h-4zM177 92h6v1h-6zM175 93h10v1h-10zM177 94h6v1h-6zM177 95h1v1h-1zM179 95h2v1h-2zM182 95h1v1h-1zM177 96h6v1h-6zM178 97h4v1h-4zM179 98h2v1h-2zM175 99h10v1h-10zM174 100h2v1h-2zM177 100h6v1h-6zM184 100h2v1h-2zM174 101h2v1h-2zM177 101h6v1h-6zM184 101h2v1h-2zM174 102h2v1h-2zM177 102h6v1h-6zM184 102h2v1h-2zM177 103h6v1h-6zM177 104h6v1h-6zM177 105h2v1h-2zM181 105h2v1h-2zM177 106h2v1h-2zM181 106h2v1h-2zM177 107h2v1h-2zM181 107h2v1h-2zM177 108h2v1h-2zM181 108h2v1h-2zM177 109h2v1h-2zM181 109h2v1h-2zM176 110h3v1h-3zM181 110h3v1h-3z"/>
+<rect class="ch01-beam-veil" x="0" y="2" width="384" height="312"/>
+</g></g>
+<g class="ch01-beam-zsweep" clip-path="url(#ch01-beam-zclip)"><g class="ch01-beam-zback">
+<rect style="fill:var(--c0);stroke:var(--c15)" x="240" y="144" width="104" height="92"/><path style="fill:var(--c1)" d="M284 152h16v4h-16zM280 156h24v4h-24zM272 160h40v4h-40zM280 164h24v4h-24zM280 168h4v4h-4zM288 168h8v4h-8zM300 168h4v4h-4zM280 172h24v4h-24zM284 176h16v4h-16zM288 180h8v4h-8zM272 184h40v4h-40zM268 188h8v4h-8zM280 188h24v4h-24zM308 188h8v4h-8zM268 192h8v4h-8zM280 192h24v4h-24zM308 192h8v4h-8zM268 196h8v4h-8zM280 196h24v4h-24zM308 196h8v4h-8zM280 200h24v4h-24zM280 204h24v4h-24zM280 208h8v4h-8zM296 208h8v4h-8zM280 212h8v4h-8zM296 212h8v4h-8zM280 216h8v4h-8zM296 216h8v4h-8zM280 220h8v4h-8zM296 220h8v4h-8zM280 224h8v4h-8zM296 224h8v4h-8zM276 228h12v4h-12zM296 228h12v4h-12z"/>
+<rect class="ch01-beam-veil" x="240" y="144" width="104" height="92"/>
+</g></g>
+<line style="stroke:var(--c15)" x1="192" y1="100" x2="240" y2="144" stroke-dasharray="2 2"/>
+<text style="fill:var(--c15)" x="240" y="185" font-size="11">close-up, 4×</text>
+<g class="ch01-beam-lap1">
+<rect class="ch01-beam-busy" x="372" y="2" width="5" height="2"/>
+<line class="ch01-beam-write" x1="0" y1="3" x2="384" y2="3"/>
+<g class="ch01-beam-pill "><rect x="126" y="2" width="254" height="14" rx="3"/><text x="131" y="13" font-size="11">frame() starts, show() writes: line 0</text></g>
+</g>
+<g class="ch01-beam-lap2">
+<rect class="ch01-beam-busy" x="372" y="2" width="5" height="96"/>
+<line class="ch01-beam-write" x1="32" y1="97" x2="352" y2="97"/>
+<line class="ch01-beam-write" x1="240" y1="176" x2="344" y2="176"/>
+<g class="ch01-beam-pill "><rect x="218" y="2" width="155" height="14" rx="3"/><text x="223" y="13" font-size="11">frame() starts: line 0</text></g>
+<g class="ch01-beam-pill "><rect x="186" y="28" width="162" height="14" rx="3"/><text x="191" y="39" font-size="11">frame() busy: a big job</text></g>
+<g class="ch01-beam-pill "><rect x="200" y="90" width="155" height="14" rx="3"/><text x="205" y="101" font-size="11">show() writes: line 95</text></g>
+</g>
+<text class="soft" x="6" y="13" font-size="11">off the tube</text>
+<text style="fill:var(--c1)" x="6" y="39" font-size="11">top border</text>
+<text style="fill:var(--c15)" x="40" y="68" font-size="11">display: line 51 is row 0</text>
+<text style="fill:var(--c1)" x="6" y="275" font-size="11">bottom border</text>
+<text class="soft" x="6" y="305" font-size="11">off the tube</text>
+<g class="ch01-beam-sweep"><line class="ch01-beam-glow" x1="0" y1="2" x2="384" y2="2"/><line class="ch01-beam-ray" x1="0" y1="2" x2="384" y2="2"/>
+<text style="fill:var(--c7)" x="380" y="-2" font-size="11" text-anchor="end">the beam</text></g>
+<text class="soft" x="0" y="320" font-size="10" dominant-baseline="hanging">312 lines, top to bottom, 50 times a second</text>
+</svg>
+<div class="ch01-beam-notes" data-animate>
+<div class="ch01-beam-lap ch01-beam-lap1"><b>Lap 1: write first</b><p>Fire was pressed, so this frame he turns from white to red. <code>frame()</code> starts with the beam at line 0, above the border, and <code>show()</code> writes the new colour straight away. The beam reaches him long after: he's red from hat to boots.</p></div>
+<div class="ch01-beam-lap ch01-beam-lap2"><b>Lap 2: write late</b><p>The same frame, with a big job before <code>show()</code>. The colour changes at line 95, with the beam partway down him. The rows above it were already drawn white; the rest come out red. That's a tear.</p></div>
+<div class="ch01-beam-key">
+<span><i style="background:var(--c7)"></i>the beam, slowed right down</span>
+<span><i style="background:var(--c13)"></i>frame() running, and where it writes</span>
+<span><i style="background:color-mix(in srgb, var(--sheet) 60%, var(--c6))"></i>not drawn yet: still last frame's picture</span>
+</div>
+</div>
+</div>

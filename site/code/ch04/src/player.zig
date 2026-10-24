@@ -13,9 +13,9 @@ const room = @import("room.zig");
 const shapes = @import("shapes.zig");
 const sprites = @import("sprites.zig");
 
-/// The player is sprite 0. It shows block 0 or block 8, whichever one
-/// isn't being rewritten.
-const sprite = 0;
+/// Which of the VIDEO chip's eight sprite slots (0-7) is the player's.
+/// He shows block 0 or block 8, whichever one isn't being rewritten.
+const player_sprite = 0;
 
 /// His feet: the point the grid is read at, 3 fat pixels in from his left
 /// edge and 21 rows down from his top, the row his boots stand on.
@@ -98,9 +98,9 @@ pub fn enter(m: *Machine) void {
 
 /// Copy the player's position, colour and frame into the VIDEO chip.
 pub fn show(m: *Machine) void {
-    sprites.place(m, sprite, m.peek(map.player_x), m.peek(map.player_y));
-    m.poke(hw.spriteColor(sprite), m.peek(map.player_color));
-    m.poke(hw.sprite_pointers + sprite, m.peek(map.player_block));
+    sprites.place(m, player_sprite, m.peek(map.player_x), m.peek(map.player_y));
+    m.poke(hw.spriteColor(player_sprite), m.peek(map.player_color));
+    m.poke(hw.sprite_pointers + player_sprite, m.peek(map.player_block));
 }
 
 /// One step every other frame: read the grid under his feet, pick a way

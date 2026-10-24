@@ -35,9 +35,12 @@ const picture = [63]u8{
     0b00000000, 0b11100111, 0b00000000,
 };
 
-/// The player is sprite 0, showing sprite block 0.
-const sprite = 0;
-const block = 0;
+/// Which of the VIDEO chip's eight sprite slots (0-7) is the player's.
+const player_sprite = 0;
+
+/// Which sprite block (0-31) holds his picture. Block 0 is the 64 bytes
+/// at $C000.
+const player_block = 0;
 
 /// How far the sprite may go. X stops at 255 because that's the most a
 /// byte can hold; the right-hand strip of the screen needs a ninth bit.
@@ -47,8 +50,8 @@ const min_y = video.sprite_origin_y;
 const max_y = video.sprite_origin_y + room.floor_top - 21; // boots on the floor
 
 pub fn start(m: *Machine) void {
-    m.load(hw.sprite_data + block * 64, &picture);
-    m.poke(hw.sprite_pointers + sprite, block);
+    m.load(hw.sprite_data + player_block * 64, &picture);
+    m.poke(hw.sprite_pointers + player_sprite, player_block);
     m.poke(hw.sprite_enable, 0b0000_0001); // bit 0 on: sprite 0 is shown
 
     m.poke(map.player_x, 160);
@@ -59,9 +62,9 @@ pub fn start(m: *Machine) void {
 
 /// Copy the player's position and colour into the VIDEO chip.
 pub fn show(m: *Machine) void {
-    m.poke(hw.spriteX(sprite), m.peek(map.player_x));
-    m.poke(hw.spriteY(sprite), m.peek(map.player_y));
-    m.poke(hw.spriteColor(sprite), m.peek(map.player_color));
+    m.poke(hw.spriteX(player_sprite), m.peek(map.player_x));
+    m.poke(hw.spriteY(player_sprite), m.peek(map.player_y));
+    m.poke(hw.spriteColor(player_sprite), m.peek(map.player_color));
 }
 
 /// Read joystick 1 and move the player one pixel in each direction held.

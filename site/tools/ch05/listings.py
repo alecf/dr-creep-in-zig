@@ -130,9 +130,9 @@ step('A5', '**`src/player.zig`** (replace the comment at the top)', 'replace_tex
      arg=lines_of('src/player.zig', '//! Player 1', '//! ladders and slides', root=OLD))
 step('A6', '**`src/player.zig`** (replace the `sprites` import)', 'replace_text',
      'const actors = @import("actors.zig");\n', arg='const sprites = @import("sprites.zig");\n')
-step('A7', None, 'delete_text', None, arg='''/// The player is sprite 0. It shows block 0 or block 8, whichever one
-/// isn't being rewritten.
-const sprite = 0;
+step('A7', None, 'delete_text', None, arg='''/// Which of the VIDEO chip's eight sprite slots (0-7) is the player's.
+/// He shows block 0 or block 8, whichever one isn't being rewritten.
+const player_sprite = 0;
 
 ''', file='src/player.zig')
 step('A8', '**`src/player.zig`** (replace `start`)', 'replace_fn', fn('src/player.zig', 'start'), arg='start')

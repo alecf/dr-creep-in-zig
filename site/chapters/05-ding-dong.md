@@ -432,9 +432,9 @@ instead of `sprites`:
 const actors = @import("actors.zig");
 ```
 
-Delete the `sprite` constant and its comment: his sprite is his slot
-number now. `start` sets the two colours all multicolour sprites share
-and leaves the rest to `actors.show`:
+Delete the `player_sprite` constant and its comment: his actor slot
+number is his sprite slot now. `start` sets the two colours all
+multicolour sprites share and leaves the rest to `actors.show`:
 
 **`src/player.zig`** (replace `start`)
 

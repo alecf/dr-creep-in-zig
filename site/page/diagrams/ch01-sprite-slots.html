@@ -1,0 +1,153 @@
+<style>
+.ch01-ss svg { max-width: none; }
+.ch01-ss .ch01-ss-frame { fill: var(--code-bg); stroke: var(--rule); }
+.ch01-ss .ch01-ss-rule { stroke: var(--rule); }
+.ch01-ss .ch01-ss-on { fill: var(--accent); }
+.ch01-ss text.ch01-ss-ontx { fill: var(--sheet); }
+.ch01-ss .ch01-ss-blk { fill: var(--code-bg); stroke: var(--rule); }
+.ch01-ss .ch01-ss-arr { stroke: var(--accent); stroke-width: 1.5; fill: none; }
+.ch01-ss .ch01-ss-maybe { stroke-dasharray: 4 3; opacity: .7; }
+.ch01-ss .ch01-ss-ahd { fill: var(--accent); }
+</style>
+<div class="ch01-ss">
+<svg viewBox="0 0 636 254" width="636" role="img" aria-labelledby="ch01-ss-t">
+<title id="ch01-ss-t">The VIDEO chip's eight sprite slots, 0 to 7, each with an X register, a Y register, a colour register, one bit of the enable byte at $D015, and a sprite pointer from $CFF8 to $CFFF. Slot 0 is the player's; its pointer holds 0, so it shows block 0 of the 32 blocks in sprite memory at $C000. Changing that byte to 8 would make it show block 8.</title>
+<defs><marker id="ch01-ss-ah" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L6 3 L0 6 z" class="ch01-ss-ahd"/></marker></defs>
+<rect class="ch01-ss-frame" x="0" y="34" width="382" height="192" rx="4"/>
+<text class="soft" x="6" y="26" font-size="11">slot</text>
+<text class="soft" x="84" y="26" font-size="11">X</text>
+<text class="soft" x="138" y="26" font-size="11">Y</text>
+<text class="soft" x="192" y="26" font-size="11">colour</text>
+<text class="soft" x="252" y="26" font-size="11">on: $D015</text>
+<text class="soft" x="326" y="26" font-size="11">pointer</text>
+<rect class="ch01-ss-on" x="0" y="34" width="382" height="24" rx="4"/>
+<text class="ch01-ss-ontx" x="6" y="50" font-size="11.5">0 · player</text>
+<text class="ch01-ss-ontx" x="84" y="50" font-size="11.5">$D000</text>
+<text class="ch01-ss-ontx" x="138" y="50" font-size="11.5">$D001</text>
+<text class="ch01-ss-ontx" x="192" y="50" font-size="11.5">$D027</text>
+<text class="ch01-ss-ontx" x="252" y="50" font-size="11.5">bit 0</text>
+<text class="ch01-ss-ontx" x="326" y="50" font-size="11.5">$CFF8</text>
+<line class="ch01-ss-rule" x1="0" y1="58" x2="382" y2="58"/>
+<text x="6" y="74" font-size="11.5">1</text>
+<text x="84" y="74" font-size="11.5">$D002</text>
+<text x="138" y="74" font-size="11.5">$D003</text>
+<text x="192" y="74" font-size="11.5">$D028</text>
+<text x="252" y="74" font-size="11.5">bit 1</text>
+<text x="326" y="74" font-size="11.5">$CFF9</text>
+<line class="ch01-ss-rule" x1="0" y1="82" x2="382" y2="82"/>
+<text x="6" y="98" font-size="11.5">2</text>
+<text x="84" y="98" font-size="11.5">$D004</text>
+<text x="138" y="98" font-size="11.5">$D005</text>
+<text x="192" y="98" font-size="11.5">$D029</text>
+<text x="252" y="98" font-size="11.5">bit 2</text>
+<text x="326" y="98" font-size="11.5">$CFFA</text>
+<line class="ch01-ss-rule" x1="0" y1="106" x2="382" y2="106"/>
+<text x="6" y="122" font-size="11.5">3</text>
+<text x="84" y="122" font-size="11.5">$D006</text>
+<text x="138" y="122" font-size="11.5">$D007</text>
+<text x="192" y="122" font-size="11.5">$D02A</text>
+<text x="252" y="122" font-size="11.5">bit 3</text>
+<text x="326" y="122" font-size="11.5">$CFFB</text>
+<line class="ch01-ss-rule" x1="0" y1="130" x2="382" y2="130"/>
+<text x="6" y="146" font-size="11.5">4</text>
+<text x="84" y="146" font-size="11.5">$D008</text>
+<text x="138" y="146" font-size="11.5">$D009</text>
+<text x="192" y="146" font-size="11.5">$D02B</text>
+<text x="252" y="146" font-size="11.5">bit 4</text>
+<text x="326" y="146" font-size="11.5">$CFFC</text>
+<line class="ch01-ss-rule" x1="0" y1="154" x2="382" y2="154"/>
+<text x="6" y="170" font-size="11.5">5</text>
+<text x="84" y="170" font-size="11.5">$D00A</text>
+<text x="138" y="170" font-size="11.5">$D00B</text>
+<text x="192" y="170" font-size="11.5">$D02C</text>
+<text x="252" y="170" font-size="11.5">bit 5</text>
+<text x="326" y="170" font-size="11.5">$CFFD</text>
+<line class="ch01-ss-rule" x1="0" y1="178" x2="382" y2="178"/>
+<text x="6" y="194" font-size="11.5">6</text>
+<text x="84" y="194" font-size="11.5">$D00C</text>
+<text x="138" y="194" font-size="11.5">$D00D</text>
+<text x="192" y="194" font-size="11.5">$D02D</text>
+<text x="252" y="194" font-size="11.5">bit 6</text>
+<text x="326" y="194" font-size="11.5">$CFFE</text>
+<line class="ch01-ss-rule" x1="0" y1="202" x2="382" y2="202"/>
+<text x="6" y="218" font-size="11.5">7</text>
+<text x="84" y="218" font-size="11.5">$D00E</text>
+<text x="138" y="218" font-size="11.5">$D00F</text>
+<text x="192" y="218" font-size="11.5">$D02E</text>
+<text x="252" y="218" font-size="11.5">bit 7</text>
+<text x="326" y="218" font-size="11.5">$CFFF</text>
+<text class="soft" x="452" y="26" font-size="11">sprite memory $C000–$C7FF</text>
+<rect class="ch01-ss-on" x="453" y="35" width="44" height="22" rx="2"/>
+<text class="ch01-ss-ontx" x="475.0" y="50" font-size="11" text-anchor="middle">0</text>
+<rect class="ch01-ss-blk" x="499" y="35" width="44" height="22" rx="2"/>
+<text class="soft" x="521.0" y="50" font-size="11" text-anchor="middle">1</text>
+<rect class="ch01-ss-blk" x="545" y="35" width="44" height="22" rx="2"/>
+<text class="soft" x="567.0" y="50" font-size="11" text-anchor="middle">2</text>
+<rect class="ch01-ss-blk" x="591" y="35" width="44" height="22" rx="2"/>
+<text class="soft" x="613.0" y="50" font-size="11" text-anchor="middle">3</text>
+<rect class="ch01-ss-blk" x="453" y="59" width="44" height="22" rx="2"/>
+<text class="soft" x="475.0" y="74" font-size="11" text-anchor="middle">4</text>
+<rect class="ch01-ss-blk" x="499" y="59" width="44" height="22" rx="2"/>
+<text class="soft" x="521.0" y="74" font-size="11" text-anchor="middle">5</text>
+<rect class="ch01-ss-blk" x="545" y="59" width="44" height="22" rx="2"/>
+<text class="soft" x="567.0" y="74" font-size="11" text-anchor="middle">6</text>
+<rect class="ch01-ss-blk" x="591" y="59" width="44" height="22" rx="2"/>
+<text class="soft" x="613.0" y="74" font-size="11" text-anchor="middle">7</text>
+<rect class="ch01-ss-blk" x="453" y="83" width="44" height="22" rx="2"/>
+<text class="soft" x="475.0" y="98" font-size="11" text-anchor="middle">8</text>
+<rect class="ch01-ss-blk" x="499" y="83" width="44" height="22" rx="2"/>
+<text class="soft" x="521.0" y="98" font-size="11" text-anchor="middle">9</text>
+<rect class="ch01-ss-blk" x="545" y="83" width="44" height="22" rx="2"/>
+<text class="soft" x="567.0" y="98" font-size="11" text-anchor="middle">10</text>
+<rect class="ch01-ss-blk" x="591" y="83" width="44" height="22" rx="2"/>
+<text class="soft" x="613.0" y="98" font-size="11" text-anchor="middle">11</text>
+<rect class="ch01-ss-blk" x="453" y="107" width="44" height="22" rx="2"/>
+<text class="soft" x="475.0" y="122" font-size="11" text-anchor="middle">12</text>
+<rect class="ch01-ss-blk" x="499" y="107" width="44" height="22" rx="2"/>
+<text class="soft" x="521.0" y="122" font-size="11" text-anchor="middle">13</text>
+<rect class="ch01-ss-blk" x="545" y="107" width="44" height="22" rx="2"/>
+<text class="soft" x="567.0" y="122" font-size="11" text-anchor="middle">14</text>
+<rect class="ch01-ss-blk" x="591" y="107" width="44" height="22" rx="2"/>
+<text class="soft" x="613.0" y="122" font-size="11" text-anchor="middle">15</text>
+<rect class="ch01-ss-blk" x="453" y="131" width="44" height="22" rx="2"/>
+<text class="soft" x="475.0" y="146" font-size="11" text-anchor="middle">16</text>
+<rect class="ch01-ss-blk" x="499" y="131" width="44" height="22" rx="2"/>
+<text class="soft" x="521.0" y="146" font-size="11" text-anchor="middle">17</text>
+<rect class="ch01-ss-blk" x="545" y="131" width="44" height="22" rx="2"/>
+<text class="soft" x="567.0" y="146" font-size="11" text-anchor="middle">18</text>
+<rect class="ch01-ss-blk" x="591" y="131" width="44" height="22" rx="2"/>
+<text class="soft" x="613.0" y="146" font-size="11" text-anchor="middle">19</text>
+<rect class="ch01-ss-blk" x="453" y="155" width="44" height="22" rx="2"/>
+<text class="soft" x="475.0" y="170" font-size="11" text-anchor="middle">20</text>
+<rect class="ch01-ss-blk" x="499" y="155" width="44" height="22" rx="2"/>
+<text class="soft" x="521.0" y="170" font-size="11" text-anchor="middle">21</text>
+<rect class="ch01-ss-blk" x="545" y="155" width="44" height="22" rx="2"/>
+<text class="soft" x="567.0" y="170" font-size="11" text-anchor="middle">22</text>
+<rect class="ch01-ss-blk" x="591" y="155" width="44" height="22" rx="2"/>
+<text class="soft" x="613.0" y="170" font-size="11" text-anchor="middle">23</text>
+<rect class="ch01-ss-blk" x="453" y="179" width="44" height="22" rx="2"/>
+<text class="soft" x="475.0" y="194" font-size="11" text-anchor="middle">24</text>
+<rect class="ch01-ss-blk" x="499" y="179" width="44" height="22" rx="2"/>
+<text class="soft" x="521.0" y="194" font-size="11" text-anchor="middle">25</text>
+<rect class="ch01-ss-blk" x="545" y="179" width="44" height="22" rx="2"/>
+<text class="soft" x="567.0" y="194" font-size="11" text-anchor="middle">26</text>
+<rect class="ch01-ss-blk" x="591" y="179" width="44" height="22" rx="2"/>
+<text class="soft" x="613.0" y="194" font-size="11" text-anchor="middle">27</text>
+<rect class="ch01-ss-blk" x="453" y="203" width="44" height="22" rx="2"/>
+<text class="soft" x="475.0" y="218" font-size="11" text-anchor="middle">28</text>
+<rect class="ch01-ss-blk" x="499" y="203" width="44" height="22" rx="2"/>
+<text class="soft" x="521.0" y="218" font-size="11" text-anchor="middle">29</text>
+<rect class="ch01-ss-blk" x="545" y="203" width="44" height="22" rx="2"/>
+<text class="soft" x="567.0" y="218" font-size="11" text-anchor="middle">30</text>
+<rect class="ch01-ss-blk" x="591" y="203" width="44" height="22" rx="2"/>
+<text class="soft" x="613.0" y="218" font-size="11" text-anchor="middle">31</text>
+<path class="ch01-ss-arr" d="M378 46.0 H448" marker-end="url(#ch01-ss-ah)"/>
+<text x="417.0" y="40.0" font-size="10.5" text-anchor="middle">holds 0</text>
+<path class="ch01-ss-arr ch01-ss-maybe" d="M378 52.0 C 422 52.0, 402 94.0, 448 94.0" marker-end="url(#ch01-ss-ah)"/>
+<text class="soft" x="396" y="116.0" font-size="10.5">poke 8 there,</text>
+<text class="soft" x="396" y="129.0" font-size="10.5">and slot 0</text>
+<text class="soft" x="396" y="142.0" font-size="10.5">shows block 8</text>
+<text class="soft" x="0" y="246" font-size="10.5">One block: 64 bytes, a 24 × 21 picture (63 bytes) and a spare.</text>
+<text class="soft" x="452" y="246" font-size="10.5">block N: $C000 + N × 64</text>
+</svg>
+</div>
