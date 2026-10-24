@@ -597,6 +597,16 @@ Castle rooms (ch03)".
   estimate for its non-memory work, with a comment (`steer` charges 40).
   ch01 frame: 92 cycles idle, 100 with a fire press. Buckets are not used
   yet (all bucket 0); ch2 should assign the stable bucket ids.
+- **Sprite slots (ch01 revision).** Prose calls the VIDEO chip's eight
+  sprites "sprite slots" 0–7 (each = X, Y, colour, a `$D015` bit, a
+  pointer); the limit of eight is stated in ch01 as shaping the whole game.
+  Code names: `player_sprite` ("which of the VIDEO chip's eight sprite
+  slots (0-7) is the player's", ch01–ch04) and, in ch01 only,
+  `player_block` (the block number const; ch02 replaces it with the RAM
+  byte `map.player_block`). "Block" = 64-byte unit of sprite memory
+  `$C000–$C7FF`, numbered 0–31, explained in ch01 with the
+  `ch01-sprite-slots` diagram. The beam is shown by the animated
+  `ch01-beam` diagram (generators in `tools/diagrams/ch01/`).
 - **Terms introduced in ch01 prose.** "explorer" for the player sprite;
   "page" (256-byte, the high hex byte of an address); "mask"; "active-low";
   "tear"; "shadow copy". Hex: `$D020` in prose and tables, `0xD020` in
