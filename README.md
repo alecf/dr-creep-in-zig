@@ -19,6 +19,13 @@ $ ./zig-out/bin/creep-headless --frames 9000 --dump-every 500 \
 # frames/frame_*.ppm now contain the intro, menu, castle map, and gameplay
 ```
 
+## The website
+
+`site/build-pages.sh` builds the GitHub Pages site (homepage, the tutorial
+from `site/`, and the wasm game at `/game/`, where players load their own
+`.d64` in the browser); `.github/workflows/pages.yml` deploys it on every
+push to `main`.
+
 ## Getting the game
 
 The game data is copyrighted and **not included**. You need a D64 disk image

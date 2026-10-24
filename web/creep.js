@@ -1,8 +1,14 @@
-// JS host for the wasm build. Fetches the game files (from ./extracted/,
-// which you populate locally — game data is not distributed), feeds them to
-// the wasm module, and runs the machine at 60 fps onto the canvas.
+// JS host for the wasm build. Gets the game files, feeds them to the wasm
+// module, and runs the machine at 60 fps onto the canvas. Game data is not
+// distributed, so the files come from one of (first that works):
+//   1. ./extracted/ next to the page (local dev: symlink your extracted dir)
+//   2. a disk image the player chose earlier (kept in this browser only)
+//   3. a .d64 the player picks or drops onto the page now (#disk input)
+
+import { extractD64 } from "./d64.js";
 
 const status = (msg) => { document.getElementById("status").textContent = msg; };
+const DISK_KEY = "creep-d64";
 
 const { instance } = await WebAssembly.instantiateStreaming(
   fetch("creep.wasm"), {},
@@ -18,23 +24,88 @@ function pushBytes(bytes) {
 }
 
 async function fetchBytes(path) {
-  const res = await fetch(path);
+  try {
+    const res = await fetch(path);
+    if (!res.ok) return null;
+    return new Uint8Array(await res.arrayBuffer());
+  } catch { return null; }
+}
+
+async function fromExtracted() {
+  let res;
+  try { res = await fetch("extracted/manifest.txt"); } catch { return null; }
   if (!res.ok) return null;
-  return new Uint8Array(await res.arrayBuffer());
+  const files = [];
+  for (const name of (await res.text()).trim().split("\n")) {
+    const data = await fetchBytes(`extracted/${name}.prg`);
+    if (data) files.push({ name, data });
+  }
+  return files;
+}
+
+const hasEngine = (files) => files.some((f) => f.name === "object");
+
+function savedDisk() {
+  try {
+    const b64 = localStorage.getItem(DISK_KEY);
+    return b64 ? Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)) : null;
+  } catch { return null; }
+}
+function saveDisk(img) {
+  try {
+    let bin = "";
+    for (let i = 0; i < img.length; i += 0x8000) bin += String.fromCharCode(...img.subarray(i, i + 0x8000));
+    localStorage.setItem(DISK_KEY, btoa(bin));
+  } catch {}
+}
+document.getElementById("forget")?.addEventListener("click", () => {
+  try { localStorage.removeItem(DISK_KEY); } catch {}
+  location.reload();
+});
+
+function diskFiles(img) {
+  try {
+    const files = extractD64(img);
+    return hasEngine(files) ? files : null;
+  } catch { return null; }
+}
+
+// Resolves once the player picks (or drops) a usable disk image.
+function askForDisk() {
+  const input = document.getElementById("disk");
+  if (!input) {
+    status("missing ./extracted/ — extract your game disk first (see README)");
+    return new Promise(() => {});
+  }
+  document.body.classList.add("needs-disk");
+  status("choose your Dr. Creep .d64 disk image to start");
+  return new Promise((resolve) => {
+    const take = async (file) => {
+      if (!file) return;
+      const img = new Uint8Array(await file.arrayBuffer());
+      const files = diskFiles(img);
+      if (!files) { status(`${file.name} isn't a Castles of Dr. Creep disk image — try another`); return; }
+      saveDisk(img);
+      document.body.classList.remove("needs-disk");
+      resolve(files);
+    };
+    input.addEventListener("change", () => take(input.files[0]));
+    addEventListener("dragover", (e) => e.preventDefault());
+    addEventListener("drop", (e) => { e.preventDefault(); take(e.dataTransfer.files[0]); });
+  });
 }
 
 status("fetching game files…");
-if (!wasm.boot_init()) throw new Error("boot_init failed");
-
-const manifestRes = await fetch("extracted/manifest.txt");
-if (!manifestRes.ok) {
-  status("missing ./extracted/ — extract your game disk first (see README)");
-  throw new Error("no manifest");
+let files = await fromExtracted();
+if (!files || !hasEngine(files)) {
+  const img = savedDisk();
+  files = img && diskFiles(img);
+  if (files) document.body.classList.add("has-saved-disk");
 }
-const names = (await manifestRes.text()).trim().split("\n");
-for (const name of names) {
-  const data = await fetchBytes(`extracted/${name}.prg`);
-  if (!data) continue;
+if (!files) files = await askForDisk();
+
+if (!wasm.boot_init()) throw new Error("boot_init failed");
+for (const { name, data } of files) {
   const nameBytes = new TextEncoder().encode(name);
   const namePtr = pushBytes(nameBytes);
   const dataPtr = pushBytes(data);

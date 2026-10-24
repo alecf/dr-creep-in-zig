@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Play Dr. Creep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="../theme.css">
+<style>
+.page { max-width: 58rem; margin: 0 auto; padding: 28px 16px 80px; display: flex; flex-direction: column; gap: 28px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.head { display: flex; flex-direction: column; gap: 10px; padding-bottom: 18px; border-bottom: 4px solid var(--accent); }
+.head h1 { margin: 0; font: 400 clamp(2rem, 6vw, 3.4rem)/1.02 var(--display); color: var(--accent); }
+.head p { margin: 0; max-width: 62ch; }
+.crt { aspect-ratio: 320 / 200; background: #000; }
+.crt canvas { background: #000; }
+.disk { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 16px; text-align: center; color: #c8c2f0; background: #352879; font: .9rem/1.5 var(--mono); }
+.needs-disk .disk { display: flex; }
+.disk input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.disk label.power { position: static; }
+.disk input:focus-visible + label { outline: 3px solid var(--accent-2); outline-offset: 2px; }
+.keys { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; font-size: .95rem; }
+.keys dt { white-space: nowrap; }
+kbd { font: 600 .8rem/1 var(--mono); background: var(--code-bg); border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 2px 6px; color: var(--code-ink); }
+.forget { display: none; align-self: flex-start; font: .78rem/1.4 var(--mono); color: var(--ink-soft); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+.has-saved-disk .forget { display: inline; }
+footer { font: .8rem/1.6 var(--mono); color: var(--ink-soft); border-top: 1px solid var(--rule); padding-top: 18px; }
+</style>
+<body>
+<div class="page">
+  <div class="top">
+    <nav class="site-nav" aria-label="Site"><a href="../">Home</a><a href="../tutorial/">Tutorial</a><a href="./" aria-current="page">Play Dr. Creep</a></nav>
+    <nav class="site-nav"><a href="https://github.com/alecf/dr-creep-in-zig">Source on GitHub</a></nav>
+  </div>
+
+  <header class="head">
+    <span class="brand-top">The Castles of</span>
+    <h1>Play Dr. Creep</h1>
+    <p>The original 1984 game, byte for byte, running on this project's Zig emulation core compiled to WebAssembly.</p>
+  </header>
+
+  <section class="play" aria-label="The game">
+    <div class="crt">
+      <canvas id="screen" width="320" height="200" tabindex="0" aria-label="Commodore 64 screen"></canvas>
+      <div class="disk">
+        <p>The game data is copyrighted, so it isn't on this site.<br>Choose your own disk image of <em>The Castles of Dr. Creep</em> (a 1541 <code>.d64</code>, 174,848 bytes), or drop it here.</p>
+        <input type="file" id="disk" accept=".d64,application/octet-stream">
+        <label class="power" for="disk">Insert disk</label>
+        <p>It's read in your browser and never uploaded. This browser remembers it for next time.</p>
+      </div>
+    </div>
+    <p class="play-status" id="status">Loading…</p>
+    <button class="forget" id="forget" type="button">Forget the remembered disk</button>
+  </section>
+
+  <section>
+    <dl class="keys">
+      <dt><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>Space</kbd></dt><dd>Joystick 1 (Space is fire)</dd>
+      <dt><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>Shift</kbd></dt><dd>Joystick 2</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Menu (the C64's RUN/STOP key)</dd>
+      <dt><kbd>Enter</kbd></dt><dd>Return</dd>
+    </dl>
+  </section>
+
+  <footer>The Castles of Dr. Creep © 1984 Broderbund Software, by Ed Hobbs. No sound yet: SID audio is still on the roadmap.</footer>
+</div>
+<script type="module" src="creep.js"></script>
+</body>
+</html>
