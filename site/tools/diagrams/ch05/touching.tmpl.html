@@ -1,0 +1,44 @@
+<style>
+.ch05-t { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 14px 18px; }
+.ch05-t > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ch05-t svg { width: 100%; max-width: 320px; }
+.ch05-t .ch05-wide { grid-column: 1 / -1; }
+.ch05-t p { margin: 0; color: var(--ink-soft); }
+.ch05-t b { color: var(--ink); font-weight: 600; }
+.ch05-t .ch05-key { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .72rem; color: var(--ink-soft); }
+.ch05-t .ch05-key i { display: inline-block; width: 1.1em; height: .7em; margin-right: .4em; vertical-align: -.05em; }
+.ch05-t .ch05-c0 { fill: var(--c0); } .ch05-t .ch05-c1 { fill: var(--c1); } .ch05-t .ch05-c2 { fill: var(--c2); }
+.ch05-t .ch05-c7 { fill: var(--c7); } .ch05-t .ch05-c8 { fill: var(--c8); } .ch05-t .ch05-c9 { fill: var(--c9); }
+.ch05-t .ch05-c10 { fill: var(--c10); } .ch05-t .ch05-c11 { fill: var(--c11); } .ch05-t .ch05-c12 { fill: var(--c12); }
+.ch05-t .ch05-c15 { fill: var(--c15); }
+.ch05-t .ch05-bg { fill: var(--rule); }
+.ch05-t .ch05-fg { fill: var(--ink-soft); opacity: .55; }
+.ch05-t .ch05-hit { fill: var(--accent); }
+.ch05-t .ch05-spr { fill: var(--accent); opacity: .35; }
+.ch05-t .ch05-box { fill: none; stroke-width: 2; }
+.ch05-t .ch05-bell, .ch05-t .ch05-door { stroke: var(--ink-soft); }
+.ch05-t .ch05-him { stroke: var(--accent); }
+.ch05-t .ch05-over { fill: var(--accent); opacity: .3; }
+.ch05-t .ch05-arh { fill: var(--accent); }
+.ch05-t i.ch05-k-bg { background: var(--rule); } .ch05-t i.ch05-k-fg { background: var(--ink-soft); opacity: .55; }
+.ch05-t i.ch05-k-spr { background: var(--accent); opacity: .35; } .ch05-t i.ch05-k-hit { background: var(--accent); }
+.ch05-t i.ch05-k-over { background: var(--accent); opacity: .3; }
+</style>
+<div class="ch05-t">
+  <div>
+    <span class="dg-label">On screen: at the bell</span>
+    @@SCREEN@@
+  </div>
+  <div>
+    <span class="dg-label">First pass: the VIDEO chip, every pixel</span>
+    @@CHIP@@
+    <div class="ch05-key"><span><i class="ch05-k-bg"></i>code 01: doesn't count</span><span><i class="ch05-k-fg"></i>codes 10, 11: foreground</span><span><i class="ch05-k-spr"></i>his sprite</span><span><i class="ch05-k-hit"></i>both</span></div>
+    <p>@@HITS@@ of his pixels land on the bell's foreground, so <b>$D01F = %0000_0001</b>: bit 0, sprite 0, becomes his <b>hit_bitmap</b>. Out on bare floor his boots end a row above the floor's top, and <b>$D01F</b> stays 0.</p>
+  </div>
+  <div class="ch05-wide">
+    <span class="dg-label">Second pass: our code, boxes</span>
+    @@BOXES@@
+    <div class="ch05-key"><span><i class="ch05-k-over"></i>overlap</span></div>
+    <p><b>Bell:</b> 145 + 8 ≥ 140, 140 + 12 ≥ 145, and the same for y: they overlap, so <b>ring</b> runs. His feet are at 148, 8 fat pixels past the bell's edge, inside its reach of 12. <b>Door:</b> 145 + 8 = 153 is short of 160, so <b>enter</b> isn't called.</p>
+  </div>
+</div>

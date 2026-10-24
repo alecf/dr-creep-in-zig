@@ -1,0 +1,10 @@
+.{
+    .name = .game,
+    .version = "0.0.1",
+    .fingerprint = 0x232b318cd4964094,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{
+        .machine = .{ .path = "../machine" },
+    },
+    .paths = .{ "build.zig", "build.zig.zon", "src" },
+}

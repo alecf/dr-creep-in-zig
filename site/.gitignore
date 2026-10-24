@@ -1,0 +1,3 @@
+_build/
+tools/*/__pycache__/
+tools/outputs.json

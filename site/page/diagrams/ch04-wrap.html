@@ -1,0 +1,30 @@
+<style>
+.ch04-wrap { display: grid; gap: 14px; }
+.ch04-wrap .ch04-op { display: grid; gap: 4px; justify-items: start; }
+.ch04-wrap .ch04-op > b { font-weight: 700; white-space: nowrap; }
+.ch04-wrap .ch04-op > b + div { display: flex; align-items: center; gap: 2px; max-width: 100%; }
+.ch04-wrap .dg-byte { flex: none; }
+.ch04-wrap .ch04-op small { color: var(--ink-soft); font-size: .72rem; }
+.ch04-wrap .dg-byte { min-width: 2.05em; padding: 3px 1px; font-size: .74rem; }
+.ch04-wrap .ch04-start { box-shadow: inset 0 0 0 2px var(--accent); }
+.ch04-wrap .ch04-seam { width: 2px; align-self: stretch; margin: 0 3px; background: var(--ink-soft); }
+.ch04-wrap .ch04-gone { opacity: .35; }
+.ch04-wrap .ch04-panic { padding: 3px 8px; border-radius: 4px; border: 2px dashed var(--accent); color: var(--accent); font-weight: 700; font-size: .72rem; min-width: 0; line-height: 1.2; }
+</style>
+<div class="ch04-wrap">
+  <div class="ch04-op">
+    <b>250 + 10</b>
+    <div><span class="dg-byte ch04-start">250</span><span class="dg-byte">251</span><span class="dg-byte">252</span><span class="dg-byte">253</span><span class="dg-byte">254</span><span class="dg-byte">255</span><span class="ch04-seam"></span><span class="ch04-panic">panic: integer overflow</span></div>
+    <small>the everyday +: running off the end is a bug</small>
+  </div>
+  <div class="ch04-op">
+    <b>250 +% 10</b>
+    <div><span class="dg-byte ch04-start">250</span><span class="dg-byte">251</span><span class="dg-byte">252</span><span class="dg-byte">253</span><span class="dg-byte">254</span><span class="dg-byte">255</span><span class="ch04-seam"></span><span class="dg-byte">0</span><span class="dg-byte">1</span><span class="dg-byte">2</span><span class="dg-byte">3</span><span class="dg-byte dg-on">4</span></div>
+    <small>wraps like an odometer (260 − 256): game_tick (ch. 2), -% in kindOf (ch. 3)</small>
+  </div>
+  <div class="ch04-op">
+    <b>250 +| 10</b>
+    <div><span class="dg-byte ch04-start">250</span><span class="dg-byte">251</span><span class="dg-byte">252</span><span class="dg-byte">253</span><span class="dg-byte">254</span><span class="dg-byte dg-on">255</span><span class="ch04-seam"></span><span class="dg-byte ch04-gone">0</span><span class="dg-byte ch04-gone">1</span><span class="dg-byte ch04-gone">2</span><span class="dg-byte ch04-gone">3</span><span class="dg-byte ch04-gone">4</span></div>
+    <small>saturates, stuck at the top: a door's panel position (ch. 3)</small>
+  </div>
+</div>

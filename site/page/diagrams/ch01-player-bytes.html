@@ -1,0 +1,12 @@
+<style>
+.ch01-pb { display: flex; flex-wrap: wrap; gap: 8px 3px; }
+.ch01-pb > div { display: flex; flex-direction: column; gap: 4px; }
+.ch01-pb .ch01-pb-a { padding-left: 2px; color: var(--ink-soft); font-size: .72rem; }
+.ch01-pb .dg-byte { text-align: left; padding: 6px 10px; }
+</style>
+<div class="ch01-pb" aria-label="The player's four bytes, $0200 to $0203">
+<div><span class="ch01-pb-a">$0200</span><span class="dg-byte">player_x</span></div>
+<div><span class="ch01-pb-a">$0201</span><span class="dg-byte">player_y</span></div>
+<div><span class="ch01-pb-a">$0202</span><span class="dg-byte">player_color</span></div>
+<div><span class="ch01-pb-a">$0203</span><span class="dg-byte">player_last_stick</span></div>
+</div>

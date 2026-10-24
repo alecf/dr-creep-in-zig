@@ -1,0 +1,9 @@
+{
+ "B": "ran 60 frames (47 calls to frame)\ncycles: max 156200 (794%), avg 7934 (40%) of 19656\n  bucket 0: max 42, avg 22\n  bucket 1: max 156184, avg 7839\n  bucket 2: max 644, avg 73\noverruns: 0, loading pauses: 2\nlast frame: frames/frame_00059.ppm\n",
+ "C": "ran 60 frames (48 calls to frame)\ncycles: max 156200 (794%), avg 7413 (37%) of 19656\n  bucket 0: max 42, avg 22\n  bucket 1: max 156184, avg 7317\n  bucket 2: max 644, avg 73\noverruns: 0, loading pauses: 2\nlast frame: frames/frame_00059.ppm\n",
+ "D": "ran 60 frames (46 calls to frame)\ncycles: max 157316 (800%), avg 8116 (41%) of 19656\n  bucket 0: max 42, avg 21\n  bucket 1: max 157300, avg 8019\n  bucket 2: max 644, avg 75\noverruns: 0, loading pauses: 2\nlast frame: frames/frame_00059.ppm\n",
+ "E1": "ran 60 frames (46 calls to frame)\ncycles: max 157316 (800%), avg 8116 (41%) of 19656\n  bucket 0: max 42, avg 21\n  bucket 1: max 157300, avg 8019\n  bucket 2: max 644, avg 75\noverruns: 0, loading pauses: 2\nlast frame: frames/frame_00059.ppm\n",
+ "E": "ran 60 frames (41 calls to frame)\ncycles: max 217890 (1108%), avg 11180 (56%) of 19656\n  bucket 0: max 42, avg 22\n  bucket 1: max 217230, avg 11084\n  bucket 2: max 644, avg 73\noverruns: 0, loading pauses: 2\nlast frame: frames/frame_00059.ppm\n",
+ "F": "ran 300 frames (233 calls to frame)\ncycles: max 219278 (1115%), avg 6281 (31%) of 19656\n  bucket 0: max 314, avg 27\n  bucket 1: max 218618, avg 6156\n  bucket 2: max 644, avg 97\noverruns: 0, loading pauses: 7\nlast frame: frames/frame_00299.ppm\n",
+ "G": "ran 300 frames (233 calls to frame)\ncycles: max 219278 (1115%), avg 6281 (31%) of 19656\n  bucket 0: max 314, avg 27\n  bucket 1: max 218618, avg 6156\n  bucket 2: max 644, avg 97\noverruns: 0, loading pauses: 7\nlast frame: frames/frame_00299.ppm\n"
+}

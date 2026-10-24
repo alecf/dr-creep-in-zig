@@ -1,0 +1,20 @@
+<style>
+.ch02-co { display: grid; grid-template-columns: max-content repeat(3, max-content) 1.4em max-content; gap: 6px 6px; align-items: start; }
+.ch02-co-cell { display: grid; gap: 1px; padding: 3px; border-radius: 5px; box-shadow: 0 0 0 1px var(--rule); }
+.ch02-co-b { padding: 0 4px; border-radius: 3px; font-size: .72rem; line-height: 1.45; text-align: center; background: var(--code-bg); }
+.ch02-co-row { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.ch02-co-hi { background: var(--accent); color: var(--sheet); font-weight: 600; }
+.ch02-co-gap { align-self: center; text-align: center; color: var(--ink-soft); }
+.ch02-co-rl { writing-mode: vertical-rl; transform: rotate(180deg); align-self: center; }
+.ch02-co-steps { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; }
+.ch02-co-steps b { font-weight: 600; color: var(--accent); }
+</style>
+<div class="ch02-co" aria-label="bitmap addresses, cell by cell">
+  <span></span><span class="dg-label">cell 0</span><span class="dg-label">cell 1</span><span class="dg-label">cell 2</span><span class="dg-label"></span><span class="dg-label">cell 39</span>
+  <span class="dg-label ch02-co-rl">cell row 0</span><span class="ch02-co-cell"><span class="ch02-co-b">E000</span><span class="ch02-co-b">E001</span><span class="ch02-co-b">E002</span><span class="ch02-co-b ch02-co-row">E003</span><span class="ch02-co-b">E004</span><span class="ch02-co-b">E005</span><span class="ch02-co-b">E006</span><span class="ch02-co-b">E007</span></span><span class="ch02-co-cell"><span class="ch02-co-b">E008</span><span class="ch02-co-b">E009</span><span class="ch02-co-b">E00A</span><span class="ch02-co-b ch02-co-row ch02-co-hi">E00B</span><span class="ch02-co-b">E00C</span><span class="ch02-co-b">E00D</span><span class="ch02-co-b">E00E</span><span class="ch02-co-b">E00F</span></span><span class="ch02-co-cell"><span class="ch02-co-b">E010</span><span class="ch02-co-b">E011</span><span class="ch02-co-b">E012</span><span class="ch02-co-b ch02-co-row">E013</span><span class="ch02-co-b">E014</span><span class="ch02-co-b">E015</span><span class="ch02-co-b">E016</span><span class="ch02-co-b">E017</span></span><span class="ch02-co-gap">…</span><span class="ch02-co-cell"><span class="ch02-co-b">E138</span><span class="ch02-co-b">E139</span><span class="ch02-co-b">E13A</span><span class="ch02-co-b ch02-co-row">E13B</span><span class="ch02-co-b">E13C</span><span class="ch02-co-b">E13D</span><span class="ch02-co-b">E13E</span><span class="ch02-co-b">E13F</span></span><span class="dg-label ch02-co-rl">cell row 1</span><span class="ch02-co-cell"><span class="ch02-co-b">E140</span><span class="ch02-co-b">E141</span><span class="ch02-co-b">E142</span><span class="ch02-co-b">E143</span><span class="ch02-co-b">E144</span><span class="ch02-co-b">E145</span><span class="ch02-co-b">E146</span><span class="ch02-co-b">E147</span></span><span class="ch02-co-cell"><span class="ch02-co-b">E148</span><span class="ch02-co-b">E149</span><span class="ch02-co-b">E14A</span><span class="ch02-co-b">E14B</span><span class="ch02-co-b">E14C</span><span class="ch02-co-b">E14D</span><span class="ch02-co-b">E14E</span><span class="ch02-co-b">E14F</span></span><span class="ch02-co-cell"><span class="ch02-co-b">E150</span><span class="ch02-co-b">E151</span><span class="ch02-co-b">E152</span><span class="ch02-co-b">E153</span><span class="ch02-co-b">E154</span><span class="ch02-co-b">E155</span><span class="ch02-co-b">E156</span><span class="ch02-co-b">E157</span></span><span class="ch02-co-gap">…</span><span class="ch02-co-cell"><span class="ch02-co-b">E278</span><span class="ch02-co-b">E279</span><span class="ch02-co-b">E27A</span><span class="ch02-co-b">E27B</span><span class="ch02-co-b">E27C</span><span class="ch02-co-b">E27D</span><span class="ch02-co-b">E27E</span><span class="ch02-co-b">E27F</span></span>
+</div>
+<div class="ch02-co-steps">
+  <b>+1</b><span>the next line down, inside a cell</span>
+  <b>+8</b><span>the same line, one cell to the right (the outlined row: display row 3)</span>
+  <b>+320</b><span>the same line, one row of cells down (40 cells × 8 bytes)</span>
+</div>

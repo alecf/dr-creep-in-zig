@@ -1,0 +1,40 @@
+<style>
+.ch03-st { display: grid; grid-template-columns: max-content 1fr; gap: 8px 10px; align-items: start; }
+.ch03-st .ch03-a { color: var(--ink-soft); font-size: .72rem; padding-top: 5px; }
+.ch03-st .ch03-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: flex-start; }
+.ch03-st .ch03-ck { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; }
+.ch03-st .ch03-ck > span { padding: 3px 5px; border-radius: 4px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ch03-st .ch03-ck > i { font-style: normal; font-size: .6rem; line-height: 1.1; color: var(--ink-soft); white-space: nowrap; }
+.ch03-st .ch03-t > span, .ch03-key .ch03-t { box-shadow: inset 0 0 0 2px var(--accent); font-weight: 700; color: var(--accent); }
+.ch03-st .ch03-n > span, .ch03-key .ch03-n { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.ch03-st .ch03-r > span, .ch03-key .ch03-r { background: var(--code-bg); box-shadow: inset 0 0 0 1px var(--rule); }
+.ch03-st .ch03-e > span, .ch03-key .ch03-e { background: var(--accent); color: var(--sheet); }
+.ch03-st .ch03-sch { grid-column: 2; margin-top: -4px; font: 400 .6rem/1.2 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); }
+.ch03-st .ch03-sep { grid-column: 1 / -1; border-top: 1px dashed var(--rule); padding-top: 4px; font-size: .7rem; color: var(--ink-soft); }
+.ch03-key { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: .72rem; color: var(--ink-soft); }
+.ch03-key span { padding: 1px 6px; border-radius: 4px; color: var(--ink); }
+</style>
+<div class="ch03-key"><span class="ch03-t">03 08</span>tag <span class="ch03-n">02</span>count <span class="ch03-r">20 28 …</span>record <span class="ch03-e">00</span>end marker</div>
+<div class="ch03-st">
+  <span class="ch03-a">$7909</span>
+  <div class="ch03-row"><span class="ch03-ck ch03-t"><span>03 08</span><i>doors</i></span><span class="ch03-ck ch03-n"><span>02</span><i>two</i></span><span class="ch03-ck ch03-r"><span>20 28 03 00 01 00 06 00</span><i>door 0</i></span><span class="ch03-ck ch03-r"><span>98 60 01 00 00 0E 0D 00</span><i>door 1</i></span></div>
+  <span class="ch03-sch">counted</span>
+  <span class="ch03-a">$791C</span>
+  <div class="ch03-row"><span class="ch03-ck ch03-t"><span>06 08</span><i>walkways</i></span><span class="ch03-ck ch03-r"><span>0F 18 48</span><i>15 long</i></span><span class="ch03-ck ch03-r"><span>11 6C 80</span><i>17 long</i></span><span class="ch03-ck ch03-r"><span>28 10 C0</span><i>the floor</i></span><span class="ch03-ck ch03-e"><span>00</span><i>end</i></span></div>
+  <span class="ch03-sch">end marker</span>
+  <span class="ch03-a">$7928</span>
+  <div class="ch03-row"><span class="ch03-ck ch03-t"><span>09 08</span><i>poles</i></span><span class="ch03-ck ch03-r"><span>10 40 48</span><i>&nbsp;</i></span><span class="ch03-ck ch03-e"><span>00</span><i>end</i></span><span class="ch03-ck ch03-t"><span>0C 08</span><i>ladders</i></span><span class="ch03-ck ch03-r"><span>09 78 80</span><i>&nbsp;</i></span><span class="ch03-ck ch03-e"><span>00</span><i>end</i></span></div>
+  <span class="ch03-sch">end marker, twice</span>
+  <span class="ch03-a">$7934</span>
+  <div class="ch03-row"><span class="ch03-ck ch03-t"><span>0F 08</span><i>bells</i></span><span class="ch03-ck ch03-n"><span>01</span><i>one</i></span><span class="ch03-ck ch03-r"><span>88 68 01</span><i>rings door 1</i></span></div>
+  <span class="ch03-sch">counted</span>
+  <span class="ch03-a">$793A</span>
+  <div class="ch03-row"><span class="ch03-ck ch03-t"><span>33 08</span><i>text</i></span><span class="ch03-ck ch03-r"><span>1C 08 0F 21</span><i>x y colour style</i></span><span class="ch03-ck ch03-r"><span>54 48 45 … 4C CC</span><i>THE ENTRANCE HALL</i></span><span class="ch03-ck ch03-e"><span>00</span><i>end</i></span></div>
+  <span class="ch03-sch">end marker</span>
+  <span class="ch03-a">$7952</span>
+  <div class="ch03-row"><span class="ch03-ck ch03-e"><span>00 00</span><i>end of room</i></span></div>
+  <span class="ch03-sep">From the final room, at $88C5: one picture, drawn in six places</span>
+  <span class="ch03-a">$88C5</span>
+  <div class="ch03-row"><span class="ch03-ck ch03-t"><span>36 08</span><i>picture</i></span><span class="ch03-ck ch03-r"><span>01 08 00 04 04 5D … 77 01</span><i>a sparkle, 1×8</i></span><span class="ch03-ck ch03-r"><span>40 40</span><i>x y</i></span><span class="ch03-ck ch03-r"><span>78 48</span><i>&nbsp;</i></span><span class="ch03-ck ch03-r"><span>34 68</span><i>&nbsp;</i></span><span class="ch03-ck ch03-r"><span>84 70</span><i>&nbsp;</i></span><span class="ch03-ck ch03-r"><span>48 80</span><i>&nbsp;</i></span><span class="ch03-ck ch03-r"><span>70 88</span><i>&nbsp;</i></span><span class="ch03-ck ch03-e"><span>00</span><i>end</i></span></div>
+  <span class="ch03-sch">one tag per thing</span>
+</div>

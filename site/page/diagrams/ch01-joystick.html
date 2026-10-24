@@ -1,0 +1,17 @@
+<style>
+.ch01-js { display: grid; grid-template-columns: repeat(8, minmax(2.6em, 3.4em)) auto; gap: 3px; align-items: center; justify-content: start; }
+.ch01-js .dg-label { text-align: center; letter-spacing: .04em; }
+.ch01-js .ch01-js-state { grid-column: 1 / -1; margin-top: 8px; color: var(--ink-soft); font-size: .75rem; }
+.ch01-js .dg-bit { min-width: 0; }
+.ch01-js .ch01-js-fixed { opacity: .5; }
+.ch01-js .ch01-js-hex { padding-left: 10px; font-weight: 700; }
+</style>
+<div class="ch01-js" role="table" aria-label="Joystick 1, the byte at $DC01, bit by bit">
+<span role="row" style="display:contents"><span class="dg-label" role="columnheader">7</span><span class="dg-label" role="columnheader">6</span><span class="dg-label" role="columnheader">5</span><span class="dg-label" role="columnheader">fire</span><span class="dg-label" role="columnheader">right</span><span class="dg-label" role="columnheader">left</span><span class="dg-label" role="columnheader">down</span><span class="dg-label" role="columnheader">up</span><span></span></span>
+<span class="ch01-js-state">nothing touched</span>
+<span role="row" style="display:contents"><span class="dg-bit ch01-js-fixed">1</span><span class="dg-bit ch01-js-fixed">1</span><span class="dg-bit ch01-js-fixed">1</span><span class="dg-bit">1</span><span class="dg-bit">1</span><span class="dg-bit">1</span><span class="dg-bit">1</span><span class="dg-bit">1</span><span class="ch01-js-hex">$FF</span></span>
+<span class="ch01-js-state">holding left</span>
+<span role="row" style="display:contents"><span class="dg-bit ch01-js-fixed">1</span><span class="dg-bit ch01-js-fixed">1</span><span class="dg-bit ch01-js-fixed">1</span><span class="dg-bit">1</span><span class="dg-bit">1</span><span class="dg-bit dg-on">0</span><span class="dg-bit">1</span><span class="dg-bit">1</span><span class="ch01-js-hex">$FB</span></span>
+<span class="ch01-js-state">up + fire</span>
+<span role="row" style="display:contents"><span class="dg-bit ch01-js-fixed">1</span><span class="dg-bit ch01-js-fixed">1</span><span class="dg-bit ch01-js-fixed">1</span><span class="dg-bit dg-on">0</span><span class="dg-bit">1</span><span class="dg-bit">1</span><span class="dg-bit">1</span><span class="dg-bit dg-on">0</span><span class="ch01-js-hex">$EE</span></span>
+</div>

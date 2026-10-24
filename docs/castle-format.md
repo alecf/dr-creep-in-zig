@@ -26,6 +26,14 @@ A castle file (`z*`, e.g. `ZTUTORIAL`) loads verbatim at **$7800**, with the
 first two bytes of the `.prg` being the usual C64 load-address header (`00 78`)
 that must be stripped to get file-offset-0 == $7800.
 
+*(Corrected after verification against creep.cpp.)* The game itself loads a
+castle to **$9800** and keeps that copy untouched (the title sequence tours
+its rooms with `mObjectPtr += 0x2000` when `mIntro`). At the start of every
+game, `Game()` (`0D71`, creep.cpp:2909–2913) copies `readLEWord($9800)` bytes
+down to `$7800` and plays the copy, which it writes to (header scratch, door
+open bits). Only a saved position loads straight to `$7800`. The layout below
+is the same at either address.
+
 ```
 $7800 - $78FF   Castle header / player run-state block (256 bytes)
 $7900 - ...     Room directory: 8 bytes per room, terminated by 0xFF or 0x40
@@ -136,12 +144,12 @@ object stream.
 | `0x0809` | Sliding pole | length-prefixed loop, end=`0x00` | 3 bytes/entry |
 | `0x080C` | Ladder | length-prefixed loop, end=`0x00` | 3 bytes/entry |
 | `0x080F` | Doorbell | count-prefixed | 3 bytes/bell |
-| `0x0812` | Lightning machine/switch | special loop, end byte=`0x20` | 8 bytes/entry |
+| `0x0812` | Lightning machine/switch | special loop, ends on a byte with bit 5 set | 8 bytes/entry |
 | `0x0815` | Forcefield | loop, end=`0x00` | 4 bytes/entry |
 | `0x0818` | Mummy | loop, end=`0x00` | 7 bytes/entry |
 | `0x081B` | Key | loop, end=`0x00` | 4 bytes/entry |
 | `0x081E` | Lock | loop, end=`0x00` | 5 bytes/entry |
-| `0x0821` | MultiDraw | *(intro-only; not reverse-engineered — see §4.4)* | — |
+| `0x0821` | MultiDraw | loop, end=`0x00` (count byte; intro-only, see §4.4) | 6 bytes/entry |
 | `0x0824` | Ray gun | loop, end=`0x80` | 7 bytes/entry |
 | `0x0827` | Teleport | single object, self-terminating | variable |
 | `0x082A` | Trap door | loop, end=`0x80` | 5 bytes/entry |
@@ -182,19 +190,21 @@ blitter (`screenDraw`), not tile coordinates.
 |---|---|---|
 | 0 | X | |
 | 1 | Y | |
-| 2 | direction | `0`=up,`1`=right,`2`=down,`3`=left (`eDirection`) — which wall the door graphic faces |
+| 2 | direction | bits 0–1: `0`=up,`1`=right,`2`=down,`3`=left — the wall the door is on, on the castle map. **Bit 7 = door open** (`obj_Door_Prepare` tests `& 0x80`; `obj_Door_Execute` sets it in the castle data when a door opens). *(Corrected after verification against creep.cpp.)* |
 | 3 | linkRoom | room number this door leads to |
 | 4 | linkDoor | door index (within `linkRoom`) the player arrives at |
-| 5 | mapX | destination marker X on the mini-map (redundant with target room's own mapX, used for the "you are here" cursor) |
-| 6 | mapY | destination marker Y |
-| 7 | castleExitDoor | `0`/`1` — `1` marks this as the castle's exit (escape) door; also empirically doubles as a per-room door **ID** referenced by Doorbell/Lock `doorID` fields (`obj_Door_Prepare`, creep.cpp:5683, reads this same byte as an index into `mRoomObjects[]`) |
+| 5 | mapX | the door's position on the castle map, X offset from the room's top-left corner. `mapRoomDraw` uses it for top/bottom-wall doors; `mapArrowDraw` uses both bytes for every door: arrow at (room x + byte5 + dx[side], room y + byte6 + dy[side]), dx = {−1, +2, −1, −5} (`$11DA`), dy = {−10, −2, +6, −2} (`$11DE`). The tutorial's room 0 right-wall door has mapX = 10 in a 12-wide room (width − 2). *(Corrected after verification against creep.cpp.)* |
+| 6 | mapY | Y offset of the same (used by `mapRoomDraw` for left/right-wall doors, by the arrow for all) |
+| 7 | castleExitDoor | `0`/`1` — `1` marks this as the castle's exit (escape) door. It is **not** a door ID: `obj_Door_Prepare` uses it only to index the frame table at `$41D1` (`$06` normal frame, `$96` exit frame), and the same `X` is then overwritten by `object_Create(byte &X)`. `obj_Door_InFront` sets the escaped flag at `$785D` when it is non-zero. *(Corrected after verification against creep.cpp.)* |
 
 **Walkway / Sliding pole / Ladder** (`0x0806`/`0x0809`/`0x080C`, loop end=`0x00`, 3 bytes/entry):
 `length`(1), `X`(1), `Y`(1). Loop stops when the next `length` byte is `0`.
 
 **Doorbell** (`0x080F`, count-prefixed, 3 bytes/entry) — `objectDoorBell.hpp`:
-`X`(1), `Y`(1), `doorID`(1) — the door this bell operates (matches a Door's
-offset-7 field).
+`X`(1), `Y`(1), `door`(1) — the door this bell operates: the door's **index
+in the room's door group** (0 = first), matched against `objNumber = count`
+in `obj_Door_Button_Prepare`. The bell is drawn in the colour of that door's
+destination room. *(Corrected after verification against creep.cpp.)*
 
 **Lightning** (`0x0812`, special loop, end byte `0x20`, 8 bytes/entry) —
 `objectLightning.hpp`. Two sub-formats distinguished by the high bit of the
@@ -205,7 +215,9 @@ first byte:
   `X`(1), `Y`(1), 1 unused byte, then 4 bytes = up to 4 **machine indices**
   this switch controls (each stored as `machineNumber * 8`, `0xFF` = unused
   slot).
-Loop ends when the next entry's first byte is exactly `0x20`.
+Loop ends when the next entry's first byte has **bit 5 set** (`& 0x20`,
+`LIGHTNING_END_MARKER`), not when it equals `0x20` (real states are
+`$00/$40/$80/$C0`, so both read the same on real data). *(Corrected after verification against creep.cpp.)*
 
 **Forcefield** (`0x0815`, loop end=`0x00`, 4 bytes/entry) — two X/Y pairs, no
 header byte: `X0,Y0,X1,Y1` (part 0 = one post, part 1 = the other).
@@ -247,9 +259,11 @@ in this one record.
 unused/zero trailing bytes.
 
 **Text** (`0x0833`, loop end=`0x00`, variable) — `objectText.hpp`: `X`(1),
-`Y`(1), `color`(1, VIC colour 0–15), `style`(1, font/height selector — `0x22`
-seen on title lines, `0x21` on body lines; exact bit meaning not reverse
-engineered), then a PETSCII-ish string where **every character except the
+`Y`(1), `color`(1, VIC colour 0–15), `style`(1: bits 0–1 = height ×1–3, each glyph row repeated, a whole style
+byte of 0 = height 1; bits 4–5 pick one of four character sets from the
+table at `$2BE8` (`$D000/$D400/$D800/$DC00`), so bit 4 = reversed and
+bit 5 = the letters set; `0x22` on title lines, `0x21` on body lines — from
+`StringPrint`) *(Corrected after verification against creep.cpp.)*, then a PETSCII-ish string where **every character except the
 last has bit 7 clear**, and **the last character has bit 7 set** as an
 end-of-string marker (characters are stored uppercase already, `& 0x7F` to
 read). A room can have many Text tags in a row sharing a single trailing
@@ -263,7 +277,14 @@ end-game trophy pieces), followed by a variable list of placement `X,Y`
 pairs (2 bytes each, one per instance the piece should be redrawn at) ending
 in `0x00`.
 
-### 4.4 Not reverse-engineered
+### 4.4 MultiDraw and the intro tags
+
+*(Corrected after verification against creep.cpp.)* `obj_MultiDraw` is in
+`creep.cpp`: records of 6 bytes (`count, shape, x, y, dx, dy`) until a count
+of 0; it draws the shape `count` times, stepping by (dx, dy). The title
+screens' tags are the routines' own addresses (`$160A` MultiDraw, `$2A6D`
+text) rather than jump-table slots. The rest of this section is the
+original note:
 
 `eObjectMultiDraw` (`0x0821`) and its intro variants `0x160A`
 (`eObjectIntroMultiDraw`) / `0x2A6D` (`eObjectIntroText`) appear only in the
@@ -298,7 +319,7 @@ Decoded:
 | `7979` | `00` | end marker (0 length ⇒ stop) |
 | `797A` | `0f 08` | tag `0x080F` = Doorbell |
 | `797C` | `01` | count = 1 bell |
-| `797D` | `90 a8 00` | X=144 Y=168 doorID=0 (rings the door above) |
+| `797D` | `90 a8 00` | X=144 Y=168 door=0 (the room's first door) |
 | `7980` | `33 08` | tag `0x0833` = Text |
 | `7982` | `14 00 07 22` | X=20 Y=0 color=7 style=0x22 |
 | `7986`… | `44 4f 4f 52 53 20 41 4e 44 20 44 4f 4f 52 42 45 4c 4c d3` | `"DOORS AND DOORBELL"` + `S`\|0x80 → string = **"DOORS AND DOORBELLS"** |

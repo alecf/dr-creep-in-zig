@@ -1,0 +1,8 @@
+{
+ "back": "castle: room gatehouse: door 0 leads to gallery door 0, which doesn't lead back",
+ "ladder": "castle: room ladders: ladder 0 must start and end on a walkway (rows 128 and 184)",
+ "zero": "castle: room gatehouse: walkway 0 has length 0, which is the end marker",
+ "overlap": "castle: room gatehouse: door 0 overlaps bell 0",
+ "keys": "castle: room keys: text 6 (\"UP. THEN TRY THE LOCK.\") runs off the screen (x 20 to 195; the screen is 16 to 175)",
+ "typo": "enum 'training.Room' has no member named 'galery'"
+}

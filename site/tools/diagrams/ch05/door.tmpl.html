@@ -1,0 +1,36 @@
+<style>
+.ch05-dr { display: grid; gap: 12px; }
+.ch05-dr-main { display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: flex-start; }
+.ch05-dr-scene { flex: 0 1 320px; width: 320px; min-width: 0; box-shadow: 0 0 0 1px var(--rule); }
+.ch05-dr .ch05-dr-ding { fill: var(--accent); font-family: var(--mono); paint-order: stroke; stroke: var(--sheet); stroke-width: 5px; stroke-linejoin: round; }
+.ch05-dr .ch05-dr-mark rect { fill: none; stroke: var(--accent); stroke-width: 2px; }
+.ch05-dr .ch05-dr-mark .ch05-dr-halo { stroke: var(--sheet); stroke-width: 5px; }
+.ch05-dr-cards { flex: 1 1 200px; min-width: 0; display: grid; }
+.ch05-dr-cards > div { grid-area: 1 / 1; display: grid; gap: 6px; align-content: start; }
+.ch05-dr-t { font: 400 .7rem/1.2 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.ch05-dr dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 1px 12px; font-size: .78rem; }
+.ch05-dr dt { color: var(--ink-soft); }
+.ch05-dr dd { margin: 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ch05-dr dd.ch05-dr-on { color: var(--accent); font-weight: 700; }
+.ch05-dr-cards p { margin: 0; font-size: .74rem; line-height: 1.4; color: var(--ink-soft); max-width: 34ch; }
+.ch05-dr-bar { position: relative; height: 10px; border-radius: 3px; background: var(--code-bg); box-shadow: inset 0 0 0 1px var(--rule); overflow: hidden; }
+.ch05-dr-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: var(--accent); }
+.ch05-dr-bar > i { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--sheet); }
+.ch05-dr-lbls { position: relative; height: 1.1em; font-size: .66rem; color: var(--ink-soft); }
+.ch05-dr-lbls > span { position: absolute; top: 0; white-space: nowrap; }
+.ch05-dr-time { font-size: .72rem; color: var(--ink-soft); }
+@@STYLE@@
+</style>
+<div class="ch05-dr" data-animate>
+  <div class="ch05-dr-main">
+    @@SCENE@@
+    <div class="ch05-dr-cards" aria-live="off">
+    @@CARDS@@
+    </div>
+  </div>
+  <div>
+    <div class="ch05-dr-bar"><span class="ch05-dr-fill"></span>@@TICKS@@</div>
+    <div class="ch05-dr-lbls">@@LABELS@@</div>
+  </div>
+  <div class="ch05-dr-time">One engine step every other frame: the real door opens in 48 frames, a little under a second. Slowed down here.</div>
+</div>
