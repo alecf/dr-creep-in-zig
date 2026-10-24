@@ -1,7 +1,11 @@
-"""Generate the Chapter 2 diagrams into site/page/diagrams/ch02-*.html."""
+"""Generate the Chapter 2 diagrams into site/page/diagrams/ch02-*.html.
+
+    python3 site/tools/diagrams/ch02/gen.py                     # every figure
+    python3 site/tools/diagrams/ch02/gen.py ch02-double-buffer  # just that one
+"""
 import pathlib
 
-OUT = pathlib.Path("/home/user/dr-creep-in-zig/site/page/diagrams")
+OUT = pathlib.Path(__file__).resolve().parents[3] / "page" / "diagrams"
 
 # ---------------------------------------------------------------- 1. fat pixels
 # Byte $6C = 01 10 11 00 in a cell painted with the walkway's stone colours:
@@ -212,15 +216,27 @@ shape = f"""<style>
 """
 
 # ---------------------------------------------------------------- 5. double buffer
-R0 = ["........", "...33...", "..3333..", ".333333.", "..1111..", "..11.1..", "..11111.", "...111..",
-      "...22...", "..2222..", ".222222.", ".222222.", ".1.22.1.", "..3333..", "..2222..", "..2..2..",
-      "..2..2..", "..2..2..", "..2..2..", "..3..3..", "..33.33."]
-R1 = ["........", "...33...", "..3333..", ".333333.", "..1111..", "..11.1..", "..11111.", "...111..",
-      "...22...", "..2222..", ".222222.", "..22222.", "..1221..", "..3333..", "..2222..", "..2..2..",
-      ".2...2..", ".2....2.", ".2....2.", ".3....3.", ".33...33"]
-SPR = {"1": "c10", "2": "c1", "3": "c8"}  # 01 skin (pink), 10 own colour (white), 11 orange
+# Animated: two frames in slow motion, the same beam over two set-ups side by
+# side. Frame N: sprite 0 shows block 0 and a busy frame unpacks the next
+# stride (explorer_right_1) at lines 230-240 (630 cycles = 10 lines). With two
+# blocks it goes into block 8 (0 ^ 8) and he's drawn whole; with one it goes
+# into block 0 under the beam, overtakes it at row 16, and he tears at the
+# knees. Frame N+1: line 0, show() flips the pointer, and he's drawn whole.
+ART2 = (pathlib.Path(__file__).resolve().parents[3] / "code/ch02/src/art.zig").read_text()
 
-def sprite_svg(rows, w, cls="", split=None):
+def frame_art(name):
+    import re
+    m = re.search(r"pub const %s = frame\(\.white, &\.\{(.*?)\}\);" % name, ART2, re.S)
+    return re.findall(r'"([.123]+)"', m.group(1))
+
+R0 = frame_art("explorer_right_0")
+R1 = frame_art("explorer_right_1")
+R3 = frame_art("explorer_right_3")  # the stride before 0: what's stale in block 8
+SPR = {"1": "c10", "2": "c1", "3": "c8"}  # 01 skin (pink), 10 own colour (white), 11 orange
+TEAR = 16  # the row the unpack overtakes the beam (see Chapter 2's "Make it tear")
+TORN = R0[:TEAR] + R1[TEAR:]
+
+def sprite_svg(rows, w, cls=""):
     rects = []
     for y, row in enumerate(rows):
         x = 0
@@ -234,62 +250,265 @@ def sprite_svg(rows, w, cls="", split=None):
                 n += 1
             rects.append(f'<rect x="{x * 2}" y="{y}" width="{n * 2}" height="1" style="fill:var(--{SPR[ch]})"/>')
             x += n
-    line = ""
-    if split is not None:
-        line = f'<line x1="-1" x2="17" y1="{split}" y2="{split}" style="stroke:var(--accent);stroke-width:.35;stroke-dasharray:1 .6"/>'
     h = w * 21 / 16
-    return (f'<svg class="{cls}" viewBox="0 0 16 21" width="{w}" height="{h:g}" shape-rendering="crispEdges" aria-hidden="true">'
-            + "".join(rects) + line + "</svg>")
+    c = f' class="{cls}"' if cls else ""
+    return (f'<svg{c} viewBox="0 0 16 21" width="{w}" height="{h:g}" shape-rendering="crispEdges" aria-hidden="true">'
+            + "".join(rects) + "</svg>")
 
-TORN = R0[:16] + R1[16:]
+# ---- the clock: raster lines in frame N (0) and N+1 (1) -> seconds
 LINES = 312
+SPR_TOP = 51 + 171        # sprite row 0 on raster line 222 (display line 0 is raster 51)
+UNP0, UNP1 = 230, 240     # the busy frame's unpack: 630 cycles = 10 lines
+SEGS = [(0, 215, 1.3), (215, 250, 5.2), (250, LINES - 1, 0.9)]  # slow motion around him
+HOLD = (1.2, 2.0)         # line 0 of each frame: show() runs
+END_HOLD = 1.8
+
+def frame_start(f):
+    t = 0.0
+    for g in range(f):
+        t += HOLD[g] + sum(s[2] for s in SEGS)
+    return t
+
+def T(f, line):
+    """Seconds into the loop when the beam reaches `line` of frame f."""
+    t = frame_start(f) + HOLD[f]
+    for a, b, d in SEGS:
+        if line <= b:
+            return t + d * (line - a) / (b - a)
+        t += d
+    return t
+
+TOTAL = frame_start(2) + END_HOLD
+def P(t):
+    return f"{t / TOTAL * 100:.3f}%"
+EPS = 0.004  # seconds: a jump between two keyframes
+
+kf = []   # generated @keyframes
+anim = []  # generated rules that use them
+def keyframes(name, frames, timing="step-end"):
+    """frames: [(t, css)]; holds each value until the next (step-end)."""
+    body = " ".join(f"{P(t)} {{ {css} }}" for t, css in frames)
+    kf.append(f"@keyframes {name} {{ {body} }}")
+    anim.append(f".ch02-db .{name} {{ animation: {name} {TOTAL:.2f}s {timing} infinite; }}")
+
+def shown_during(name, spans):
+    """Visible only during [a, b) spans."""
+    fr = [(0, "opacity: 0")]
+    for a, b in spans:
+        fr += [(a, "opacity: 1"), (b, "opacity: 0")]
+    fr.append((TOTAL, "opacity: 0" if spans[-1][1] < TOTAL else "opacity: 1"))
+    if spans[0][0] == 0:
+        fr[0] = (0, "opacity: 1")
+        fr.pop(1)
+    keyframes(name, fr)
+
+def reveal(name, a, b, hide_at=TOTAL):
+    """A picture drawn top row first, a row at a time from a to b, kept until hide_at."""
+    shut, full = "clip-path: inset(0 0 100% 0)", "clip-path: inset(0 0 0 0)"
+    fr = [(0, shut + "; animation-timing-function: step-end"),
+          (a, shut + "; animation-timing-function: steps(21, end)"),
+          (b, full + "; animation-timing-function: step-end"),
+          (hide_at, shut), (TOTAL, shut)]
+    keyframes(name, fr)
+
+def sweep(name, a, b):
+    """A row marker moving from the top to the bottom of a block from a to b."""
+    keyframes(name, [(0, "opacity: 0; top: 0%"), (a, "opacity: 1; top: 0%; animation-timing-function: linear"),
+                     (b, "opacity: 1; top: 100%; animation-timing-function: step-end"), (b + EPS, "opacity: 0; top: 100%"),
+                     (TOTAL, "opacity: 0; top: 100%")])
+
+# the beam, and the line number it's on
+pts = [(0, 0)]
+for f in range(2):
+    pts.append((T(f, 0), 0))
+    for a, b, d in SEGS:
+        pts.append((T(f, b), b))
+    if f == 0:
+        pts.append((T(f, LINES - 1) + EPS, 0))
+pts.append((TOTAL, LINES - 1))
+keyframes("ch02-db-beam", [(t, f"top: {l / LINES * 100:.3f}%; animation-timing-function: linear") for t, l in pts])
+keyframes("ch02-db-ln", [(t, f"--ch02-db-line: {l}; animation-timing-function: linear") for t, l in pts])
+
+F1 = T(1, 0) - HOLD[1]  # frame N+1 begins
+DRAW = [(T(f, SPR_TOP), T(f, SPR_TOP + 21)) for f in range(2)]
+UNPACK = (T(0, UNP0), T(0, UNP1))
+shown_during("ch02-db-fN", [(0, F1)])
+shown_during("ch02-db-fN1", [(F1, TOTAL)])
+shown_during("ch02-db-flip", [(F1, T(1, 0))])
+shown_during("ch02-db-band", [UNPACK])
+# what the beam has drawn on screen: frame N's picture, then frame N+1's over it
+reveal("ch02-db-drawN", *DRAW[0])
+reveal("ch02-db-drawN1", *DRAW[1])
+reveal("ch02-db-fill", *UNPACK)
+sweep("ch02-db-readN", *DRAW[0])
+sweep("ch02-db-readN1", *DRAW[1])
+sweep("ch02-db-write", *UNPACK)
+shown_during("ch02-db-tear", [(T(0, SPR_TOP + TEAR), T(1, SPR_TOP + TEAR))])
+
+NOTE = [0]
+def notes(cards):
+    """[(until, text)]: one note at a time, each until the next begins."""
+    out, start = [], 0
+    for until, text in cards:
+        NOTE[0] += 1
+        shown_during(f"ch02-db-n{NOTE[0]}", [(start, until)])
+        out.append(f'<p class="ch02-db-n{NOTE[0]}">{text}</p>')
+        start = until
+    return '<div class="ch02-db-notes">' + "".join(out) + "</div>"
+
+STEPS = [T(0, SPR_TOP), UNPACK[0], UNPACK[1], F1, T(1, 0), T(1, SPR_TOP), DRAW[1][1], TOTAL]
+notes_two = notes(list(zip(STEPS, [
+    "show() has pointed sprite 0 at block 0. The beam sweeps down.",
+    "The beam reaches him: it reads block 0, a row a line.",
+    "Busy frame: the next stride is unpacked into block 8 (0 ^ 8). The beam never reads it.",
+    "He's drawn whole from block 0. Block 8 waits, finished.",
+    "Line 0: show() writes 8 to $CFF8. One byte, and the flip is done.",
+    "The beam sweeps down to him.",
+    "It reads block 8: the new stride, whole.",
+    "Block 0 is the hidden one now (8 ^ 8): the next unpack goes there.",
+])))
+notes_one = notes(list(zip(STEPS, [
+    "One block: sprite 0 shows block 0, so the unpack must go there too.",
+    "The beam reaches him: it reads block 0, a row a line.",
+    "The unpack rewrites block 0 under the beam, about two rows a line. At row 16 it overtakes.",
+    "Above his knees, the old stride; below, the new. Torn.",
+    "Line 0: $CFF8 ← 0 again. There's nowhere else to point.",
+    "The beam sweeps down to him.",
+    "Block 0 is finished now, so he's whole again, a frame late.",
+    "Every busy frame that changes his stride tears him like this.",
+])))
+
+def stack(base, layers, w):
+    """A picture with later pictures drawn over it, each layer `(rows, cls)`."""
+    return (f'<span class="ch02-db-stack">{sprite_svg(base, w)}'
+            + "".join(sprite_svg(r, w, c) for r, c in layers) + "</span>")
+
+def block(n, base, layers, reads, writes, tags):
+    marks = "".join(f'<i class="ch02-db-read {c}"><b>beam</b></i>' for c in reads)
+    marks += "".join(f'<i class="ch02-db-wr {c}"><b>unpack</b></i>' for c in writes)
+    tag = "".join(f'<span class="ch02-db-tag {c}{" ch02-db-on" if t == "shown" else ""}">{t}</span>' for t, c in tags)
+    return (f'<div class="ch02-db-blk"><div class="ch02-db-bh"><span class="dg-label">block {n}</span><span class="ch02-db-tags">{tag}</span></div>'
+            f'<div class="ch02-db-pic"><div class="ch02-db-in">{stack(base, layers, 48)}{marks}</div></div></div>')
+
+def screen(ptrs, unp_into, small):
+    ptr = "".join(f'<span class="{c}">$CFF8 ← {v}</span>' for v, c in ptrs)
+    return f"""<div class="ch02-db-scr">
+      <div class="ch02-db-disp"></div>
+      <div class="ch02-db-floor"></div>
+      <div class="ch02-db-ptr"><span class="ch02-db-pv">{ptr}</span></div>
+      <i class="ch02-db-flash ch02-db-flip"></i>
+      <div class="ch02-db-spr">{small}</div>
+      <div class="ch02-db-unp ch02-db-band"></div>
+      <div class="ch02-db-unl ch02-db-band">unpack<br>→ block {unp_into}</div>
+      <i class="ch02-db-beam"></i>
+    </div>"""
+
+def result(base, layers, tear=False):
+    t = '<i class="ch02-db-tearl ch02-db-tear"></i>' if tear else ""
+    tag = '<span class="ch02-db-tags"><span class="ch02-db-tag ch02-db-bad ch02-db-tear">torn at the knees</span></span>' if tear else ""
+    reads = '<i class="ch02-db-read ch02-db-readN"><b>beam</b></i><i class="ch02-db-read ch02-db-readN1"><b>beam</b></i>'
+    return (f'<div class="ch02-db-blk"><div class="ch02-db-bh"><span class="dg-label">on screen</span>{tag}</div>'
+            f'<div class="ch02-db-pic"><div class="ch02-db-in">{stack(base, layers, 48)}{t}{reads}</div></div></div>')
+
+two = f"""<div class="ch02-db-case" aria-label="Two blocks: block 8 is unpacked while the beam reads block 0, then the pointer flips">
+    <div class="dg-label">two blocks</div>
+    <div class="ch02-db-body">
+    {screen([(0, "ch02-db-fN"), (8, "ch02-db-fN1")], 8, stack(R0, [(R0, "ch02-db-drawN"), (R1, "ch02-db-drawN1")], 16))}
+    <div class="ch02-db-col">
+      {block(0, R0, [], ["ch02-db-readN"], [], [("shown", "ch02-db-fN"), ("hidden", "ch02-db-fN1")])}
+      {block(8, R3, [(R1, "ch02-db-fill")], ["ch02-db-readN1"], ["ch02-db-write"], [("hidden", "ch02-db-fN"), ("shown", "ch02-db-fN1")])}
+      {result(R0, [(R0, "ch02-db-drawN"), (R1, "ch02-db-drawN1")])}
+    </div>
+    </div>
+    {notes_two}
+  </div>"""
+one = f"""<div class="ch02-db-case" aria-label="One block: the unpack rewrites block 0 while the beam reads it, and he tears at the knees">
+    <div class="dg-label">one block</div>
+    <div class="ch02-db-body">
+    {screen([(0, "ch02-db-fN"), ("0", "ch02-db-fN1")], 0, stack(R0, [(TORN, "ch02-db-drawN"), (R1, "ch02-db-drawN1")], 16))}
+    <div class="ch02-db-col">
+      {block(0, R0, [(R1, "ch02-db-fill")], ["ch02-db-readN", "ch02-db-readN1"], ["ch02-db-write"], [("shown", "")])}
+      {result(R0, [(TORN, "ch02-db-drawN"), (R1, "ch02-db-drawN1")], tear=True)}
+    </div>
+    </div>
+    {notes_one}
+  </div>"""
+
 def pct(line):
     return f"{line / LINES * 100:.3f}%"
 
-def panel(title, ptr, unpack_at, unpack_into, shown_rows, note, verdict, torn=False):
-    bar = "" if unpack_at is None else (
-        f'<div class="ch02-db-unp" style="top:{pct(unpack_at)};height:{pct(10)}"></div>'
-        f'<div class="ch02-db-unl" style="top:{pct(unpack_at - 3)}">unpack<br>→ block {unpack_into}</div>')  # 630 cycles = 10 lines
-    return f"""
-  <div class="ch02-db-p">
-    <div class="dg-label">{title}</div>
-    <div class="ch02-db-scr">
-      <div class="ch02-db-disp"></div>
-      <div class="ch02-db-floor"></div>
-      <div class="ch02-db-ptr">$CFF8 ← {ptr}</div>
-      <div class="ch02-db-spr">{sprite_svg(shown_rows, 16)}</div>
-      {bar}
-    </div>
-    <div class="ch02-db-out">{sprite_svg(shown_rows, 32, split=16 if torn else None)}<span>{note}<br><b>{verdict}</b></span></div>
-  </div>"""
+css = f"""@property --ch02-db-line {{ syntax: '<integer>'; inherits: false; initial-value: 0; }}
+.ch02-db {{ display: grid; gap: 14px; }}
+.ch02-db-clock {{ display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }}
+.ch02-db-fr {{ display: inline-grid; }}
+.ch02-db-fr > * {{ grid-area: 1 / 1; }}
+.ch02-db-clock b {{ font-weight: 600; }}
+.ch02-db-ln {{ counter-reset: ch02l var(--ch02-db-line); font-variant-numeric: tabular-nums; }}
+.ch02-db-ln::after {{ content: counter(ch02l); }}
+.ch02-db-cases {{ display: flex; flex-wrap: wrap; gap: 18px 26px; }}
+.ch02-db-case {{ flex: 0 1 290px; min-width: 0; display: grid; gap: 8px; align-content: start; }}
+.ch02-db-body {{ display: flex; gap: 12px; align-items: flex-start; }}
+.ch02-db-scr {{ position: relative; flex: 0 0 104px; height: 312px; background: var(--code-bg); box-shadow: 0 0 0 1px var(--rule); border-radius: 4px; overflow: hidden; }}
+.ch02-db-disp {{ position: absolute; left: 8px; right: 8px; top: {pct(51)}; height: {pct(200)}; background: var(--c0); }}
+.ch02-db-floor {{ position: absolute; left: 8px; right: 8px; top: {pct(51 + 192)}; height: {pct(7)}; background: var(--c10); border-top: 1px solid var(--c15); }}
+.ch02-db-ptr {{ position: absolute; left: 0; right: 0; top: 0; padding: 3px 6px; font-size: .7rem; z-index: 1; }}
+.ch02-db-pv {{ display: inline-grid; }}
+.ch02-db-pv > span {{ grid-area: 1 / 1; }}
+.ch02-db-flash {{ position: absolute; left: 0; right: 0; top: 0; height: 1.5rem; background: color-mix(in srgb, var(--accent) 22%, transparent); box-shadow: inset 0 0 0 1.5px var(--accent); border-radius: 4px 4px 0 0; }}
+.ch02-db-spr {{ position: absolute; left: 22px; top: {pct(SPR_TOP)}; line-height: 0; }}
+.ch02-db-unp {{ position: absolute; left: 4px; right: 4px; top: {pct(UNP0)}; height: {pct(UNP1 - UNP0)}; background: color-mix(in srgb, var(--accent) 30%, transparent); box-shadow: 0 0 0 1px var(--accent); }}
+.ch02-db-unl {{ position: absolute; right: 3px; top: {pct(UNP0 - 3)}; transform: translateY(-100%); text-align: right; font-size: .64rem; line-height: 1.2; color: var(--ink); background: var(--sheet); padding: 1px 3px; border-radius: 3px; box-shadow: 0 0 0 1px var(--accent); }}
+.ch02-db-beam {{ position: absolute; left: 0; right: 0; top: 0; height: 2px; margin-top: -1px; background: var(--accent); box-shadow: 0 0 6px 1px var(--accent); }}
+.ch02-db-col {{ flex: 1 1 auto; min-width: 0; display: grid; gap: 10px; align-content: start; }}
+.ch02-db-blk {{ display: grid; gap: 3px; }}
+.ch02-db-bh {{ display: flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; }}
+.ch02-db-bh > .dg-label {{ white-space: nowrap; }}
+.ch02-db-tags {{ display: inline-grid; }}
+.ch02-db-tag {{ grid-area: 1 / 1; font-size: .66rem; color: var(--ink-soft); }}
+.ch02-db-tag.ch02-db-on, .ch02-db-tag.ch02-db-bad {{ color: var(--accent); font-weight: 600; }}
+.ch02-db-pic {{ position: relative; justify-self: start; margin-left: 36px; margin-right: 52px; padding: 3px; background: var(--c0); box-shadow: 0 0 0 1px var(--rule); line-height: 0; }}
+.ch02-db-in {{ position: relative; }}
+.ch02-db-stack {{ display: grid; }}
+.ch02-db-stack > svg {{ grid-area: 1 / 1; }}
+.ch02-db-read, .ch02-db-wr {{ position: absolute; top: 0; height: 0; font-style: normal; line-height: 1; }}
+.ch02-db-in > .ch02-db-read {{ left: -39px; right: 0; border-top: 2px solid var(--accent); }}
+.ch02-db-in > .ch02-db-wr {{ left: 0; right: -55px; border-top: 2px dashed var(--ink); }}
+.ch02-db-read b, .ch02-db-wr b {{ position: absolute; top: -.62rem; font: 600 .6rem/1 var(--mono); padding: 1px 2px; background: var(--sheet); }}
+.ch02-db-read b {{ left: 0; color: var(--accent); }}
+.ch02-db-wr b {{ right: 0; color: var(--ink); }}
+.ch02-db-tearl {{ position: absolute; left: -6px; right: -6px; top: {TEAR / 21 * 100:.3f}%; border-top: 1.5px dashed var(--accent); }}
+.ch02-db-notes {{ display: grid; font-size: .74rem; line-height: 1.4; }}
+.ch02-db-notes > p {{ grid-area: 1 / 1; margin: 0; }}
+.ch02-db-key {{ display: grid; grid-template-columns: max-content 1fr; gap: 3px 10px; font-size: .74rem; }}
+.ch02-db-key b {{ font-weight: 600; }}
+"""
 
 dbl = f"""<style>
-.ch02-db {{ display: flex; flex-wrap: wrap; gap: 16px; }}
-.ch02-db-p {{ flex: 1 1 92px; max-width: 200px; display: grid; gap: 8px; align-content: start; }}
-.ch02-db-scr {{ position: relative; height: 312px; background: var(--code-bg); box-shadow: 0 0 0 1px var(--rule); border-radius: 4px; }}
-.ch02-db-disp {{ position: absolute; left: 10px; right: 10px; top: {pct(51)}; height: {pct(200)}; background: var(--c0); }}
-.ch02-db-floor {{ position: absolute; left: 10px; right: 10px; top: {pct(51 + 192)}; height: {pct(7)}; background: var(--c10); border-top: 1px solid var(--c15); }}
-.ch02-db-ptr {{ position: absolute; left: 0; right: 0; top: 0; padding: 3px 8px; border-top: 2px solid var(--accent); font-size: .72rem; }}
-.ch02-db-spr {{ position: absolute; left: calc(50% - 8px); top: {pct(51 + 171)}; line-height: 0; }}
-.ch02-db-spr svg {{ display: block; }}
-.ch02-db-unp {{ position: absolute; left: 4px; right: 4px; background: color-mix(in srgb, var(--accent) 18%, transparent); box-shadow: 0 0 0 1px var(--accent); }}
-.ch02-db-unl {{ position: absolute; right: 4px; transform: translateY(-100%); text-align: right; font-size: .68rem; line-height: 1.25; color: var(--ink); background: var(--sheet); padding: 1px 4px; border-radius: 3px; }}
-.ch02-db-out {{ display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: .72rem; line-height: 1.35; }}
-.ch02-db-out svg {{ flex: none; background: var(--c0); padding: 3px; box-sizing: content-box; }}
-.ch02-db-out b {{ color: var(--accent); font-weight: 600; }}
-.ch02-db-key {{ display: grid; grid-template-columns: max-content 1fr; gap: 3px 10px; }}
-.ch02-db-key b {{ font-weight: 600; }}
+{css}{chr(10).join(kf)}
+{chr(10).join(anim)}
 </style>
-<div class="ch02-db">{panel("frame N", 0, 230, 8, R0, "beam reads block 0", "whole (block 8 is hidden)")}{panel("frame N + 1", 8, None, None, R1, "beam reads block 8", "whole, and new")}{panel("one block", 0, 230, 0, TORN, "beam and unpack share block 0", "torn at the knees", torn=True)}
-</div>
-<div class="ch02-db-key">
-  <b>top to bottom</b><span>one frame's 312 raster lines; the black area is the display</span>
-  <b>$CFF8 ← n</b><span>show() points sprite 0 at block n, on line 0</span>
-  <b>band</b><span>a busy frame's unpack: 630 cycles, lines 230–240, while the beam crosses him</span>
+<div class="ch02-db" data-animate>
+  <div class="ch02-db-clock"><span class="ch02-db-fr"><b class="ch02-db-fN">frame N</b><b class="ch02-db-fN1">frame N + 1</b></span><span>raster line <b class="ch02-db-ln"></b></span></div>
+  <div class="ch02-db-cases">
+  {two}
+  {one}
+  </div>
+  <div class="ch02-db-key">
+    <b>top to bottom</b><span>one frame's 312 raster lines; the black area is the display, lines 51–250</span>
+    <b>$CFF8 ← n</b><span>show() points sprite 0 at block n, on line 0</span>
+    <b>^ 8</b><span>the hidden block is the shown one ^ 8: 0 and 8 differ only in bit 3</span>
+    <b>band</b><span>a busy frame's unpack: 630 cycles, lines 230–240, while the beam crosses him</span>
+    <b>slow motion</b><span>a frame really lasts 1/50 s; the lines around him are slowed down most</span>
+  </div>
 </div>
 """
 
-for name, html in [("ch02-fat-pixels", fat), ("ch02-cell-order", cells), ("ch02-row-table", table),
-                   ("ch02-shape-entry", shape), ("ch02-double-buffer", dbl)]:
-    (OUT / f"{name}.html").write_text(html)
-    print("wrote", name)
+if __name__ == "__main__":
+    import sys
+    want = set(sys.argv[1:])  # e.g. ch02-double-buffer; nothing = every figure
+    for name, html in [("ch02-fat-pixels", fat), ("ch02-cell-order", cells), ("ch02-row-table", table),
+                       ("ch02-shape-entry", shape), ("ch02-double-buffer", dbl)]:
+        if want and name not in want:
+            continue
+        (OUT / f"{name}.html").write_text(html)
+        print("wrote", name)

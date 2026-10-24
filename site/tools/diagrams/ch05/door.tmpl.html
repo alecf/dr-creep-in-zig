@@ -1,29 +1,36 @@
 <style>
-.ch05-d { display: flex; flex-wrap: wrap; gap: 14px 9px; align-items: flex-start; }
-.ch05-d > div { display: flex; flex-direction: column; gap: 5px; width: 96px; }
-.ch05-d svg { width: 96px; }
-.ch05-d .ch05-c0 { fill: var(--c0); } .ch05-d .ch05-c7 { fill: var(--c7); } .ch05-d .ch05-c8 { fill: var(--c8); }
-.ch05-d .ch05-c9 { fill: var(--c9); } .ch05-d .ch05-c11 { fill: var(--c11); } .ch05-d .ch05-c12 { fill: var(--c12); }
-.ch05-d .ch05-c15 { fill: var(--c15); }
-.ch05-d dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 0 6px; font-size: .72rem; }
-.ch05-d dt { color: var(--ink-soft); } .ch05-d dd { margin: 0; white-space: nowrap; }
-.ch05-d .ch05-on { color: var(--accent); font-weight: 700; }
-.ch05-d p { margin: 0; font-size: .72rem; color: var(--ink-soft); }
+.ch05-dr { display: grid; gap: 12px; }
+.ch05-dr-main { display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: flex-start; }
+.ch05-dr-scene { flex: 0 1 320px; width: 320px; min-width: 0; box-shadow: 0 0 0 1px var(--rule); }
+.ch05-dr .ch05-dr-ding { fill: var(--accent); font-family: var(--mono); paint-order: stroke; stroke: var(--sheet); stroke-width: 5px; stroke-linejoin: round; }
+.ch05-dr .ch05-dr-mark rect { fill: none; stroke: var(--accent); stroke-width: 2px; }
+.ch05-dr .ch05-dr-mark .ch05-dr-halo { stroke: var(--sheet); stroke-width: 5px; }
+.ch05-dr-cards { flex: 1 1 200px; min-width: 0; display: grid; }
+.ch05-dr-cards > div { grid-area: 1 / 1; display: grid; gap: 6px; align-content: start; }
+.ch05-dr-t { font: 400 .7rem/1.2 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.ch05-dr dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 1px 12px; font-size: .78rem; }
+.ch05-dr dt { color: var(--ink-soft); }
+.ch05-dr dd { margin: 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ch05-dr dd.ch05-dr-on { color: var(--accent); font-weight: 700; }
+.ch05-dr-cards p { margin: 0; font-size: .74rem; line-height: 1.4; color: var(--ink-soft); max-width: 34ch; }
+.ch05-dr-bar { position: relative; height: 10px; border-radius: 3px; background: var(--code-bg); box-shadow: inset 0 0 0 1px var(--rule); overflow: hidden; }
+.ch05-dr-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: var(--accent); }
+.ch05-dr-bar > i { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--sheet); }
+.ch05-dr-lbls { position: relative; height: 1.1em; font-size: .66rem; color: var(--ink-soft); }
+.ch05-dr-lbls > span { position: absolute; top: 0; white-space: nowrap; }
+.ch05-dr-time { font-size: .72rem; color: var(--ink-soft); }
+@@STYLE@@
 </style>
-<div class="ch05-d">
-  <div><span class="dg-label">Bell rings</span>@@D0@@
-    <dl><dt>execute</dt><dd class="ch05-on">1</dd><dt>open</dt><dd>0</dd></dl>
-    <p>ring sets the flag. Nothing drawn yet.</p></div>
-  <div><span class="dg-label">Step 1</span>@@D1@@
-    <dl><dt>execute</dt><dd class="ch05-on">1</dd><dt>open</dt><dd>1</dd><dt>step</dt><dd>23 → 22</dd></dl>
-    <p>Open bit set in the castle, both sides. Row 23 wiped.</p></div>
-  <div><span class="dg-label">Step 12</span>@@D2@@
-    <dl><dt>execute</dt><dd class="ch05-on">1</dd><dt>open</dt><dd>1</dd><dt>step</dt><dd>12 → 11</dd></dl>
-    <p>A row a step, bottom up.</p></div>
-  <div><span class="dg-label">Step 23</span>@@D3@@
-    <dl><dt>execute</dt><dd class="ch05-on">1</dd><dt>open</dt><dd>1</dd><dt>step</dt><dd>1 → 0</dd></dl>
-    <p>One row left.</p></div>
-  <div><span class="dg-label">Step 24</span>@@D4@@
-    <dl><dt>execute</dt><dd>0</dd><dt>open</dt><dd>1</dd><dt>step</dt><dd>0</dd></dl>
-    <p>Row 0 wiped, the open door drawn, the flag cleared.</p></div>
+<div class="ch05-dr" data-animate>
+  <div class="ch05-dr-main">
+    @@SCENE@@
+    <div class="ch05-dr-cards" aria-live="off">
+    @@CARDS@@
+    </div>
+  </div>
+  <div>
+    <div class="ch05-dr-bar"><span class="ch05-dr-fill"></span>@@TICKS@@</div>
+    <div class="ch05-dr-lbls">@@LABELS@@</div>
+  </div>
+  <div class="ch05-dr-time">One engine step every other frame: the real door opens in 48 frames, a little under a second. Slowed down here.</div>
 </div>
