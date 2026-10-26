@@ -33,9 +33,9 @@ pub fn prepare(m: *Machine, r: castle.Record) void {
     if (l.state & castle.lightning_switch != 0) {
         // A plate on the wall, and the lever in it, up or down.
         room.place(m, .lever_plate, l.x, l.y);
-        const lever: shapes.Id = if (l.state & castle.lightning_on != 0) .lever_up else .lever_down;
-        room.place(m, lever, l.x + 4, l.y + 8);
-        _ = objects.add(m, .lever, room.boxOf(m, lever, l.x + 4, l.y + 8), r.at);
+        const picture = lever(l.state & castle.lightning_on != 0);
+        room.place(m, picture, l.x + 4, l.y + 8);
+        _ = objects.add(m, .lever, room.boxOf(m, picture, l.x + 4, l.y + 8), r.at);
         return;
     }
     // The pole, a piece every 8 rows, then the emitter, 4 fat pixels to
@@ -77,7 +77,12 @@ pub fn pull(m: *Machine, n: u8, who: u3) void {
         objects.slot(m, machine_n).flags.execute = true;
         m.work(20); // the sums and the stores
     }
-    room.swap(m, if (on) .lever_down else .lever_up, if (on) .lever_up else .lever_down, o.box.x, o.box.y);
+    room.swap(m, lever(!on), lever(on), o.box.x, o.box.y);
+}
+
+/// The lever's picture: up while its switch is on.
+fn lever(on: bool) shapes.Id {
+    return if (on) .lever_up else .lever_down;
 }
 
 /// A machine's `execute`. Switched off, it stops: the bolt goes and the

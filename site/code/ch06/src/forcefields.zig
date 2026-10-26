@@ -26,24 +26,26 @@ pub fn prepare(m: *Machine, r: castle.Record) void {
     room.place(m, .button_lit, f.button_x + 4, f.button_y + 8);
     room.place(m, .field_top, f.field_x, f.field_y);
     const n = objects.add(m, .button, room.boxOf(m, .button_frame, f.button_x, f.button_y), r.at) orelse return;
-    const field = actors.add(m, .forcefield) orelse return;
     const o = objects.slot(m, n);
-    o.actor = field; // the link: the button knows its field by slot number
-    const a = actors.slot(m, field);
-    a.box.x = f.field_x;
-    a.box.y = f.field_y + 2;
-    a.pace = 4;
+    if (actors.add(m, .forcefield)) |field| {
+        o.actor = field; // the link: the button knows its field by slot number
+        const a = actors.slot(m, field);
+        a.box.x = f.field_x;
+        a.box.y = f.field_y + 2;
+        a.pace = 4;
+    }
     raise(m, o, true);
     m.work(20); // the sums and the stores
 }
 
-/// Put button `o`'s field up, or take it down: its picture, and its wall
-/// in the grid. 1984's field is under the emitter, 27 rows down.
+/// Put button `o`'s field up, or take it down: its wall in the grid (in
+/// the cell 27 rows under the emitter, as in 1984), and its picture. With
+/// no sprite free for it, the field is invisible, but still a wall.
 fn raise(m: *Machine, o: *align(1) objects.Object, up: bool) void {
     const f = m.view(castle.Forcefield, o.record);
     const col = grid.column(f.field_x + 2) orelse return;
     grid.wall(m, col, (f.field_y + 27) / 8, up);
-    actors.setFrame(m, @intCast(o.actor), if (up) .field_on_0 else .field_off);
+    if (o.actor != actors.none) actors.setFrame(m, @intCast(o.actor), if (up) .field_on_0 else .field_off);
 }
 
 /// A button's `in_front`: the explorer presses fire at it. The field goes

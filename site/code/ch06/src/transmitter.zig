@@ -25,7 +25,7 @@ fn padColors(i: u8) u8 {
     return shade(i + 2);
 }
 
-/// Sending flashes the pad and the lamp 8 times, 2 steps on, 2 off.
+/// Sending flashes the pad and the lamp 8 times: 2 steps on, 2 off.
 const flashes = 8;
 
 /// Where pad `i` of the booth at `at` is: the address of its x and y.
@@ -66,7 +66,7 @@ pub fn use(m: *Machine, n: u8, who: u3) void {
         a.box.x = m.peek(pad); // standing on it, feet on its floor
         a.box.y = m.peek(pad + 1) + 8 - player.feet_y;
         o.flags.execute = true;
-        o.step = 2 * flashes;
+        o.step = 4 * flashes;
         return;
     }
     if (a.stick != stick_up or objects.clock(m) & 15 != 0) return;
@@ -75,15 +75,15 @@ pub fn use(m: *Machine, n: u8, who: u3) void {
     room.tint(m, t.x + 4, t.y, 2, 1, padColors(t.target));
 }
 
-/// A booth's `execute`, after a send: the lamp and the pad flash, white
-/// and black against the pad's colour, every other step.
+/// A booth's `execute`, after a send: the pad flashes white and the lamp
+/// black, then both show the pad's colour again.
 pub fn flash(m: *Machine, n: u8) void {
     const o = objects.slot(m, n);
     const t = m.view(castle.Teleport, o.record);
     const pad = padAt(o.record, t.target);
     m.work(16); // the tests
     o.step -= 1;
-    const on = o.step & 2 != 0 and o.step != 0;
+    const on = o.step & 2 != 0;
     room.tint(m, m.peek(pad), m.peek(pad + 1), 2, 1, if (on) shade(@intFromEnum(Color.white)) else padColors(t.target));
     room.tint(m, t.x + 4, t.y, 2, 1, if (on) shade(@intFromEnum(Color.black)) else padColors(t.target));
     if (o.step == 0) o.flags.execute = false;
