@@ -1,0 +1,51 @@
+<style>
+.ch08-ch { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 18px 28px; align-items: start; }
+.ch08-ch > div { display: grid; gap: 8px; min-width: 0; }
+.ch08-ch .ch08-ch-room { position: relative; height: 120px; max-width: 300px; border-radius: 4px; background: var(--c0); overflow: hidden; }
+.ch08-ch .ch08-ch-walk { position: absolute; height: 4px; background: var(--c10); }
+.ch08-ch .ch08-ch-ladder { position: absolute; width: 10px; border-left: 2px solid var(--c15); border-right: 2px solid var(--c15); background: repeating-linear-gradient(to bottom, transparent 0 6px, var(--c15) 6px 8px); }
+.ch08-ch .ch08-ch-frank { position: absolute; width: 10px; height: 18px; background: var(--c5); border-radius: 2px; }
+.ch08-ch .ch08-ch-him { position: absolute; width: 10px; height: 18px; background: var(--c1); border-radius: 2px; }
+.ch08-ch .ch08-ch-plate { position: absolute; width: 12px; height: 4px; background: var(--c12); }
+.ch08-ch .ch08-ch-tab { display: grid; grid-template-columns: auto auto auto; gap: 3px 10px; font-size: .78rem; max-width: 300px; }
+.ch08-ch .ch08-ch-tab > span { padding: 2px 6px; border-radius: 4px; background: var(--code-bg); box-shadow: inset 0 0 0 1px var(--rule); font-variant-numeric: tabular-nums; }
+.ch08-ch .ch08-ch-tab > .ch08-ch-h { background: none; box-shadow: none; color: var(--ink-soft); font-size: .68rem; }
+.ch08-ch .ch08-ch-win { color: var(--accent); font-weight: 600; }
+.ch08-ch p { margin: 0; font-size: .74rem; color: var(--ink-soft); }
+</style>
+<div class="ch08-ch">
+  <div>
+    <span class="dg-label">A junction: the explorer decides</span>
+    <div class="ch08-ch-room" role="img" aria-label="A Trap for Frank: Frank at the top of the ladder on the upper walkway; the explorer on the floor below, a little to the left, standing on the trapdoor's switch">
+      <span class="ch08-ch-walk" style="left:55%; right:0; top:34px"></span>
+      <span class="ch08-ch-walk" style="left:0; right:0; top:112px"></span>
+      <span class="ch08-ch-ladder" style="left:78%; top:34px; height:78px"></span>
+      <span class="ch08-ch-frank" style="left:78%; top:16px"></span>
+      <span class="ch08-ch-him" style="left:55%; top:94px"></span>
+      <span class="ch08-ch-plate" style="left:54%; top:110px"></span>
+    </div>
+    <div class="ch08-ch-tab">
+      <span class="ch08-ch-h">way</span><span class="ch08-ch-h">how far he is</span><span class="ch08-ch-h">grid has it?</span>
+      <span>up</span><span>—</span><span>no</span>
+      <span>right</span><span>—</span><span>yes</span>
+      <span class="ch08-ch-win">down</span><span class="ch08-ch-win">64 rows</span><span class="ch08-ch-win">yes: go</span>
+      <span>left</span><span>28 fat pixels</span><span>yes</span>
+    </div>
+    <p>The explorer is below him and to his left, so only down and left get a distance. The farthest comes first: down, 64 rows. The grid has a way down here, the ladder, so down it is. Left would have been next.</p>
+  </div>
+  <div>
+    <span class="dg-label">A corridor: keep going</span>
+    <div class="ch08-ch-room" role="img" aria-label="Frank walking along a walkway with no ladder or pole: only left and right are open">
+      <span class="ch08-ch-walk" style="left:5%; right:5%; top:80px"></span>
+      <span class="ch08-ch-frank" style="left:45%; top:62px"></span>
+      <span class="ch08-ch-him" style="left:85%; top:20px"></span>
+    </div>
+    <div class="ch08-ch-tab">
+      <span class="ch08-ch-h">ways open</span><span class="ch08-ch-h">he's going</span><span class="ch08-ch-h">so</span>
+      <span>left, right</span><span>left</span><span class="ch08-ch-win">left</span>
+      <span>left only</span><span>left</span><span>left</span>
+      <span>right only</span><span>left</span><span class="ch08-ch-win">right: turn</span>
+    </div>
+    <p>Two ways straight through, and he's going one of them: he keeps going, wherever the explorer is. At a walkway's end only one way is left, and he turns round. So he paces, end to end, and the explorer only matters where ways meet.</p>
+  </div>
+</div>

@@ -1903,3 +1903,190 @@ Castle rooms (ch03)".
   "Two guns, two panels"; stale-plate box without the ch9 clause; escape
   caption; Boss invitation no longer suggests standing in the doorway.
   Prose ≈ 5,220 words.
+- **Chapter 8 file, title, images.** `site/chapters/08-monster-mash.md`,
+  `title: "Monster Mash"`, generated from `tools/ch08/ch08.tmpl.md` by
+  `expand.py` (84 listings; 3 deletions told in prose: `gunOf`, the
+  explorer's `underfoot` and `tread`; prose ≈ 5,530 words by `wc.py`).
+  Screenshots (768×544, nearest-neighbour, made by `tools/ch08/shots.py`
+  from the `rebuild.py` stage runs): `08-storm.png` (Mission Briefing; C
+  490, the switched-on machine's bolt on the mummy under the explorer),
+  `08-rise.png` (B 420, ankh white, mummy climbing out of the opened
+  tomb), `08-frank.png` (D 560, Frank stepping out of his alcove),
+  `08-trap.png` (E 640, Frank on the ladder above the open trapdoor),
+  `08-ride.png` (E 1620, Frank walking on the spot at the reversed belt's
+  end). Diagrams: `ch08-dice` (animated highlight down the four rows of
+  the first roll: `$57 $C6` → rotr → `$E3`; `$57^$E3 = $B4`; `$C6^$B4 =
+  $72`), `ch08-choose` (static; room 13's junction: down 64 rows beats
+  left 28 fat pixels; the corridor rule table), `ch08-ride` (animated;
+  belt with him +3 a turn, against him on the spot). Quoted error: `the
+  shape table doesn't fit in its region` (`errs.py` case `full`, the
+  snapshot right after listing B3, the mummy's art).
+- **Source layout (ch08).** New files `dice.zig` (`start`, `roll`, 2
+  tests), `mummy.zig` (`prepare`, `open`, `release`, `glow`, `wake`,
+  `walk`, `hit`, `touch`; comptime checks: the rise table drops 8 rows,
+  walking pictures consecutive), `frankenstein.zig` (`prepare`, `turn`,
+  `wakes`, `choose`, `bit`, `move`, `hit`, `touch`; comptime check on
+  picture order). Changed: `map.zig` (region `dice` `$020F–$0210`
+  between `engine` and `text`; **star map `$5F00`, shape table
+  `$6000–$77FF`** (6,144 bytes), forced by the mummy's art overflowing
+  4,096; the program-image reservation shrinks to `$5EFF`), `castle.zig`
+  (`Mummy{state, ankh_x, ankh_y, tomb_x, tomb_y, x, y}` with
+  `mummy_tomb/out/dead` = 1/2/3; `Frankenstein{state: Frank, x, y,
+  frank_x, frank_y, frame, way}`; `Frank` packed: bit 0 `left`, 1
+  `awake`, 2 `dead`, 7 `end`; Pattern's comment points at ch11),
+  `objects.zig` (kinds `ankh {glow, release}`, `alcove {null, null}`;
+  slot bytes `plate`, `last_plate` replace two of the three spares, set
+  to `none` in `add`; **`owner(kind, n)`**, the object whose `actor ==
+  n`, generalising ch07's `gunOf`), `trapdoors.zig` (`underfoot` moved
+  here; `Under {nothing, hole, plate}`, `under(n, object)`,
+  `tread(plate*, last*)` shared by the explorer and monsters),
+  `player.zig` (own `tread`/`underfoot` removed; `touch` switches on
+  `under`), `actors.zig` (`Kind {player, lightning, forcefield, mummy,
+  laser, frankenstein}` = 1984 0–5; `directEnumArray(..., 0, ...)`;
+  mummy `{walk, flickers, hit, touch, group 0b010}`, frankenstein
+  `{turn, flickers, hit, touch, group 0}`), `lightning.zig` (`crackle`
+  rolls the dice), `guns.zig` (`fly` uses `owner`; `strike` stops on
+  `.alcove`), `conveyors.zig` (`carry` takes mummies and Frankensteins:
+  2 px a turn, any frame), `room.zig` (mummy/frankenstein preparers;
+  `later` is the pattern only, "Chapter 11"), `author.zig` (tomb 20×24,
+  ankh 8×16, alcove at x−4 16×24 on screen and in the overlap check),
+  `shapes.zig` (Ids after `laser`: `brick, tomb_open, ankh,
+  mummy_rise_0..2, mummy_right_0..2, mummy_left_0..2, alcove_right,
+  alcove_left, frank_asleep, frank_right_0..2, frank_left_0..2,
+  frank_climb_0..3, frank_slide`), `art.zig` (sections "the mummy",
+  "Frankenstein's monster"), `training.zig` (imports `shapes`; rooms 11,
+  12, 13, 14, 16), `main.zig` (boot calls `dice.start`; search test
+  allows 3 cells per alcove; helpers `monster`, `distance`, `back`,
+  `escapeMummy`, `stormOut`, `trapFrank`, `rideOut`).
+- **Mechanics, as implemented (ch08).** *Dice* (1984 `$5ED5`): turned =
+  low byte of rotr16(high:low, 1); high ^= turned; low = (low & $FE) ^
+  high; return low. Seeds `$C6 $57` at boot only (never reset per game).
+  First rolls 72 FF 8C B8 D0 D0 B8 8C; the seed pair has a tail of 1, then
+  a cycle of 32,767; low two bits ≈ uniform. *Bolt:* pace = 1 + (roll &
+  3); picture = roll & 3, the next one if it equals the current (1984).
+  *Mummy prepare:* 5×3 bricks (4×8 each) from (tomb_x, tomb_y); not in
+  the tomb → middle three of the middle row unplaced, `tomb_open` drawn;
+  ankh drawn + object; state out → actor at record (x, y), climb done,
+  pace 2. *release* (ankh in_front): player, playing, feet − ankh.x < 8,
+  state tomb → out, record x/y = tomb + (6, 3), ankh `execute` with step
+  8, open, actor at tomb + (6, 3 − 8), pace 4, `mummy_rise_0`. *glow:*
+  every 4th step, tint 2×2 white/white or orange/yellow, 8 times.
+  *walk:* destroy → free, clear `o.actor`; tread plates; rise entries
+  (dy 0,0,0,2,2,2,2; pictures rise 0,0,1,1,2,2,2) at pace 4 then pace 2;
+  then (player playing) toward player 1's x unless |dx| < 2, needing the
+  grid's right/left bit at the feet, never changing y, walking frames
+  cycle, record x/y updated. *hit:* lightning or laser → state dead,
+  flicker; anything else nothing. *touch:* open trapdoor → dead; plate →
+  `o.plate`. *Frankenstein prepare:* grid patch at row (y+24)/8: facing
+  right cells col..col+2 lose `left`; facing left col−1..col+1 lose
+  `right` (1984); alcove picture at (x−4, y) + object; not dead → actor:
+  awake → record (frank_x, frank_y, way, frame); asleep → (x, y+3),
+  `frank_asleep`, way still. Pace 2. *turn:* destroy handling; asleep →
+  `wakes` (playing, |his top − Frank's top| < 4, in front: left-facing
+  him.x ≤ x, right-facing him.x > x) → awake, way still; tread; `choose`;
+  `move`; record x/y/frame/way. *choose:* no ways → still; one → it; two
+  opposite and the current way open → keep; else far[up,right,down,left]
+  from player 1 (dx ≥ 0 → right, dy < 0 → up; others 0xFF) and pick the
+  farthest open, each retry only strictly shorter distances, ties to the
+  lower index (1984's quirk kept). *move:* along: y −= feet_y % 8, x ±1,
+  walk frames cycle; up/down: x = x − feet_x % 4 + 1; rungs (feet cell or
+  cell below has `up`) → y ∓ 2, climb frame `climb_0 + ((y>>1)&3)`; else
+  slide y += 2, `frank_slide`. *hit:* awake only; lightning or laser →
+  dead. *touch:* open trapdoor → dead (even asleep); plate → `o.plate`.
+  *Belts:* `carry` runs on the actor's turn (touching), monsters +2 any
+  frame; against him, he walks on the spot at the belt's end (feet 54–57
+  in room 14's test). *Laser:* alcove object stops it (`strike`);
+  an awake Frank or a mummy dies by its `hit`.
+- **Training Castle rooms 11–14, 16 (ch08).** Design rule: every monster
+  room's door 0 is upstairs, unreachable by its monster (poles only go
+  down; mummies never climb), so a death never leaves the monster at the
+  door until ch9's clean castle. 11 The Mummy: doors (16, 96) → ray_guns
+  door 1 and (156, 160) → frankenstein; walkways floor + {30 @ 16,128};
+  pole {8 @ 128,128}; bell (140, 168); mummy {tomb, ankh 48,112, tomb
+  28,168}; sign "A MUMMY SLEEPS IN / HIS TOMB. PASS THE / ANKH AND HE
+  WAKES. / HE KEEPS TO HIS / FLOOR: LEAD HIM ONE / WAY, RUN THE OTHER."
+  12 Frankenstein: doors (16, 96), (156, 160); floor + `upper_left`;
+  pole {8 @ 88,128}; bell 140; frank {right, 24, 168}. 13 A Trap for
+  Frank: doors (16, 96), (156, 96) → frank_ride; floor, `upper_left`,
+  `upper_right`; pole {8 @ 80,128}; ladder {9 @ 124,128}; bell (140,
+  104); trapdoor {shut, 120, 192, **switch 96**, 184}; frank awake at
+  (100, 104), frank (100, 107), frame `frank_right_0`, way still. *The
+  switch moved from 64 to 96 during testing:* with the explorer at feet
+  ≈ 66 Frank dithered at the ladder top for ever (down 64 vs left ≈ 59
+  at the walkway cell; one step down, still in that cell, down 58 < left
+  59 → left, back up, repeat). Told in the chapter. 14 Frank's Ride:
+  doors (16, 96), (156, 160) → under_fire; floor + {25 @ 16,128}; pole
+  {8 @ 104,128}; bell 140; conveyor {on, right, 56, 184, control 116,
+  160}; frank {right, 24, 168}. 16 Mummy in a Storm: doors (156, 96) →
+  under_fire door 1, (16, 160) → locked_away; floor + `upper_right`;
+  ladder {9 @ 100,128}; bell (44, 168); lightning: machine 0 {off, 124,
+  136, length 3}, machine 1 {on, 64, 112, length 6}, switch {120, 104,
+  machines 0 and 8}; mummy {out, ankh 104,176, tomb 72,168, at 78,171}.
+- **Deviations (ch08).** (1) Mummy rise: dy is 1984's, dx is 0 (1984
+  slides him sideways out of its own tomb shape); tomb, rise and walk
+  pictures and the out position (tomb + (6, 3)) are ours (box). (2) Ankh
+  flash colours ours (white / orange-yellow). (3) Alcove picture is ours,
+  drawn at x−4; 1984's extra shape `$1C` under it is not drawn (box).
+  (4) Frank's vertical picture uses our explorer's rungs rule (feet cell
+  **or cell below** has up), a conscious choice paying the ch04 note;
+  1984 copies its explorer's feet-cell-only test (box). (5) An awake
+  Frank's record `frame` byte holds **our shape Id**, not 1984's sprite
+  frame; ch11 needs a translation when real castles have awake Franks
+  (box). (6) Frank–Frank avoidance masks (1984 blocks ways another Frank
+  occupies) skipped; no room has two on one floor (box; ch11). (7)
+  Monsters chase player 1 only; 1984 the nearest playing explorer (ch9;
+  box). (8) The dice are never re-seeded; same as
+  1984 as far as the disassembly shows.
+- **Costs at ch08.** Roll 24 cycles (2 per bolt turn). Mummy turn ≈ 90,
+  Frankenstein ≈ 136 in a corridor, +40 per extra try at a junction; a
+  picture change adds ≈ 650 (sprite unpack). `owner` 12 per object
+  searched. Boss Battle (`runs.py` F, 4,060 frames: room 11 from 215, 12
+  by door at 1,021, 13 at 1,535, 14 at 2,334, N at 3,515 in Under Fire,
+  16 from 3,548, ending in room 16's doorway to Locked Away): 3,881 calls,
+  bucket maxima 348 / 241,532 (room draws) / 1,278 / 4,248 (actors, room
+  11) / 2,432, 17 loading pauses, 0 overruns. Named frames 500, 1380,
+  2040, 2950, 3780. Shape table 5,106 bytes (was 3,774); castle 4,652
+  (was 4,496).
+- **Tests at ch08 (56 in `zig build test`).** Dice: 1984's first eight
+  rolls; cycle 32,767 after the first roll with low-two-bit counts in
+  8,100–8,300. All room tests play through the stick (`inRoom` pokes
+  only the room number; `back` presses N): mummy (sleeps 200 frames,
+  wakes past the ankh, under you on the floor, record x matches, escape
+  to room 12); mummy revisit after a death at the pole (still out, by
+  the pole, escape works); storm (lever under the mummy kills him, count
+  0, state 3, down and out to room 17) and its revisit after a death on
+  the ladder; Frank (asleep 200 frames, awake on landing, run out to room
+  13 with him on his way) and revisit (wait upstairs until he passes
+  under the pole going left, out); Frank vs a stray bolt (asleep immune,
+  awake dies; a `hit` unit test that places a bolt actor directly); trap
+  (switch, he comes down into the hole and dies, switch shut again, up
+  his ladder, out to room 14); trap without the switch (he reaches the
+  floor alive); trap revisit (caught on the floor, back, lead him up his
+  ladder, the trap works again); ride (2 turns on the belt = 6 px; two
+  presses → running left, he holds at feet 54–57 for 100 checks; out to
+  room 15) and its revisit (he's past the belt on your side; wait until
+  he's held at the belt's near end walking left; slide down; same
+  escape). Runs are recorded from these helpers (scratch recorder:
+  the test helpers driven from a headless-like start, printing presses
+  with headless frame numbers) and checked by eye.
+- **Ladder bookkeeping (ch08).** Taught: XOR as "flip where the other
+  has 1s" (ch2's `^` promise paid), bit rotation (`std.math.rotr`),
+  pseudo-random numbers with a seed, determinism for tests and replays
+  (under-the-hood box; ch2's "making numbers look random" paid, with the
+  star LCG as the multiply-add contrast), cycle length and fairness of
+  the low bits (tests), following a link backwards by search (`owner`;
+  the Follow-It-Back Power-Up), sharing per-actor state through pointers
+  (`tread`), grid patching as one-way doors, a chaser that only thinks at
+  junctions (diagram). Built on: ch05 groups and `hit`/`touch`, ch06
+  trapdoors/belts/lightning, ch07 `directEnumArray` gap (paid: back to
+  0), `packed struct(u8)` flag bytes. ch3's `later` preparers: only the
+  pattern remains (ch11).
+- **Promises (ch08 → later).** ch9: monsters, guns, ankhs and panels
+  serve the nearest playing explorer; ankh/alcove plate bytes are
+  per-monster already, the explorer's `player_plate` still needs a P2
+  copy; the clean castle copy resets mummies (state, x/y), Frankenstein
+  records and belts; second explorer as a target for `wakes`/`choose`.
+  ch10: sounds (ankh, tomb opening, Frank's steps, deaths). ch11: real
+  castles' mummy/Frankenstein records (1984 frame numbers in awake Franks'
+  `frame` byte → our Ids); Frank–Frank avoidance masks; tombs and alcoves
+  at X < 16 (the ch06 tint note applies to `glow`); the pattern preparer.

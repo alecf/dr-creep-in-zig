@@ -118,7 +118,7 @@ step('B7', '**`src/objects.zig`** (add above `clock`)', 'before_text', fn('src/o
 GUNS = f8('src/guns.zig')
 step('B8', '**`src/guns.zig`** (in `fly`, replace the `gunOf` line)', 'replace_text',
      '        if (objects.owner(m, .gun, n)) |o| {\n', arg='        if (gunOf(m, n)) |o| {\n')
-step('B9', '**`src/guns.zig`** (delete `gunOf`)', 'delete_fns', None, arg=['gunOf'])
+step('B9', None, 'delete_fns', None, arg=['gunOf'], file='src/guns.zig')
 
 TRAP = f8('src/trapdoors.zig')
 step('B10', '**`src/trapdoors.zig`** (add below the `objects` import)', 'after_line',
@@ -130,11 +130,11 @@ step('B12', '**`src/trapdoors.zig`** (add at the end)', 'append',
      cut(TRAP, '/// What an actor can find', '/// What actor `n`') + fn('src/trapdoors.zig', 'under'))
 step('B13', '**`src/trapdoors.zig`** (add at the end)', 'append', fn('src/trapdoors.zig', 'tread'))
 PL7 = f7('src/player.zig')
-step('B14', '**`src/player.zig`** (delete `underfoot`)', 'delete_text',
-     None, arg=cut(PL7, '/// Something under his feet', '/// Where he appears in a doorway'))
+step('B14', None, 'delete_text',
+     None, file='src/player.zig', arg=cut(PL7, '/// Something under his feet', '/// Where he appears in a doorway'))
 step('B15', '**`src/player.zig`** (in `turn`, replace the `tread` line)', 'replace_text',
      '    trapdoors.tread(m, m.view(u8, map.player_plate), m.view(u8, map.player_last_plate));\n', arg='    tread(m);\n')
-step('B16', '**`src/player.zig`** (delete `tread`)', 'delete_fns', None, arg=['tread'])
+step('B16', None, 'delete_fns', None, arg=['tread'], file='src/player.zig')
 step('B17', '**`src/player.zig`** (replace `touch`)', 'replace_fn', fn('src/player.zig', 'touch'), arg='touch')
 
 MUM = f8('src/mummy.zig')
