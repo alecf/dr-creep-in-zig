@@ -18,7 +18,7 @@ pub const player_y = player.first + 1; // sprite Y, 50 (top edge) and down
 pub const player_color = player.first + 2; // palette number, 1-15
 pub const player_last_stick = player.first + 3; // joystick 1 as it read last frame
 
-// ---- memory the hardware provides ---------------------------------------
+// ---- memory the hardware gives us ---------------------------------------
 
 const stack = Region{ .name = "stack (reserved)", .first = hw.stack, .last = hw.stack + 256 - 1 };
 const program = Region{ .name = "program image", .first = hw.program, .last = hw.program_end - 1 };

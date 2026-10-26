@@ -34,7 +34,7 @@ into a single byte anyway.
 In Zig every integer type says how many bits it gets. A `u8` is 8 bits,
 unsigned: 0 to 255. A `u16` is 0 to 65,535. Any width works: a `u3`
 holds 0 to 7, which is why Chapter 3's castle map sizes were `u3`s. An
-`i8` is **signed**, −128 to 127 (later in this chapter you'll see how a
+`i8` is **signed**, −128 to 127 (later in this chapter we'll see how a
 byte stores a negative number).
 
 Fixed width means a sum can need more bits than its type has. 255 + 1
@@ -45,8 +45,8 @@ is wrong, and nothing says so. That's the kind of bug that eats an
 afternoon.
 
 Zig won't let that happen by accident. An ordinary `+`, `-` or `*` that
-overflows is a bug, and in the builds this tutorial uses (`zig build`,
-`zig build run`, `zig build test` and `zig build wasm`) the game stops on the spot
+overflows is a bug, and in the builds we use (`zig build`, `zig build
+run`, `zig build test` and `zig build wasm`) the game stops on the spot
 with `panic: integer overflow`. Zig's fastest build modes skip the check,
 and then anything can happen, so the checks are worth keeping on.
 
@@ -74,7 +74,7 @@ that says "I meant that".
 
 ### A byte for the whole width
 
-So how does the 1984 game do it? The answer has been sitting there
+So how does the 1984 game do it? The answer has been in front of us
 since Chapter 3: every object's X counts **fat pixels, plus 16**. X = 16
 is the left edge of the screen, and X = 175 the last fat pixel on the
 right. The screen is 320 screen pixels wide, which doesn't fit in a
@@ -375,12 +375,12 @@ A cell's ways byte: hover any cell of the Ladders room to see its eight bits.
 :::
 
 A set bit means "you can leave this cell that way". Only the four
-straight directions are ever set; no object sets a diagonal. They're
-numbered because the joystick gives a direction number too, and then "is
+straight directions are ever set; no object sets a diagonal. We number
+them because the joystick gives a direction number too, and then "is
 that way open?" is one test: `ways & (1 << d)`. A cell in the middle of
 a walkway is `$44`, left and right; a rung in the middle of a ladder is
 `$11`, up and down. (Chapter 3 used a `packed struct(u8)` to give bits
-names. Here a bit is chosen by its *number*, so plain masks fit better.)
+names. Here we choose a bit by its *number*, so plain masks fit better.)
 
 ### A grid is a row of bytes
 
@@ -392,8 +392,7 @@ In JavaScript a grid is usually an array of arrays, `grid[y][x]`: 26
 separate objects (the outer array and its 25 rows), and every read
 follows a pointer to its row first. The flat version,
 `new Uint8Array(40 * 25)` read as `grid[y * 40 + x]`, is 1,000 bytes in
-one block, with no pointers anywhere. That's the one this chapter
-builds.
+one block, with no pointers anywhere. That's the one we're building.
 Cell (col, row) is `row × 40 + col` bytes in:
 
 :::diagram ch04-flat-grid
@@ -484,8 +483,8 @@ pub fn at(m: *Machine, x: u8, y: u8) u8 {
 ```
 
 `at` is all it costs a step to ask "which ways are open?": a test, two
-shifts and an add, one `peek`. Twenty cycles. Hold on to that number.
-At the end of the chapter it races the slow way, and it isn't close.
+shifts and an add, one `peek`. Twenty cycles. Hold on to that number; we'll put it up
+against the slow way at the end of the chapter, and it isn't close.
 
 ### Filling in the grid
 
@@ -614,9 +613,9 @@ castle: room poles: pole 0 must start on a walkway and end just above one (top p
 Chapter 3 drew the Sliding Poles pole one piece too long, and the
 Entrance Hall's too. On screen you'd never know, because the last piece
 disappears into the floor's bricks. In the grid, that piece gives the
-floor a way down: a hole. This is the best kind of bug to catch:
-invisible on screen, fatal in the data, and found before anyone falls
-in. Shorten both poles by one piece:
+floor a way down: a hole. I love
+this kind of bug: invisible on screen, fatal in the data, and caught
+before anyone falls in. Shorten both poles by one piece:
 
 **`src/training.zig`** (in the `poles` room, replace the pole)
 
@@ -638,8 +637,8 @@ in. Shorten both poles by one piece:
 
 ### Seeing the grid
 
-The grid is invisible, which makes it hard to trust. So the game gets a
-switch that draws it. Press **G** and the room is redrawn with
+The grid is invisible, which makes it hard to trust. So let's give the
+game a switch that draws it. Press **G** and the room is redrawn with
 the grid over it (and the explorer back in the doorway, so look first,
 then walk). A second switch, **Q**, arrives at the end of the chapter.
 Neither uses W A S D or I J K L, the keys the browser version uses as
@@ -752,8 +751,8 @@ Build, run, press N twice for the Ladders room, then G:
 There's the castle as the explorer will feel it: each walkway a line
 that stops at its ends, and the ladder joining them with a T at each.
 All the bricks and colours were for you; this is the whole room as far
-as he's concerned. It's the best debug view in the game, and the whole
-of `debug.zig` is about fifty lines. Press G again to put the bricks back.
+as he's concerned. It's my favourite debug view in the game, and the
+whole of `debug.zig` is about fifty lines. Press G again to put the bricks back.
 
 ## Steering by the grid
 
@@ -806,7 +805,7 @@ and the build stops:
 memory map: player overlaps game
 ```
 
-`game` starts at `$0206`, the byte the player just claimed. That's what the
+`game` starts at `$0206`, the byte we just claimed. That's what the
 overlap check is for. Move `game` and `room` up a byte:
 
 **`src/map.zig`** (replace the `game` region's first line)
@@ -876,11 +875,11 @@ top-level `const`.
 
 Here Zig differs from JavaScript in exactly the way this chapter is
 about: a `[3][3]u8` like `compass` isn't three arrays reached through
-pointers, it's nine bytes in a row, laid out exactly like the grid. The
-game could even ask the machine for the grid as a `[25][40]u8` with
-Chapter 3's `m.view`. It indexes the grid by hand instead, with `peek`
-and `poke`, because those charge the meter for every read, and the
-meter is the point of this chapter.
+pointers, it's nine bytes in a row, laid out exactly like our grid. We
+could even ask the machine for the grid as a `[25][40]u8` with Chapter
+3's `m.view`. We index it by hand instead, with `peek` and `poke`,
+because those charge the meter for every read, and the meter is the
+point of this chapter.
 
 `step_x` and `step_y` say how far a step goes each way: a fat pixel
 across, two rows up or down. Look closely and you'll see they hold **no
@@ -889,7 +888,7 @@ need any. That's the next trick.
 
 ### 255 is minus one
 
-Okay, this is the best trick in the chapter. Think of a byte as a clock
+Okay, this is my favourite trick in the chapter. Think of a byte as a clock
 face with 256 marks instead of 12. Go forward 255 marks, and you land
 one mark *behind* where you started. In numbers: add 255 to 10 and let
 it wrap. 10 + 255 is 265, and 265 − 256 is 9. Adding 255 with `+%`
@@ -1051,7 +1050,7 @@ door, at the right-hand edge of the screen. In the Long Gallery (one N),
 try walking off the end of the walkway: you can't, however hard you
 push. In Sliding Poles, walk onto the pole and push down. He climbs and
 slides standing bolt upright in his walking pose, like a man riding an
-invisible lift. That's next.
+invisible lift. We fix that next.
 
 ## Climbing and sliding
 
@@ -1286,13 +1285,12 @@ frame slots), and 196 to 228 cycles a step in play.
 The 1984 game keeps its grid at `$C000` with **two bytes per cell**,
 2,000 bytes for the screen's 1,000 cells, and never reads the second
 byte: 1,000 bytes nothing uses, on a machine that counts every byte! The direction bits are
-exactly the ones in this chapter, and the movement code is ready for
-diagonals that nothing ever sets.
+exactly ours, and the movement code is ready for diagonals that nothing
+ever sets.
 
 Look closely and you'll catch the 1984 explorer in his pole pose for a
 moment when he starts down a ladder, because the top rung's cell has no
-way up. This chapter's explorer looks one cell further down before it
-picks his picture.
+way up. Ours looks one cell further down before it picks his picture.
 
 And the grid isn't only written when a room is drawn: an opening
 trapdoor clears the bits that let you walk across it, and sets them

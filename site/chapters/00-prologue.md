@@ -43,7 +43,7 @@ you'll be designing around:
 | Limit | What it means |
 |---|---|
 | **64 KB of memory** | Code, castle, screen and monsters all fit in 65,536 bytes. |
-| **1 MHz processor** | About a million tiny steps, called **cycles**, a second. Work is measured in cycles. |
+| **1 MHz processor** | About a million tiny steps, called **cycles**, a second. We measure work in cycles. |
 | **50 frames a second** | 19,656 cycles per frame to read the joysticks, move everyone and redraw. |
 | **8 hardware sprites** | Eight free-moving pictures over the background, total. |
 | **4 colours per 8×8 cell** | The 320×200 screen is cut into 8×8-pixel squares called cells. Each cell gets three colours of its own, plus one background colour shared by the whole screen. |

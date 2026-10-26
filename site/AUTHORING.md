@@ -25,8 +25,7 @@ Read "Voice and tone" in the outline in full. A summary:
   games as a player and have never seen how one is built.
 - **The method:** start from the player's experience, then show the
   mechanism. Bridge from JS/Python ("in JS you'd write...; here's what
-  that really costs; here's what this game does instead"). Use byte
-  diagrams.
+  that really costs; here's what we do instead"). Use byte diagrams.
 - **Not condescending:** no quizzes, no "easy/simple/just/obviously", no
   "great job!" after every listing, no baby talk, no mascot. A few
   exclamation points per chapter, not per paragraph. Name the "aha"
@@ -66,7 +65,7 @@ Read "Voice and tone" in the outline in full. A summary:
   voice. These stay:
   - opening a section from the player's experience ("You know that
     moment when…");
-  - the senior dev's enthusiasm, said out loud ("this is the best
+  - the senior dev's enthusiasm, said out loud ("this is my favourite
     trick in the whole game");
   - a joke or a vivid image, at most one or two per section;
   - celebrating real milestones;
@@ -104,12 +103,10 @@ Read "Voice and tone" in the outline in full. A summary:
     a flip-book, a times table, a clock face, a rubber stamp), always
     *after* the plain statement, never instead of it.
   - Keep the playful tone: jokes, enthusiasm and vivid images stay.
-- **No "we", "I", "my", "our" or "let's".** The guide talks to the
-  reader as "you", or about "the game" / "this chapter". Write "the
-  best trick in the chapter", not "my favourite trick"; "the game's
-  memory map", not "our memory map"; "time to fix that", not "let's fix
-  that". This applies to code comments in listings too (and so to the
-  checkpoints, which must match).
+- **Keep the collaborative voice.** "We", "let's" and the guide's own
+  "I love this one" stay: the tutorial should feel like building the
+  game together. (The no-"we"/"I" rule is for the homepage only, not
+  the tutorial.)
 - **Boxes earn their place.** Keep a box only if it adds something the
   main text doesn't. Merge or drop the ones that repeat the prose.
 

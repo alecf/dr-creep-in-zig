@@ -13,7 +13,7 @@ const glyph_pixels = map.text_glyph + 3;
 /// The style byte every castle Text object carries. Bits 0-1: how tall,
 /// 1 to 3 times (0 counts as 1). Bit 4: reversed, light letters cut out
 /// of a solid block. Bit 5 asks for the letters (rather than picture)
-/// character set, which is the only one this ROM has; castles always set it.
+/// character set, which is the only one our ROM has; castles always set it.
 pub const style_height: u8 = 0b0000_0011;
 pub const style_reversed: u8 = 0b0001_0000;
 pub const style_letters: u8 = 0b0010_0000;
