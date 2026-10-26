@@ -25,7 +25,8 @@ Read "Voice and tone" in the outline in full. A summary:
   games as a player and have never seen how one is built.
 - **The method:** start from the player's experience, then show the
   mechanism. Bridge from JS/Python ("in JS you'd write...; here's what
-  that really costs; here's what we do instead"). Use byte diagrams.
+  that really costs; here's what this game does instead"). Use byte
+  diagrams.
 - **Not condescending:** no quizzes, no "easy/simple/just/obviously", no
   "great job!" after every listing, no baby talk, no mascot. A few
   exclamation points per chapter, not per paragraph. Name the "aha"
@@ -65,7 +66,7 @@ Read "Voice and tone" in the outline in full. A summary:
   voice. These stay:
   - opening a section from the player's experience ("You know that
     moment when…");
-  - the senior dev's enthusiasm, said out loud ("this is my favourite
+  - the senior dev's enthusiasm, said out loud ("this is the best
     trick in the whole game");
   - a joke or a vivid image, at most one or two per section;
   - celebrating real milestones;
@@ -88,6 +89,27 @@ Read "Voice and tone" in the outline in full. A summary:
     ones.
   - The test: could the reader explain the sentence back in their own
     words? If not, rewrite it.
+- **Plain words (added after the owner flagged the ch02 opening as
+  "what does that even mean?").** The reader is a programmer, not an
+  English major. Rules:
+  - Short sentences. One idea per sentence. If a sentence has a colon
+    *and* a semicolon, split it.
+  - Define every term before using it, in plain words: what the thing
+    *is* and what it *does*. "A cell is 8 × 8 dots" comes before
+    anything about a cell's colours.
+  - Build up in small steps, one fact at a time, rather than packing
+    three facts into one sentence ("a pixel takes two bits, so each one
+    is two dots wide" skips the step that explains the "so").
+  - Short, concrete everyday metaphors are welcome (paint-by-numbers,
+    a flip-book, a times table, a clock face, a rubber stamp), always
+    *after* the plain statement, never instead of it.
+  - Keep the playful tone: jokes, enthusiasm and vivid images stay.
+- **No "we", "I", "my", "our" or "let's".** The guide talks to the
+  reader as "you", or about "the game" / "this chapter". Write "the
+  best trick in the chapter", not "my favourite trick"; "the game's
+  memory map", not "our memory map"; "time to fix that", not "let's fix
+  that". This applies to code comments in listings too (and so to the
+  checkpoints, which must match).
 - **Boxes earn their place.** Keep a box only if it adds something the
   main text doesn't. Merge or drop the ones that repeat the prose.
 

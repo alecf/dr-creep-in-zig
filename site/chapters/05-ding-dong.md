@@ -171,7 +171,7 @@ padding (Chapter 3). Here's slot 0 with the explorer in it:
 and most of them mark a stage in an actor's life. `destroy` gives it one
 last turn to tidy up, and `free` empties its slot at the end of the step.
 The two hit flags are set from the VIDEO chip, and they're the best trick
-in the chapter. We'll use them when we build the doorbell.
+in the chapter. They come into play with the doorbell.
 
 :::widget byte-diagram
 The actor table live: eight 16-byte rows at `$BD00`, slot 0's fields named and its `state` split into flags.
@@ -203,7 +203,7 @@ const kinds = std.enums.directEnumArray(Kind, Behaviour, 0, .{
 });
 ```
 
-Okay, this is one of my favourite ideas in the whole game.
+Okay, this is one of the best ideas in the whole game.
 `*const fn (m: *Machine, n: u3) void` is a **function pointer**. Chapter
 2 showed you that a pointer is an address. Code lives at addresses too,
 in the program image, and a function pointer is the address where a
@@ -221,8 +221,8 @@ You've written this before. In JavaScript it's
 `kinds[a.kind].turn(m, n)`. It's the same idea, but JavaScript looks the
 entry up by name, in a hash table, while the game runs, so a missing
 entry shows up as `undefined is not a function` in the middle of play.
-Ours is looked up by number in an array, and a missing entry stops the
-build.
+The Zig table is looked up by number in an array, and a missing entry
+stops the build.
 `std.enums.directEnumArray` does the checking: it takes a struct with a
 field for every tag of `Kind` (like Chapter 3's `EnumFieldStruct`) and
 returns an array with each tag's entry at the tag's number.
@@ -722,8 +722,8 @@ The frame budget by bucket in the Gatehouse: Chapter 4 beside Chapter 5, then at
 
 ## A promise from Chapter 3
 
-Chapter 3's `room.draw` picks each record's code with a `switch`, and I
-promised you then that it would get a table of functions. Here it is:
+Chapter 3's `room.draw` picks each record's code with a `switch`. It
+was always going to get a table of functions instead. Here it is:
 
 **`src/room.zig`** (add above the `machine` import)
 
@@ -968,9 +968,9 @@ pub const Flags = packed struct(u8) {
 pub const Kind = enum(u8) { door, bell, _ };
 ```
 
-`record` is our first `u16` field in a struct. We put it at an even
-offset, so Zig adds no padding before it and the machine accepts the view
-(Chapter 3's rule). The flags byte has 1984's
+`record` is the game's first `u16` field in a struct. It sits at an
+even offset, so Zig adds no padding before it and the machine accepts
+the view (Chapter 3's rule). The flags byte has 1984's
 three: `disable` (nobody can stand in front of it), `execute` (it has
 work to do) and `picked` (a taken key, Chapter 7). The other five bits
 belong to each kind. Then the handlers:
@@ -1101,8 +1101,8 @@ every object, every step. In a busy room that's 8 × 32 = 256 box tests
 a step, and nearly all of them say "no": an explorer strolling across
 empty floor isn't in front of anything.
 
-Here's the trick I've been saving: the VIDEO chip can rule most of them
-out for us, at no cost.
+Here's the trick this chapter has been saving: the VIDEO chip can rule
+most of them out, at no cost.
 As the beam draws, it sets a sprite's bit in `$D01F` whenever one of its
 pixels lands on a **foreground** pixel of the bitmap (codes `10` and
 `11`, reference card section 5), and in `$D01E` whenever it lands on
@@ -1110,15 +1110,16 @@ another sprite. Every object is drawn with foreground pixels in it, so an
 actor that touched no foreground can't be standing in front of anything:
 
 :::diagram ch05-touching
-The bell three ways: on screen, to the VIDEO chip, and to our code.
+The bell three ways: on screen, to the VIDEO chip, and to the game's code.
 :::
 
 Once a step the engine reads both registers, zeroes them so they start
 counting again, and copies each actor's bit into `hit_bitmap` and
 `hit_sprite`. Only an actor with `hit_bitmap` set looks through the
 objects. The hardware does the cheap, rough test on every pixel of every
-frame, and our code does the exact one only when it might say yes. The
-chip sets those bits whether anyone reads them or not; we finally do.
+frame, and the game's code does the exact one only when it might say
+yes. The chip was setting those bits all along, whether anyone read
+them or not. Now the game finally reads them.
 
 **`src/actors.zig`** (add below the `sprites` import)
 
@@ -1268,8 +1269,8 @@ The Gatehouse door after its bell rings: a row an engine step, every other frame
 :::
 
 The 1984 door is 15 rows tall and opens in 15 steps, about 0.6 seconds.
-Ours is 24 rows, tall enough for our explorer (Chapter 3), and takes 24
-steps: a little under a second of pure suspense.
+This one is 24 rows, tall enough for this game's explorer (Chapter 3),
+and takes 24 steps: a little under a second of pure suspense.
 
 `ring` measures from his feet, so `feet_x` becomes public. `room.zig`
 imports the two tables, and its own `objects` function would clash with
@@ -1351,7 +1352,7 @@ and the door and the bell make their objects as they're drawn:
 **`src/room.zig`** (replace `door_panel_dx`, `door_panel_dy` and `door`, and the comments above them)
 
 ```zig
-/// Where the door itself sits inside its arch, and its size. Ours is
+/// Where the door itself sits inside its arch, and its size. This one is
 /// taller than the 1984 game's (12 x 15, 16 rows down), so that the
 /// explorer fits through. It's also the box he stands in front of.
 pub const door_panel_dx: u8 = 4;
@@ -1970,9 +1971,10 @@ direction in the explorer's record on every turn, and a door lets him in
 only when that byte is 1: up and to the right. Every door, either wall.
 The walk is a 12-entry table of four bytes (step across, step down,
 picture, and what next, `$FF` for "carry on"), and the walk out starts
-halfway down it. The 1984 bell is less strict than ours: it rings while fire
-is *held*, which is harmless because ringing a door that's already open
-does nothing. We use a press, as Chapter 1 promised, so a held button never rings a bell by accident.
+halfway down it. The 1984 bell is less strict than this one: it rings
+while fire is *held*, which is harmless because ringing a door that's
+already open does nothing. This game uses a press, as Chapter 1
+promised, so a held button never rings a bell by accident.
 :::
 
 ## Ding dong, you're dead
@@ -1981,8 +1983,8 @@ You know the moment. You've dropped down a pole into a room with no way
 back up, the bell's on the wrong side of a door, and you're stuck.
 Nothing in the Training Castle can kill the explorer until Chapter 6, but
 dying is the actor table's business, so the engine learns it now. The
-first way to die is the key the 1984 game gives you for giving up. Ours
-is **X**, for crossing out a life (not K: that's joystick 2's down). Each
+first way to die is the key the 1984 game gives you for giving up. Here
+it's **X**, for crossing out a life (not K: that's joystick 2's down). Each
 stage of dying after the first is a flag in the state byte:
 
 ```
@@ -2209,8 +2211,8 @@ title screen. Ding dong.
 
 ## What the first pass saves
 
-I promised the collision bits were the best trick in the chapter. Let's
-prove it. A third debug switch, **C**, turns them off, so every actor
+The collision bits were billed as the best trick in the chapter. Time
+to prove it. A third debug switch, **C**, turns them off, so every actor
 checks every object on every turn, touching or not:
 
 **`src/map.zig`** (replace the `debug` region's comment and first line, and add a third switch)

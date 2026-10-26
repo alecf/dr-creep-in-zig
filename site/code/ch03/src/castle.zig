@@ -193,7 +193,7 @@ pub const Record = struct { kind: Kind, at: u16, end: u16 };
 /// Walks a room's object stream, one record at a time.
 pub const Walker = struct {
     at: u16, // the next byte to read
-    kind: Kind = .door, // the group we're in
+    kind: Kind = .door, // the group being walked
     in_group: bool = false,
     left: u8 = 0, // records still to come in a counted group
 

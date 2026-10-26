@@ -43,10 +43,10 @@ you'll be designing around:
 | Limit | What it means |
 |---|---|
 | **64 KB of memory** | Code, castle, screen and monsters all fit in 65,536 bytes. |
-| **1 MHz processor** | About a million tiny steps, called **cycles**, a second. We measure work in cycles. |
+| **1 MHz processor** | About a million tiny steps, called **cycles**, a second. Work is measured in cycles. |
 | **50 frames a second** | 19,656 cycles per frame to read the joysticks, move everyone and redraw. |
 | **8 hardware sprites** | Eight free-moving pictures over the background, total. |
-| **4 colours per 8×8 cell** | The 320×200 screen is 8×8-pixel cells; each picks three colours plus one screen-wide background. |
+| **4 colours per 8×8 cell** | The 320×200 screen is cut into 8×8-pixel squares called cells. Each cell gets three colours of its own, plus one background colour shared by the whole screen. |
 | **3 voices** | The SOUND chip plays three notes at once, music and effects together. |
 
 Every design decision in this game comes back to that table. Why is the
@@ -62,8 +62,8 @@ frame's 19,656 cycles your code used.
 
 You don't build the Comet 64; you write the game that runs on it. The
 machine comes in the box, along with a web page that runs it in your
-browser (the **shell**) and a **headless runner** that runs your game
-from the command line. It also comes with a **programmer's reference card**,
+browser (the **shell**) and a **headless runner**, which runs your game
+from the command line with no window at all. It also comes with a **programmer's reference card**,
 [`machine/REFERENCE.md`](../code/machine/REFERENCE.md), the way every
 computer of the era came with a thick manual of addresses and registers.
 Keep it open in a tab from Chapter 1 on.

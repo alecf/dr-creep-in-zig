@@ -39,7 +39,7 @@ pub const shape_table = Region{ .name = "shape table", .first = 0x6800, .last = 
 /// Where each of the 200 bitmap rows starts: two bytes per row.
 pub const row_table = Region{ .name = "row table", .first = 0xBB00, .last = 0xBB00 + 200 * 2 - 1 };
 
-// ---- memory the hardware gives us ---------------------------------------
+// ---- memory the hardware provides ---------------------------------------
 
 const stack = Region{ .name = "stack (reserved)", .first = hw.stack, .last = hw.stack + 256 - 1 };
 const program = Region{ .name = "program image", .first = hw.program, .last = stars.first - 1 };

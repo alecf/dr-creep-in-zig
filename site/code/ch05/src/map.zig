@@ -70,7 +70,7 @@ pub const objects = Region{ .name = "objects", .first = 0xBE00, .last = 0xBE00 +
 /// saying which ways the explorer can go from there (grid.zig).
 pub const grid = Region{ .name = "navigation grid", .first = 0xC800, .last = 0xC800 + 40 * 25 - 1 };
 
-// ---- memory the hardware gives us ---------------------------------------
+// ---- memory the hardware provides ---------------------------------------
 
 const stack = Region{ .name = "stack (reserved)", .first = hw.stack, .last = hw.stack + 256 - 1 };
 const program = Region{ .name = "program image", .first = hw.program, .last = stars.first - 1 };

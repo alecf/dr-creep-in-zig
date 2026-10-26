@@ -159,7 +159,7 @@ fn column(m: *Machine, id: shapes.Id, at: u16) void {
     }
 }
 
-/// Where the door itself sits inside its arch, and its size. Ours is
+/// Where the door itself sits inside its arch, and its size. This one is
 /// taller than the 1984 game's (12 x 15, 16 rows down), so that the
 /// explorer fits through. It's also the box he stands in front of.
 pub const door_panel_dx: u8 = 4;
