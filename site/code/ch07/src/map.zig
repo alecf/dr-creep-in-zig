@@ -43,12 +43,6 @@ pub const engine = Region{ .name = "engine", .first = 0x020D, .last = 0x020E };
 pub const engine_objects = engine.first + 0; // object slots in use (objects.zig)
 pub const engine_ending = engine.first + 1; // steps until the room is over, or 0 while it isn't ending
 
-/// The keys player 1 carries: how many, then each one's number, in the
-/// order he picked them up. Room for 32.
-pub const keys = Region{ .name = "keys", .first = 0x0210, .last = 0x0230 };
-pub const keys_count = keys.first + 0; // how many keys he has
-pub const keys_held = keys.first + 1; // their numbers, 32 bytes
-
 /// Text: a lookup table, the shape each letter is built in, and a string.
 pub const text = Region{ .name = "text", .first = 0x0300, .last = 0x037F };
 pub const text_widen = text.first + 0x00; // 16 bytes: 4 glyph bits -> 4 fat pixels
@@ -98,7 +92,6 @@ pub const regions = [_]Region{
     room,
     debug,
     engine,
-    keys,
     text,
     program,
     stars,

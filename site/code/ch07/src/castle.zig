@@ -16,6 +16,9 @@ pub const magic = header + 0x02; // always $80: "this is a castle"
 pub const start_room = header + 0x03; // player 1, then player 2
 pub const start_door = header + 0x05; // player 1, then player 2
 pub const lives = header + 0x07; // player 1, then player 2
+pub const keys_count = header + 0x13; // keys carried: player 1, then player 2
+pub const keys_held = header + 0x15; // their numbers: 32 for player 1, then 32 for player 2
+pub const pocket = 32; // keys a player can carry
 pub const final_room = header + 0x5F; // 2 bytes: the final room's objects, or 0
 pub const magic_value: u8 = 0x80;
 

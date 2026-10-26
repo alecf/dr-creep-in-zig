@@ -518,8 +518,8 @@ test "keys: the lock does nothing without its key, and opens its door with it" {
     try std.testing.expectEqual(4, m.ram[map.engine_objects]); // two doors, the key, the lock
     try std.testing.expectEqual(objects.Kind.key, objects.slot(m, 2).kind);
     hold(m, machine.joy.fire, 4);
-    try std.testing.expectEqual(1, m.ram[map.keys_count]);
-    try std.testing.expectEqual(@intFromEnum(Color.green), m.ram[map.keys_held]);
+    try std.testing.expectEqual(1, m.ram[castle.keys_count]);
+    try std.testing.expectEqual(@intFromEnum(Color.green), m.ram[castle.keys_held]);
     try std.testing.expectEqual(0, m.view(castle.Key, room.first(m, .key).?).shape); // gone for good
     // Gone from the table too: the last object, the lock, moved into its slot.
     try std.testing.expectEqual(3, m.ram[map.engine_objects]);
@@ -607,11 +607,11 @@ test "under fire: the forcefield stops the lasers, and without it they hit" {
     inRoom(m, 15); // the gun faces right from x 72, at the field at x 88
     var lasers: usize = 0;
     for (0..200) |_| {
-        hold(m, machine.joy.left, 2); // up against the field, and waiting there
+        hold(m, machine.joy.left, 2); // up against the field, and leaning on it
         lasers += count(m, .laser);
+        try std.testing.expectEqual(@intFromEnum(player.Status.playing), m.ram[map.player_status]);
     }
     try std.testing.expect(lasers > 0);
-    try std.testing.expectEqual(@intFromEnum(player.Status.playing), m.ram[map.player_status]);
 
     // Back to the button, and down goes his shield.
     while (explorer(m).box.x < 138) hold(m, machine.joy.right, 2);
@@ -644,14 +644,18 @@ test "under fire: send the gun up from its panel, then take the field down and r
 test "with all eight sprites busy, the gun holds its fire until one is free" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
-    inRoom(m, 15); // the field is actor 0, the explorer 1
+    inRoom(m, 10); // the explorer is actor 0
     const n = objects.find(m, .gun, 0) orelse return error.NoGun;
     const gun = m.view(castle.RayGun, objects.slot(m, n).record);
-    while (actors.add(m, .laser)) |_| {} // fill slots 2 to 7
-    m.ram[map.game_tick] = 0; // a gun's turn: he's level with it, in the doorway
+    while (actors.add(m, .laser)) |_| {} // fill slots 1 to 7
+    m.ram[map.game_tick] = 0; // the gun's turn
+    gun.state = .{ .left = true, .steered = true, .fire = true }; // as if his panel said "fire"
     guns.run(m, n);
     try std.testing.expect(!gun.state.shot);
+    try std.testing.expect(!gun.state.fire); // that press is used up
     actors.slot(m, 5).state = .{ .unused = true };
+    gun.state.steered = true;
+    gun.state.fire = true;
     guns.run(m, n);
     try std.testing.expect(gun.state.shot);
     try std.testing.expectEqual(5, objects.slot(m, n).actor); // the laser took the free slot

@@ -19,13 +19,14 @@ const player = @import("player.zig");
 const gun_width = 8;
 const gun_height = 11;
 
-/// The gun fires when the explorer's top is fewer than 5 rows from its own.
-const aim = 5;
-
-/// The stick's directions at the panel, and the two a laser flies in.
+/// The stick's directions at the panel.
 const stick_up = 0;
 const stick_down = 4;
 const stick_still = 0x80;
+
+/// The gun fires when the explorer's top is fewer than 5 rows from its
+/// own. Its laser flies right or left: stick directions 2 and 6.
+const aim = 5;
 const right = 2;
 const left = 6;
 

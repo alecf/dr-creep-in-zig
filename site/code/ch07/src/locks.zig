@@ -5,16 +5,12 @@
 const machine = @import("machine");
 const Machine = machine.Machine;
 const Color = machine.Color;
-const map = @import("map.zig");
 const castle = @import("castle.zig");
 const room = @import("room.zig");
 const shapes = @import("shapes.zig");
 const actors = @import("actors.zig");
 const objects = @import("objects.zig");
 const player = @import("player.zig");
-
-/// How many keys his pocket holds.
-const pocket = map.keys.last - map.keys_held + 1;
 
 /// A key's or a lock's colours: code 10 is key number `number`'s colour,
 /// and code 01 a white glint.
@@ -40,11 +36,11 @@ pub fn take(m: *Machine, n: u8, who: u3) void {
     const o = objects.slot(m, n);
     m.work(16); // the tests
     if (a.kind != .player or a.fire == 0 or !player.playing(m)) return;
-    const count = m.peek(map.keys_count);
-    if (count == pocket) return; // his pocket is full: leave it where it is
+    const count = m.peek(castle.keys_count);
+    if (count == castle.pocket) return; // his pocket is full: leave it where it is
     const k = m.view(castle.Key, o.record);
-    m.poke(map.keys_held + count, k.number);
-    m.poke(map.keys_count, count + 1);
+    m.poke(castle.keys_held + count, k.number);
+    m.poke(castle.keys_count, count + 1);
     k.shape = 0; // gone from the castle, for good
     room.unplace(m, .key, o.box.x, o.box.y);
     o.flags.picked = true;
@@ -53,11 +49,11 @@ pub fn take(m: *Machine, n: u8, who: u3) void {
 
 /// Is key `number` in his pocket?
 pub fn carrying(m: *Machine, number: u8) bool {
-    const count = m.peek(map.keys_count);
+    const count = m.peek(castle.keys_count);
     var i: u8 = 0;
     while (i < count) : (i += 1) {
         m.work(10); // the test and the loop
-        if (m.peek(map.keys_held + i) == number) return true;
+        if (m.peek(castle.keys_held + i) == number) return true;
     }
     return false;
 }
