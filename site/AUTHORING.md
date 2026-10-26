@@ -88,6 +88,25 @@ Read "Voice and tone" in the outline in full. A summary:
     ones.
   - The test: could the reader explain the sentence back in their own
     words? If not, rewrite it.
+- **Plain words (added after the owner flagged the ch02 opening as
+  "what does that even mean?").** The reader is a programmer, not an
+  English major. Rules:
+  - Short sentences. One idea per sentence. If a sentence has a colon
+    *and* a semicolon, split it.
+  - Define every term before using it, in plain words: what the thing
+    *is* and what it *does*. "A cell is 8 × 8 dots" comes before
+    anything about a cell's colours.
+  - Build up in small steps, one fact at a time, rather than packing
+    three facts into one sentence ("a pixel takes two bits, so each one
+    is two dots wide" skips the step that explains the "so").
+  - Short, concrete everyday metaphors are welcome (paint-by-numbers,
+    a flip-book, a times table, a clock face, a rubber stamp), always
+    *after* the plain statement, never instead of it.
+  - Keep the playful tone: jokes, enthusiasm and vivid images stay.
+- **Keep the collaborative voice.** "We", "let's" and the guide's own
+  "I love this one" stay: the tutorial should feel like building the
+  game together. (The no-"we"/"I" rule is for the homepage only, not
+  the tutorial.)
 - **Boxes earn their place.** Keep a box only if it adds something the
   main text doesn't. Merge or drop the ones that repeat the prose.
 

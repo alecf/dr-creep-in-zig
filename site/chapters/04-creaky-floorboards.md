@@ -888,8 +888,10 @@ need any. That's the next trick.
 
 ### 255 is minus one
 
-Okay, this is my favourite trick in the chapter. Add 255 to a byte and
-let it wrap. 10 + 255 is 265, and 265 − 256 is 9. Adding 255 with `+%`
+Okay, this is my favourite trick in the chapter. Think of a byte as a clock
+face with 256 marks instead of 12. Go forward 255 marks, and you land
+one mark *behind* where you started. In numbers: add 255 to 10 and let
+it wrap. 10 + 255 is 265, and 265 − 256 is 9. Adding 255 with `+%`
 *is* subtracting 1. Adding 254 is subtracting 2. This isn't a
 coincidence; it's how computers store negative numbers:
 

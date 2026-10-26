@@ -371,7 +371,8 @@ all the state in `m.ram`, the widgets can show it live, tests can check
 it, and you never wonder where something is: it's wherever the map says.
 
 So we keep every address the game uses in one file, `map.zig`: the
-game's **memory map**. It grows every chapter, and Zig checks it while it
+game's **memory map**. Think of it as a seating chart for memory: every
+byte has a name card, and no two things get the same seat. It grows every chapter, and Zig checks it while it
 compiles, so two things can never end up in the same place. This
 chapter's entry is the player: four bytes at `$0200`, the first free
 address above the processor's stack (the processor's own scratch space).
@@ -719,9 +720,9 @@ From the player's side, a joystick is a stick and a button. From the
 machine's side, it's five switches, each pressed or not: one bit each,
 packed into one byte. Joystick 1 is at **`$DC01`** (`hw.joy1`), and the
 top three bits are always 1. Here's the twist: **a switch reads 0 while
-it's pressed, and 1 when it isn't.** That's **active-low**: pressing
-connects the switch's wire to ground, and letting go lets a resistor pull
-it back up to 1. So an untouched stick reads `$FF`, and holding left
+it's pressed, and 1 when it isn't.** It sounds backwards, and it is.
+That's just how the wiring works: pressing the stick connects the
+switch's wire to 0 volts. The name for this is **active-low**. So an untouched stick reads `$FF`, and holding left
 drops bit 2 to give `$FB`.
 
 :::diagram ch01-joystick

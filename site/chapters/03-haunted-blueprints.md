@@ -75,12 +75,14 @@ castle of `$0154` bytes stores its size like this:
               low     high
 ```
 
-This is **little-endian**: the little end goes first. It looks backwards
-to a human, who writes the big digits on the left, but it suits a processor
-that reads one byte at a time. To work out "this address plus 3", it adds
-3 to the low byte and then carries into the high byte, just as you add on
-paper starting from the right-hand column. With the low byte stored first,
-it can start adding as soon as it has read that first byte. `m.peek16` puts the halves back
+This is called **little-endian**: the little end goes first. It looks
+backwards, because people write the big digits on the left. But it
+suits a processor that reads one byte at a time. Think about adding 3
+to an address on paper. You start with the right-hand column, the
+small digits, and carry into the next. The processor does the same: it
+adds to the low byte first, then carries into the high byte. With the
+low byte stored first, it can start adding as soon as it has read one
+byte. `m.peek16` puts the halves back
 together: `peek(a) | peek(a + 1) << 8`.
 
 ## The room directory
@@ -106,14 +108,14 @@ the data never uses.
 
 ### A struct is a row of bytes
 
-Here's where Zig gets to describe those 8 bytes for us. In JavaScript the
-engine decides how an object is stored, and your variable only holds a
-reference to it, so you can't point an object at 8 bytes of memory and read
-them as its fields. A Zig **`extern struct`** guarantees its layout: the
-fields sit in memory in the order you wrote them, by layout rules every
-compiler agrees on. Declare the entry as one and `@sizeOf(Entry)` is 8,
-`@offsetOf(Entry, "objects")` is 6, and the struct declaration is an exact
-description of the format. (A plain `struct`, like the `Walker`
+Here's where Zig gets to describe those 8 bytes for us. In JavaScript, the engine
+decides how an object is stored, and you never see it. So there's no
+way to take 8 bytes of memory and say "read these as an object with
+these fields". Zig can do exactly that with an **`extern struct`**. Its
+fields sit in memory in the order you wrote them, one after the other,
+like boxes on a shelf. So if you declare the entry as an `extern
+struct`, `@sizeOf(Entry)` is 8, `@offsetOf(Entry, "objects")` is 6, and
+the declaration is an exact picture of the format. (A plain `struct`, like the `Walker`
 coming up, makes no such promise; Zig may reorder its fields.)
 
 One catch. A `u16` field has to start at an even offset (that rule is its
@@ -125,9 +127,10 @@ byte later than the castle format says:
 Top: a JavaScript object is found by name; an `extern struct` is bytes in order. Bottom: one padding byte puts `objects` on the wrong bytes.
 :::
 
-The castle packs its
-bytes tight (the final-room word is at `$5F`, an odd offset), so castle
-words are `[2]u8` in our structs, read with `m.peek16`. `m.view`, the
+The castle packs its bytes tight. For example, the final-room field is
+two bytes starting at `$5F`, an odd offset. So in our structs,
+every two-byte castle value is written as `[2]u8` (two separate bytes,
+which never get padding) and read with `m.peek16`. `m.view`, the
 reference card's typed pointer into memory (section 9), refuses padded
 types at compile time, so you find out from the compiler instead of by
 reading garbage:
@@ -1314,26 +1317,28 @@ What we want is to write a room like this:
 
 and have the compiler work out every byte, every pointer and the size,
 and refuse to build if a door leads to a room that doesn't lead back.
-That's `comptime`, and here's the full story.
+That's `comptime`, and here's the full story, in three parts.
 
-**It's the same language, earlier.** Zig has no separate macro language.
-Code whose inputs are all known while compiling can run while compiling,
-like the star map and shape table did. Only things that need the running
-machine (`m.peek`, frames) can't.
+**Compile-time code is ordinary Zig.** Many languages have a separate
+mini-language for code that runs during the build. Zig doesn't. Any
+code whose inputs are all known while compiling can run while
+compiling, like the star map and shape table did. The only code that
+can't is code that needs the running machine, like `m.peek` or frames.
 
-**Types are values.** At compile time a function can take a type and
-return one. `Door(Name)` below takes the castle's enum of room names and
+**Types are values.** At compile time a function can take a type as an
+argument and hand a new type back. `Door(Name)` below takes the castle's enum of room names and
 returns a struct type whose `to` field is one of those names. In
 TypeScript you'd write `Door<Name>`; in Zig it's an ordinary function
 call that happens to run in the compiler. So `.to = .gallery` is checked:
 misspell it `.galery` and the compiler says `enum 'training.Room' has no
 member named 'galery'`, before a byte is written.
 
-**Loops that change type.** The builder loops over a room's lists, but
-`room.door` is a list of doors and `room.text` a list of lines, and an
-ordinary loop's variable can have only one type. **`inline for`** has the
-compiler write the body out once per kind, eighteen copies, each with its
-own types. `@field(room, @tagName(kind))` picks the room's list for that
+**Loops over different types.** The builder loops over a room's lists.
+But `room.door` is a list of doors and `room.text` is a list of lines,
+and in an ordinary loop the variable can only have one type. **`inline
+for`** gets round that. It makes the compiler copy the loop's body out
+once per kind of object, eighteen copies, and each copy gets its own
+types. `@field(room, @tagName(kind))` picks the room's list for that
 kind, and a `switch` on a kind the compiler already knows compiles only
 the matching branch. The loop is gone before the program runs.
 
