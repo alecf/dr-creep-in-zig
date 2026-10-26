@@ -109,7 +109,7 @@ fn roomColors(m: *Machine, n: u8) u8 {
 }
 
 /// One colour in both halves of a screen-plane byte.
-pub fn both(color: u8) u8 {
+fn both(color: u8) u8 {
     return color << 4 | color;
 }
 
