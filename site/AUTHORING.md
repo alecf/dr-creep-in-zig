@@ -1702,3 +1702,150 @@ Castle rooms (ch03)".
   off-left handling: a machine at castle X < 16 overflows (panics in Debug
   and ReleaseSafe). Add them to the "check the real castles for X < 16"
   list when real castles load.
+- **Chapter 7 file, title, images.** `site/chapters/07-lock-and-load.md`,
+  `title: "Lock and Load"`, generated from `tools/ch07/ch07.tmpl.md` by
+  `expand.py` (65 listings, prose ≈ 5,030 words by `wc.py`). Screenshots
+  (768×544, every one from a `tools/ch07/runs.py` run): `07-under-fire.png`
+  (Mission Briefing; E 470, a laser stopping on the field with the explorer
+  behind it), `07-keys.png` (A 740, at the green key upstairs),
+  `07-locked.png` (B 390, just arrived on the pad), `07-panel.png` (C 480,
+  at the panel, gun climbing), `07-shot.png` (D 340, the laser reaching him
+  on the floor), `07-escape.png` (E 1380, gun at the top, field down, running
+  for the door). Diagrams: `ch07-swap` (animated; the key's slot taken by
+  the last object, count 4 → 3), `ch07-gun-byte` (static; the `Gun` bits,
+  castle-set vs game-set), `ch07-slots` (animated; one laser's life in
+  slot 2, plus the full table where `add` says null). Quoted error:
+  `Cannot create a direct enum array for actors.Kind. It would have 1
+  unused slots, but only 0 are allowed.` (`errs.py` case `gap`). Quoted test
+  failure: the first Under Fire test before the `share` fix (`expected 0,
+  found 3`).
+- **Source layout (ch07).** New files `locks.zig` (`prepareKey`, `take`,
+  `carrying`, `prepareLock`, `unlock`) and `guns.zig` (`gunX`, `picture`,
+  `lowest`, `prepare`, `lamps`, `run`, `move`, `shoot`, `fly`, `gunOf`,
+  `blocked`, `strike`, `steer`; comptime check that each way's 4 gun
+  pictures are consecutive). Changed: `castle.zig` (header `keys_count`
+  `+$13`, `keys_held` `+$15`, `pocket = 32`; documented `Key`, `Lock`;
+  `RayGun.runtime` renamed **`gun_y`** and `state` typed **`Gun`**, a
+  `packed struct(u8)`: bit 0 `left`, 1 `down`, 2 `up`, 3 `fire`, 4
+  `no_gun`, 5 `steered`, 6 `shot`, 7 `end` = 1984 `RAYGUN_*` TRACK_TO_LEFT,
+  MOVE_DOWN, MOVE_UP, FIRED_BY_PLAYER, TRACK_ONLY, PLAYER_CONTROLLING,
+  DONT_FIRE, END), `objects.zig` (kinds `key, lock, gun, panel`; `step`
+  re-reads the count and removes `picked` objects; `remove`), `actors.zig`
+  (`Kind.laser = 4`, `directEnumArray(..., 1, ...)` leaving the mummy's gap;
+  laser `{turn fly, flickers false, hit blocked, touch strike, group
+  0b100}`; **`share`**, a strict box test for sprite pairs, replaces
+  `objects.overlap` in `hitting`), `room.zig` (key/lock/ray_gun preparers;
+  `later` now only mummy, pattern, frankenstein), `author.zig` (keys 8×16
+  and locks 12×24 on screen and in the overlap check; a lock's door must
+  exist), `training.zig` (`key(color, x, y)` / `lock(color, door, x, y)`
+  helpers writing `$50 + colour` / `$57 + colour`), `shapes.zig` (Ids
+  appended after `pad`: `key, lock, track, gun_right_0..3, gun_left_0..3,
+  panel, laser`), `art.zig` (sections "keys and locks", "ray guns"),
+  `main.zig` (`feet` helper, 7 new tests). `map.zig` unchanged.
+- **Memory (ch07).** Inventories live in the **castle header, as in 1984**:
+  `$7813` P1 count, `$7814` P2 count, `$7815–$7834` P1 keys, `$7835–$7854`
+  P2 keys (1984 `obj_Key_Infront`/`obj_Key_NotFound`). So a saved castle
+  carries them and ch9's clean castle copy per game resets them; until
+  then a new game keeps the old pockets *and* the taken keys (consistent).
+  This is a first use of the header as runtime state (ch9 teaches it).
+  Shape table 3,774 bytes (was 3,265); castle 4,496 (was 4,435).
+- **Mechanics, as implemented.** *Key:* prepare skips `shape == 0`, recolours
+  `.key` (`white << 4 | number`), places, adds object. `take` (in_front):
+  player, fire *press*, playing, pocket not full → append number, count+1,
+  record `shape = 0`, erase picture, `picked` + `disable`. *Removal:*
+  `objects.step`, for a `picked` object: count−1, copy the last 16-byte slot
+  over it (`m.copy`), `continue` so the moved object skips this step (1984
+  `object_Execute`). *Lock:* prepare recolours `.lock`, places, adds;
+  `unlock`: player, press, playing, `carrying(number)` → find `.door` with
+  `number == lock.door`, set `execute` if shut; key kept. *Gun prepare:*
+  clear `shot`, draw `length` track pieces 8 rows apart, draw gun at (x+4 or
+  x−8, gun_y) unless `no_gun`, gun object (8×11) with `execute`; panel
+  (8×24) drawn, lamps grey, panel object. *Gun run* (every step, acts on
+  `clock & 3 == 0`): not steered → clear up/down, if playing: `near =
+  |his top − gun_y|`, up if his top < gun_y else down. `move`: one row if
+  track remains (gun_y between y and y + 8·length − 11), erase/draw picture
+  `gun_*_0 + (gun_y & 3)`, box follows, lamps (up green / down red / grey,
+  tinting the 2×1 cells at control_y and control_y + 16). Then steered →
+  clear `steered`, need `fire`, clear it; else need `near < 5`; then not
+  `shot` → `shoot`. *Shoot:* `actors.add(.laser) orelse return`, at (gun x
+  ± 8, gun_y + 5), way 2/6, `setFrame(.laser)`, `shot`, `o.actor = slot`.
+  *Fly* (pace 1): ±4 a step; x < 8 or ≥ 176 → `destroy`; last turn → `free`,
+  `gunOf` (gun object whose `actor` is n) → `actor = none`, `shot = false`.
+  *blocked* (hit): always true (no flicker → gone next step). *strike*
+  (touch): machine → true, a gun other than its own → true. *Panel steer*:
+  player, playing, feet within panel width; stick 0 → up, 4 → down, `0x80` →
+  neither, else return; `steered`; a fire press → `fire`.
+- **Training Castle rooms 9, 10, 15, 17 (ch07).** 9 Keys and Locks: bell
+  removed; key green (168, 112) at the upper walkway's end; lock green door
+  1 (44, 168). 10 Ray Guns: gun `{left, x 132, y 96, length 12, gun_y 152,
+  control 40, 104}` (gun at 124–131, panel beside the ladder top); walking
+  the floor gets him shot before x 124; standing in the doorway, shot in ≈ 3
+  s. 15 Under Fire: walkways floor + `upper_right`, `ladder_right`; field
+  `{button 136,160; field 88,168}`; gun `{right, x 60, y 96, length 12,
+  gun_y 171, control 120, 104}` (lasers from 72 die on the field); new sign
+  "THE FORCEFIELD IS / YOUR SHIELD. TAKE / IT DOWN AND THE / GUN CAN HIT
+  YOU. SO / SEND THE GUN UP / FIRST, THEN RUN!". 17 Locked Away: bell
+  removed; pole `{8, 100, 128}`; teleport `{128, 160, target 0, one pad
+  (136, 120)}`; key light_blue (168, 112); lock light_blue door 1 (44, 168).
+  The panels sit next to ladder tops on purpose: a gun steered to the top
+  reaches the upper walkway's row in ≈ 7 rows (28 steps).
+- **Deviations (ch07).** (1) Key/lock/panel react to a fire *press*; 1984
+  reads the held button (its panel copies held fire into FIRED every turn,
+  so holding fire keeps shooting; box). (2) One key picture recoloured;
+  1984 draws the record's picture `$51–$57`. The record's `shape` byte is
+  only "0 = taken" for us, so **no 1984-ID → `Id` table is needed for keys**
+  (pays the ch3/ch11 note for keys; locks' byte is unused in 1984 too).
+  (3) Lock has a white glint (code 01). (4) Laser 2 rows tall (1984 1).
+  (5) The key erases its own picture in `take`; 1984 erases picked objects
+  in `object_Execute`. (6) The gun is drawn in `prepare`; 1984 on its first
+  execute. (7) Gun→laser link is `o.actor`, with `gunOf` searching back;
+  1984 stores the gun in the laser (`field_1E`). (8) **Full sprite table:**
+  ours holds fire; 1984's `$3A98` ignores the finder's carry and takes slot
+  0 (box). (9) Tracking reads player 1 only (ch9 adds the nearest of two);
+  1984's "y ≥ 200 counts as above" and signed-distance wrap are dropped.
+  (10) Track is one symmetric piece; 1984 has left/right track pictures.
+  (11) Pocket full (32) refuses the key; 1984 would overflow into P2's list.
+  (12) **Sprite–sprite boxes are strict** (`share`, `>`); 1984 uses `>=`
+  (`Sprite_Collision_Check`), which kills an explorer leaning on a field
+  when a laser dies on its far side (field box 88–95, explorer 92, laser
+  84–91: edges meet at 92). Found by the Under Fire test; told in the
+  chapter and a box. Object touching keeps `overlap` (inclusive).
+- **Costs at ch07 (measured).** Removal 120 cycles (`objects.step` 68 → 188
+  with one removal). Gun moving a row ≈ 1,430; idle turn 4; firing turn ≈
+  2,086 (+≈ 650 for the laser's unpack). Laser turn 16, last turn 52.
+  Boss Battle (`runs.py` F, 4,760 frames: rooms 9 → 10, N×4 → 15, N → 17,
+  ending in room 18): 4,555 calls, bucket 3 max 2,138, bucket 4 max 3,622
+  (room 10, a gun row + the door opening), 20 loading pauses, 0 overruns.
+  Named frames 740, 1720, 2740, 3680, 4110.
+- **Tests at ch07 (41 in `zig build test`).** All room tests play through
+  the stick: keys (lock refuses empty-handed; ladder, key, slot-2 swap check,
+  record shape 0; back to the lock; through door 1 to room 10); locked away
+  (booth fire → upstairs, key, pole, lock opens); ray guns death (floor walk,
+  one laser at a time, dies before x 124); ray guns steering (gun holds still
+  at the panel, steered to the top, a laser fired over his head comes and
+  goes, then down and out to room 11); under fire shield (alive leaning on
+  the field for 400 frames with lasers dying, button → dead); under fire
+  solution (panel, gun up, button, run, out to room 16). One unit-style test
+  sets gun flags directly: sprite cap (room 10, slots 1–7 filled, steered +
+  fire → no shot, fire consumed; free slot 5 → laser in 5, `o.actor` 5).
+- **Ladder bookkeeping (ch07).** Taught: fixed list + count instead of a
+  growable array (under-the-hood box, `push`/`includes`); swap-with-last
+  removal (diagram; the Last-One-In Power-Up); a whole device's state in one
+  flag byte shared by castle and game (`Gun`, diagram); spawning under a
+  hard cap, null = wait (diagram, the Spawn-and-Free Power-Up); explicit enum
+  values (`laser = 4`) and `directEnumArray`'s gap count; strict vs inclusive
+  box tests. Built on, not re-taught: ch05's free-slot reuse and the
+  `State` lifecycle (`destroy` last turn → `free` → `unused`), ch06's links
+  by number (`o.actor`, `objects.find`). Outline "you can shoot another
+  player" is ch9's (lasers already kill any `player` actor).
+- **Promises (ch07 → later).** ch8: mummy is actor kind 3 (fill the gap,
+  then `directEnumArray(..., 0)` again or keep 1 for none); lasers kill
+  Frankensteins (1984 laser `touch` on a Frankenstein object; `strike`
+  needs the case) and monsters need laser `hit`s; mummy/frank groups vs
+  `0b100`. ch9: player 2's pocket (`keys_count + 1`, `keys_held + 32`),
+  keys/locks/panels for either player, guns track the nearest playing
+  player, per-player `player_plate` (stale after a swap-removal; box in
+  ch7), the clean castle copy resets pockets and taken keys, the header as
+  scratch state. ch10: sounds (key pickup, gun fire, lock). ch11: real
+  castles' gun records with `no_gun`, panels at X < 16 (the ch06 tint
+  note applies to `lamps`).

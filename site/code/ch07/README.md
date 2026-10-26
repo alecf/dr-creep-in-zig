@@ -1,28 +1,25 @@
-# Checkpoint: Chapter 6, "Flip the Switch"
+# Checkpoint: Chapter 7, "Lock and Load"
 
-The game at the end of Chapter 6: the castle's machines. One pattern runs
-them all: a *control* (a switch, a button, a plate in the floor, a control
-box, a booth) linked to a *device* (lightning machines, a forcefield, a
-trapdoor, a conveyor belt, a set of pads), by number, never by pointer.
-Training Castle rooms 4 to 8 work:
+The game at the end of Chapter 7: keys, locks, ray guns and their lasers.
+Training Castle rooms 9, 10, 15 and 17 work:
 
-- **Lightning**: two machines with crackling bolts (actors), and a switch
-  upstairs that names both machines by their place in the castle. Push the
-  stick down at it to stop them, up to start them. Touch a bolt and you die.
-- **Forcefields**: the field is an actor and a wall in the navigation grid.
-  Its button takes it down; the gauge counts 240 engine steps back up.
-- **Trapdoors**: an open trapdoor is a wall in the grid. Step onto its
-  switch and it flips, once. In the Trapdoors room it opens behind you.
-  Fall in and you die.
-- **Conveyors**: the belt carries whoever stands on it. Its control box
-  stops it, and starts it again the other way. The slats move by
-  recolouring cells, not by drawing. This one runs into an open trapdoor;
-  the way on is the high walkway, up the ladder and down the pole.
-- **The transmitter**: push up in the booth to move the lamp to the next
-  pad's colour, press fire to go there.
+- **Keys and Locks** (9): press fire at a key and it goes in your pocket,
+  a list of key numbers kept in the castle's header (`$7813`, as in 1984).
+  It leaves the object table by 1984's rule: the last object moves into
+  its slot. Press fire at the lock of the same colour and its door opens.
+- **Ray Guns** (10): the gun slides along its track towards your row and
+  fires when you're level with it. Its laser is the first short-lived
+  actor: it takes the first free sprite slot, flies, and frees it. At the
+  panel you steer the gun (up, down, still) and fire it yourself.
+- **Under Fire** (15): the forcefield is a shield: lasers stop on it.
+  Send the gun up from its panel, then take the field down and run.
+- **Locked Away** (17): the key is upstairs, reached only by the
+  transmitter; a pole brings you down to the lock.
 
-The engine gained 1984's sprite-sprite check (per-kind `hit` handlers and
-group masks) and per-kind `touch` handlers for objects.
+A gun's whole state is one flag byte in its castle record (`castle.Gun`).
+With all eight sprites busy, a gun holds its fire. Sprites now hit each
+other only when their boxes share a fat pixel, so an explorer leaning on a
+forcefield is safe from the lasers that die on its far side.
 
 Keys: N and P flip rooms; G draws the grid; Q searches instead of reading
 the grid (and walks through forcefields and open trapdoors: the castle
@@ -33,13 +30,15 @@ every turn; X gives up a life.
 src/main.zig         boot(), frame(), the game's modes and the engine step, whole-game tests
 src/map.zig          the game's memory map, checked at compile time
 src/actors.zig       the actor table: slots, kinds, turns, sprite-sprite hits, flickering
-src/objects.zig      the object table: slots, flags, handlers, finding by number, touching
+src/objects.zig      the object table: slots, flags, handlers, finding by number, touching, removing
 src/doors.zig        doors and doorbells: ringing, opening, walking in
 src/lightning.zig    lightning machines, their bolts, and their switches
 src/forcefields.zig  forcefields, their buttons and gauges
 src/trapdoors.zig    trapdoors and the switches in the floor
 src/conveyors.zig    conveyor belts and their control boxes
 src/transmitter.zig  the matter transmitter: booth, lamp and pads
+src/locks.zig        keys, the pocket, and locks
+src/guns.zig         ray guns, their panels, and lasers
 src/player.zig       the explorer: joystick, steps, ladders, poles, doorways, deaths
 src/grid.zig         the navigation grid: building it, walls, reading it, the slow search
 src/sprites.zig      unpacking sprite frames; castle coordinates to sprite registers
@@ -56,11 +55,12 @@ src/text.zig         letters from the character ROM, with the castle's text styl
 src/title.zig        the title screen
 ```
 
-The Boss Battle run walks rooms 4 to 8 from the Lightning room (four N
-presses) to the Keys room:
+The Boss Battle run plays the Keys room (nine N presses), walks on
+through the Ray Guns room, presses N four times for Under Fire, and N once
+more for Locked Away:
 
 ```
-zig build run -- --frames 3120 --press 20:f:5 --key 45:N --key 60:N --key 75:N --key 90:N --press 110:r:64 --press 180:u:80 --press 265:l:46 --press 315:d:6 --press 330:r:46 --press 380:d:80 --press 465:r:172 --press 640:f:5 --press 700:r:40 --press 760:ur:10 --press 920:l:76 --press 1000:f:5 --press 1010:l:160 --press 1172:f:5 --press 1240:l:30 --press 1272:ur:10 --press 1420:l:236 --press 1660:f:5 --press 1720:l:30 --press 1752:ur:10 --press 1900:l:104 --press 2006:u:130 --press 2140:l:150 --press 2292:d:100 --press 2394:r:14 --press 2412:f:5 --press 2420:l:40 --press 2462:ur:10 --press 2610:l:92 --press 2706:u:34 --press 2744:f:5 --press 2754:l:32 --press 2790:f:5 --press 2850:l:28 --press 2882:ur:10 --dump-every 10
+zig build run -- --frames 4760 --press 20:f:5 --key 45:N --key 60:N --key 75:N --key 90:N --key 105:N --key 120:N --key 135:N --key 150:N --key 165:N --press 185:l:230 --press 415:f:5 --press 440:r:126 --press 566:u:70 --press 636:r:130 --press 766:f:5 --press 781:l:114 --press 895:d:70 --press 965:l:126 --press 1091:f:5 --press 1096:l:60 --press 1156:ur:10 --press 1326:r:64 --press 1390:u:70 --press 1460:l:26 --press 1506:u:464 --press 1970:f:5 --press 2015:r:26 --press 2041:d:70 --press 2111:r:172 --press 2283:f:5 --press 2288:r:60 --press 2348:ur:10 --key 2518:N --key 2533:N --key 2548:N --key 2563:N --press 2598:l:140 --press 2798:r:36 --press 2834:u:70 --press 2904:r:16 --press 2920:u:514 --press 3434:l:12 --press 3446:d:70 --press 3516:r:56 --press 3572:f:5 --press 3577:l:182 --press 3759:f:5 --press 3764:l:60 --press 3824:ur:10 --key 3994:N --press 4029:l:64 --press 4093:f:5 --press 4108:r:90 --press 4198:f:5 --press 4213:l:138 --press 4351:d:70 --press 4421:l:102 --press 4523:f:5 --press 4528:l:60 --press 4588:ur:10 --dump-every 10
 zig build wasm && python3 -m http.server -d web
 zig build test
 ```

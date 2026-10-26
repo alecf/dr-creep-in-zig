@@ -1,0 +1,62 @@
+<style>
+.ch07-sl { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 18px 28px; align-items: start; }
+.ch07-sl > div { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ch07-sl .ch07-sl-tab { display: grid; grid-template-columns: 3.6em 1fr; grid-auto-rows: 26px; gap: 3px 8px; max-width: 300px; }
+.ch07-sl .off { color: var(--ink-soft); font-size: .7rem; align-self: center; }
+.ch07-sl .dg-byte { display: flex; align-items: center; padding: 0 8px; text-align: left; }
+.ch07-sl .ch07-sl-free { opacity: .55; }
+.ch07-sl .ch07-sl-cell { display: inline-grid; width: 100%; }
+.ch07-sl .ch07-sl-cell > span { grid-area: 1 / 1; opacity: 0; }
+.ch07-sl small { color: var(--ink-soft); font-size: .68rem; }
+.ch07-sl .ch07-sl-s0 { animation: ch07-sl-s0 6s step-end infinite; }
+.ch07-sl .ch07-sl-s1 { animation: ch07-sl-s1 6s step-end infinite; color: var(--accent); }
+.ch07-sl .ch07-sl-s2 { animation: ch07-sl-s2 6s step-end infinite; color: var(--accent); }
+.ch07-sl .ch07-sl-s3 { animation: ch07-sl-s3 6s step-end infinite; color: var(--accent); }
+.ch07-sl .ch07-sl-s4 { animation: ch07-sl-s4 6s step-end infinite; }
+.ch07-sl .ch07-sl-room { position: relative; height: 40px; max-width: 300px; border-radius: 4px; background: var(--c0); overflow: hidden; }
+.ch07-sl .ch07-sl-gun { position: absolute; left: 6%; top: 10px; width: 6%; height: 20px; background: var(--c15); }
+.ch07-sl .ch07-sl-field { position: absolute; left: 70%; top: 2px; width: 4%; height: 36px; background: var(--c14); }
+.ch07-sl .ch07-sl-him { position: absolute; left: 76%; top: 4px; width: 6%; height: 32px; background: var(--c1); }
+.ch07-sl .ch07-sl-laser { position: absolute; left: 12%; top: 19px; width: 8%; height: 3px; background: var(--c7); opacity: 0; animation: ch07-sl-fly 6s linear infinite; }
+.ch07-sl p { margin: 0; font-size: .74rem; color: var(--ink-soft); }
+@keyframes ch07-sl-s0 { 0% { opacity: 1 } 15% { opacity: 0 } 75% { opacity: 1 } }
+@keyframes ch07-sl-s1 { 0% { opacity: 0 } 15% { opacity: 1 } 20% { opacity: 0 } }
+@keyframes ch07-sl-s2 { 0% { opacity: 0 } 20% { opacity: 1 } 60% { opacity: 0 } }
+@keyframes ch07-sl-s3 { 0% { opacity: 0 } 60% { opacity: 1 } 70% { opacity: 0 } }
+@keyframes ch07-sl-s4 { 0% { opacity: 0 } 70% { opacity: 1 } 75% { opacity: 0 } }
+@keyframes ch07-sl-fly {
+  0%, 14.9% { opacity: 0; transform: translateX(0) }
+  15% { opacity: 1; transform: translateX(0) }
+  60% { opacity: 1; transform: translateX(600%) }
+  70% { opacity: 1; transform: translateX(600%) }
+  70.1%, 100% { opacity: 0; transform: translateX(600%) }
+}
+</style>
+<div class="ch07-sl" data-animate>
+  <div>
+    <span class="dg-label">Under Fire: one laser's life</span>
+    <div class="ch07-sl-room" role="img" aria-label="The gun on the left fires a laser to the right; it flies to the forcefield and stops there, short of the explorer behind it"><span class="ch07-sl-gun"></span><span class="ch07-sl-laser"></span><span class="ch07-sl-field"></span><span class="ch07-sl-him"></span></div>
+    <div class="ch07-sl-tab">
+      <span class="off">slot 0</span><span class="dg-byte">forcefield</span>
+      <span class="off">slot 1</span><span class="dg-byte">explorer</span>
+      <span class="off">slot 2</span><span class="dg-byte"><span class="ch07-sl-cell"><span class="ch07-sl-s0"><small>unused</small></span><span class="ch07-sl-s1">laser <small>created</small></span><span class="ch07-sl-s2">laser <small>flying, 4 a step</small></span><span class="ch07-sl-s3">laser <small>hit: destroy</small></span><span class="ch07-sl-s4"><small>free</small></span></span></span>
+      <span class="off">slot 3</span><span class="dg-byte ch07-sl-free"><small>unused</small></span>
+      <span class="off">…</span><span class="dg-byte ch07-sl-free"><small>unused, to slot 7</small></span>
+    </div>
+    <p>The gun's <code>shoot</code> takes the first unused slot. The laser's last turn frees it and tells the gun it can fire again.</p>
+  </div>
+  <div>
+    <span class="dg-label">All eight busy</span>
+    <div class="ch07-sl-tab">
+      <span class="off">slot 0</span><span class="dg-byte">forcefield</span>
+      <span class="off">slot 1</span><span class="dg-byte">explorer</span>
+      <span class="off">slot 2</span><span class="dg-byte">laser</span>
+      <span class="off">slot 3</span><span class="dg-byte">laser</span>
+      <span class="off">slot 4</span><span class="dg-byte">bolt</span>
+      <span class="off">slot 5</span><span class="dg-byte">bolt</span>
+      <span class="off">slot 6</span><span class="dg-byte">laser</span>
+      <span class="off">slot 7</span><span class="dg-byte">laser</span>
+    </div>
+    <p><code>actors.add</code> says <b>null</b>. There's no ninth sprite to give, so the gun holds its fire and tries again on its next turn.</p>
+  </div>
+</div>

@@ -1,0 +1,38 @@
+<style>
+.ch07-sw { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px 28px; align-items: start; }
+.ch07-sw .ch07-sw-tab { position: relative; display: grid; grid-template-columns: 4.2em 1fr; grid-auto-rows: 30px; gap: 4px 8px; max-width: 320px; }
+.ch07-sw .off { color: var(--ink-soft); font-size: .72rem; align-self: center; }
+.ch07-sw .dg-byte { position: relative; display: flex; align-items: center; padding: 0 8px; text-align: left; }
+.ch07-sw .ch07-sw-cell { display: inline-grid; width: 100%; }
+.ch07-sw .ch07-sw-cell > span { grid-area: 1 / 1; display: flex; justify-content: space-between; gap: 8px; }
+.ch07-sw small { color: var(--ink-soft); font-size: .7rem; }
+.ch07-sw .ch07-sw-key { color: var(--accent); }
+.ch07-sw .ch07-sw-a { animation: ch07-sw-a 6s step-end infinite; }
+.ch07-sw .ch07-sw-b { animation: ch07-sw-b 6s step-end infinite; opacity: 0; }
+.ch07-sw .ch07-sw-ghost { position: absolute; left: calc(4.2em + 8px); right: 0; top: 68px; height: 30px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; border-radius: 4px; background: var(--accent); color: var(--sheet); opacity: 0; animation: ch07-sw-move 6s linear infinite; }
+.ch07-sw .ch07-sw-ghost small { color: inherit; opacity: .8; }
+.ch07-sw .ch07-sw-count { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+.ch07-sw p { margin: 0; font-size: .74rem; color: var(--ink-soft); max-width: 40ch; }
+@keyframes ch07-sw-a { 0% { opacity: 1 } 55% { opacity: 0 } }
+@keyframes ch07-sw-b { 0% { opacity: 0 } 55% { opacity: 1 } }
+@keyframes ch07-sw-move {
+  0%, 30% { opacity: 0; transform: translateY(34px) }
+  31% { opacity: 1; transform: translateY(34px) }
+  53% { opacity: 1; transform: translateY(0) }
+  55%, 100% { opacity: 0; transform: translateY(0) }
+}
+</style>
+<div class="ch07-sw" data-animate>
+  <div>
+    <span class="dg-label">The Keys room's object table</span>
+    <div class="ch07-sw-tab">
+      <span class="off">slot 0</span><span class="dg-byte"><span class="ch07-sw-cell"><span>door <small>number 0</small></span></span></span>
+      <span class="off">slot 1</span><span class="dg-byte"><span class="ch07-sw-cell"><span>door <small>number 1</small></span></span></span>
+      <span class="off">slot 2</span><span class="dg-byte"><span class="ch07-sw-cell"><span class="ch07-sw-a ch07-sw-key">key <small>picked</small></span><span class="ch07-sw-b">lock <small>green</small></span></span></span>
+      <span class="off">slot 3</span><span class="dg-byte"><span class="ch07-sw-cell"><span class="ch07-sw-a">lock <small>green</small></span><span class="ch07-sw-b"><small>(not in the table)</small></span></span></span>
+      <span class="ch07-sw-ghost">lock <small>16 bytes</small></span>
+    </div>
+    <div class="ch07-sw-count"><span class="dg-label">engine_objects</span><span class="dg-byte"><span class="ch07-sw-cell"><span class="ch07-sw-a">4</span><span class="ch07-sw-b">3</span></span></span></div>
+  </div>
+  <p>He takes the key, and the key's <b>picked</b> flag goes up. Later in the same step, <code>objects.step</code> copies the last object, the lock, over the key's 16 bytes and counts one fewer. Two doors and a lock: the table is packed again, and nothing else moved.</p>
+</div>
