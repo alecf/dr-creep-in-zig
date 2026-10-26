@@ -67,7 +67,7 @@ pub fn draw(m: *Machine) void {
     }
 }
 
-/// The monsters come alive in the next chapter.
+/// The monsters come alive in the next chapter, the title screens' pattern later.
 fn later(m: *Machine, r: castle.Record) void {
     _ = m;
     _ = r;

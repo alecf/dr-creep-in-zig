@@ -133,8 +133,8 @@ fn move(m: *Machine, o: *align(1) objects.Object, g: *align(1) castle.RayGun) vo
 }
 
 /// Fire: a laser from the muzzle, flying the way the gun faces. If all
-/// eight sprites are busy, there's no laser, and the gun tries again on
-/// its next turn.
+/// eight sprites are busy, there's no laser. A gun on its own fires on
+/// its next turn; a press at the panel is lost.
 fn shoot(m: *Machine, o: *align(1) objects.Object, g: *align(1) castle.RayGun) void {
     const n = actors.add(m, .laser) orelse return;
     const a = actors.slot(m, n);

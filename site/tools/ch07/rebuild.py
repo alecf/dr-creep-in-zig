@@ -2,7 +2,7 @@
 # run at each stage; compare the result with the checkpoint.
 import sys, os, shutil, subprocess, re
 sys.path.insert(0, os.path.dirname(__file__))
-from listings import STEPS, OLD, NEW
+from listings import STEPS, OLD, NEW, SNAP
 S = os.environ.get('WORK', '/tmp/claude-0/-home-claude-dr-creep-in-zig/792f76de-5ad6-5ca5-bfb5-7d7dced7c491/scratchpad/ch07')
 work = S + '/rebuild'
 shutil.rmtree(work, ignore_errors=True); os.makedirs(work)
@@ -67,6 +67,9 @@ for st in STEPS:
     else:
         m = re.match(r'\*\*`(src/[a-z_]+\.zig)`\*\*', st['label']); st['file'] = m.group(1)
     apply(st)
+    if st['key'] in SNAP:
+        d = S + '/at-' + st['key']; shutil.rmtree(d, ignore_errors=True)
+        shutil.copytree(P, d, ignore=shutil.ignore_patterns('.zig-cache', 'zig-out'))
     if st['run']:
         tag = st['run']
         for cmd in (['zig', 'fmt', '--check', 'src'], ['zig', 'build'], ['zig', 'build', 'test']):

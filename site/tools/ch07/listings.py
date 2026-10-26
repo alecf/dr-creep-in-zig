@@ -155,7 +155,7 @@ step('C8', '**`src/room.zig`** (add below the `locks` import)', 'after_line',
 step('C9', '**`src/room.zig`** (in `prepares`, replace the ray gun entry)', 'replace_text',
      '    .ray_gun = guns.prepare,\n', arg='    .ray_gun = later,\n')
 step('C10', '**`src/room.zig`** (replace the comment above `later`)', 'replace_text',
-     '/// The monsters come alive in the next chapter.\n', arg='/// Monsters, keys, locks and guns come alive in later chapters.\n')
+     '/// The monsters come alive in the next chapter, the title screens\' pattern later.\n', arg='/// Monsters, keys, locks and guns come alive in later chapters.\n')
 GUNS = f7('src/guns.zig')
 GUNS_HEAD = GUNS[:GUNS.index('/// Where gun `g` hangs')]
 AIM = '''
@@ -196,7 +196,8 @@ step('C16', '**`src/guns.zig`** (add at the end)', 'append', fn('src/guns.zig', 
 step('C17', '**`src/training.zig`** (replace the `ray_guns` room)', 'replace_text',
      room_of(TR, 'ray_guns', 'mummy'), arg=room_of(TR6, 'ray_guns', 'mummy'))
 T_STEER = test('ray guns: steer')
-SHOT = '''    hold(m, machine.joy.fire, 4); // and fire it, over his head
+ESCAPE = fn('src/main.zig', 'escapeRayGuns')
+SHOT = '''    hold(m, machine.joy.fire, 4); // and fire it, high over the room
     hold(m, 0, 8); // the gun hears it on its next turn
     try std.testing.expectEqual(1, count(m, .laser));
     try std.testing.expect(gun.state.shot);
@@ -204,7 +205,9 @@ SHOT = '''    hold(m, machine.joy.fire, 4); // and fire it, over his head
     try std.testing.expectEqual(0, count(m, .laser));
     try std.testing.expect(!gun.state.shot);
 '''
-step('C18', '**`src/main.zig`** (add above `explorer`)', 'before_text', rep(T_STEER, (SHOT, '')), arg=HELPERS, run='C')
+step('C18', '**`src/main.zig`** (add above `explorer`)', 'before_text', T_STEER, arg=HELPERS)
+step('C19', '**`src/main.zig`** (add above `feet`)', 'before_text', rep(ESCAPE, (SHOT, '')) + '\n',
+     arg='/// Where his feet are, across the room.', run='C')
 
 # ============================================================================
 # D: lasers
@@ -214,32 +217,33 @@ step('D1', '**`src/actors.zig`** (replace the comment at the top)', 'replace_tex
      arg=lines_of('src/actors.zig', '//! The actor table', '//! forcefields so far', root=OLD))
 step('D2', '**`src/actors.zig`** (add below the `forcefields` import)', 'after_line',
      'const guns = @import("guns.zig");\n', arg='const forcefields = @import("forcefields.zig");')
-step('D3', '**`src/actors.zig`** (replace `Kind`)', 'replace_text',
+step('D3', '**`src/shapes.zig`** (in `Id`, add at the end, after `panel`)', 'after_line', '    laser,\n', arg='    panel,')
+step('D4', '**`src/art.zig`** (add above `// ---- pictures for the castle`)', 'before_text',
+     cut(ART, '/// A laser:', PICTURES), arg=PICTURES)
+step('D5', '**`src/guns.zig`** (add below `stick_still`)', 'after_line', AIM, arg='const stick_still = 0x80;')
+step('D6', '**`src/guns.zig`** (replace `run`)', 'replace_fn', RUN, arg='run')
+step('D7', '**`src/guns.zig`** (add below `move`)', 'insert_after_fn', fn('src/guns.zig', 'shoot'), arg='move')
+step('D8', '**`src/guns.zig`** (add below `shoot`)', 'insert_after_fn',
+     fn('src/guns.zig', 'fly') + '\n' + fn('src/guns.zig', 'gunOf'), arg='shoot')
+step('D9', '**`src/guns.zig`** (add below `gunOf`)', 'insert_after_fn',
+     fn('src/guns.zig', 'blocked') + '\n' + fn('src/guns.zig', 'strike'), arg='gunOf')
+step('D10', '**`src/actors.zig`** (replace `Kind`)', 'replace_text',
      lines_of('src/actors.zig', '/// Every kind of actor', 'pub const Kind'),
      arg=lines_of('src/actors.zig', '/// Every kind of actor', 'pub const Kind', root=OLD))
-step('D4', '**`src/actors.zig`** (in `kinds`, add below the forcefield\'s entry)', 'after_line',
+step('D11', '**`src/actors.zig`** (in `kinds`, add below the forcefield\'s entry)', 'after_line',
      lines_of('src/actors.zig', '    .laser = ', '    .laser = '),
      arg='    .forcefield = .{ .turn = forcefields.shimmer, .flickers = false, .group = 0b011 },')
-step('D5', '**`src/actors.zig`** (replace the first line of `kinds` and the comment above it)', 'replace_text',
+step('D12', '**`src/actors.zig`** (replace the first line of `kinds` and the comment above it)', 'replace_text',
      lines_of('src/actors.zig', '/// One entry for every kind, found by number.', 'const kinds'),
      arg=lines_of('src/actors.zig', '/// One entry for every kind, found by number.', 'const kinds', root=OLD))
-step('D6', '**`src/shapes.zig`** (in `Id`, add at the end, after `panel`)', 'after_line', '    laser,\n', arg='    panel,')
-step('D7', '**`src/art.zig`** (add above `// ---- pictures for the castle`)', 'before_text',
-     cut(ART, '/// A laser:', PICTURES), arg=PICTURES)
-step('D8', '**`src/guns.zig`** (add below `stick_still`)', 'after_line', AIM, arg='const stick_still = 0x80;')
-step('D9', '**`src/guns.zig`** (replace `run`)', 'replace_fn', RUN, arg='run')
-step('D10', '**`src/guns.zig`** (add below `move`)', 'insert_after_fn', fn('src/guns.zig', 'shoot'), arg='move')
-step('D11', '**`src/guns.zig`** (add below `shoot`)', 'insert_after_fn',
-     fn('src/guns.zig', 'fly') + '\n' + fn('src/guns.zig', 'gunOf'), arg='shoot')
-step('D12', '**`src/guns.zig`** (add below `gunOf`)', 'insert_after_fn',
-     fn('src/guns.zig', 'blocked') + '\n' + fn('src/guns.zig', 'strike'), arg='gunOf')
 step('D13', '**`src/main.zig`** (add below the `locks` import)', 'after_line',
      'const guns = @import("guns.zig");\n', arg='const locks = @import("locks.zig");')
-step('D14', '**`src/main.zig`** (add above the steering test)', 'before_text', test('ray guns: along'),
+step('D14', '**`src/main.zig`** (add above the steering test)', 'before_text', test('ray guns: past'),
      arg='test "ray guns: steer')
-step('D15', '**`src/main.zig`** (in the steering test, add below the `// up to the top of its track` line)', 'after_line',
+step('D15', '**`src/main.zig`** (in `escapeRayGuns`, add below the `// up to the top of its track` line)', 'after_line',
      SHOT, arg='    while (gun.gun_y != gun.y) hold(m, machine.joy.up, 2); // up to the top of its track')
-step('D16', '**`src/main.zig`** (add above `explorer`)', 'before_text', test('with all eight'), arg=HELPERS, run='D')
+step('D16', '**`src/main.zig`** (add above `explorer`)', 'before_text', test('ray guns: shot once'), arg=HELPERS)
+step('D17', '**`src/main.zig`** (add above `explorer`)', 'before_text', test('with all eight'), arg=HELPERS, run='D')
 
 # ============================================================================
 # E: under fire
@@ -254,3 +258,6 @@ step('E3', '**`src/main.zig`** (add above the sprite-cap test)', 'before_text',
 step('E4', '**`src/actors.zig`** (in `hitting`, replace the `overlap` line)', 'replace_text',
      '        if (!share(m, a.box, b.box)) continue;\n', arg='        if (!objects.overlap(m, a.box, b.box)) continue;\n')
 step('E5', '**`src/actors.zig`** (add below `hitting`)', 'insert_after_fn', fn('src/actors.zig', 'share'), arg='hitting', run='F')
+
+# The reader's project right after these steps is kept, for errs.py.
+SNAP = {'D11'}

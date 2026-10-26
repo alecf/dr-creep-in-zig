@@ -10,7 +10,9 @@ Training Castle rooms 9, 10, 15 and 17 work:
 - **Ray Guns** (10): the gun slides along its track towards your row and
   fires when you're level with it. Its laser is the first short-lived
   actor: it takes the first free sprite slot, flies, and frees it. At the
-  panel you steer the gun (up, down, still) and fire it yourself.
+  panel you steer the gun (up, down, still) and fire it yourself. You
+  come in behind the gun, so a gun left low after a death can't touch you
+  at the door.
 - **Under Fire** (15): the forcefield is a shield: lasers stop on it.
   Send the gun up from its panel, then take the field down and run.
 - **Locked Away** (17): the key is upstairs, reached only by the
@@ -60,7 +62,7 @@ through the Ray Guns room, presses N four times for Under Fire, and N once
 more for Locked Away:
 
 ```
-zig build run -- --frames 4760 --press 20:f:5 --key 45:N --key 60:N --key 75:N --key 90:N --key 105:N --key 120:N --key 135:N --key 150:N --key 165:N --press 185:l:230 --press 415:f:5 --press 440:r:126 --press 566:u:70 --press 636:r:130 --press 766:f:5 --press 781:l:114 --press 895:d:70 --press 965:l:126 --press 1091:f:5 --press 1096:l:60 --press 1156:ur:10 --press 1326:r:64 --press 1390:u:70 --press 1460:l:26 --press 1506:u:464 --press 1970:f:5 --press 2015:r:26 --press 2041:d:70 --press 2111:r:172 --press 2283:f:5 --press 2288:r:60 --press 2348:ur:10 --key 2518:N --key 2533:N --key 2548:N --key 2563:N --press 2598:l:140 --press 2798:r:36 --press 2834:u:70 --press 2904:r:16 --press 2920:u:514 --press 3434:l:12 --press 3446:d:70 --press 3516:r:56 --press 3572:f:5 --press 3577:l:182 --press 3759:f:5 --press 3764:l:60 --press 3824:ur:10 --key 3994:N --press 4029:l:64 --press 4093:f:5 --press 4108:r:90 --press 4198:f:5 --press 4213:l:138 --press 4351:d:70 --press 4421:l:102 --press 4523:f:5 --press 4528:l:60 --press 4588:ur:10 --dump-every 10
+zig build run -- --frames 4745 --press 20:f:5 --key 45:N --key 60:N --key 75:N --key 90:N --key 105:N --key 120:N --key 135:N --key 150:N --key 165:N --press 185:l:230 --press 415:f:5 --press 440:r:126 --press 566:u:70 --press 636:r:130 --press 766:f:5 --press 781:l:114 --press 895:d:70 --press 965:l:126 --press 1091:f:5 --press 1096:l:60 --press 1156:ur:10 --press 1326:r:32 --press 1398:u:596 --press 1994:f:5 --press 2059:r:204 --press 2263:f:5 --press 2268:r:60 --press 2328:ur:10 --key 2498:N --key 2513:N --key 2528:N --key 2543:N --press 2578:l:140 --press 2778:r:36 --press 2814:u:70 --press 2884:r:16 --press 2900:u:514 --press 3414:l:12 --press 3426:d:70 --press 3496:r:56 --press 3552:f:5 --press 3557:l:182 --press 3739:f:5 --press 3744:l:60 --press 3804:ur:10 --key 3978:N --press 4013:l:64 --press 4077:f:5 --press 4092:r:90 --press 4182:f:5 --press 4197:l:138 --press 4335:d:70 --press 4405:l:102 --press 4507:f:5 --press 4512:l:60 --press 4572:ur:10 --dump-every 10
 zig build wasm && python3 -m http.server -d web
 zig build test
 ```

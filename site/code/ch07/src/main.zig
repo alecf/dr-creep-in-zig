@@ -555,10 +555,10 @@ test "locked away: the transmitter up to the key, the pole down to the lock" {
     try std.testing.expectEqual(1, objects.slot(m, objects.find(m, .door, 1).?).open);
 }
 
-test "ray guns: along the floor, the gun shoots him" {
+test "ray guns: past the muzzle, the gun shoots him" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
-    inRoom(m, 10); // the gun faces left from x 124; he comes in on the left
+    inRoom(m, 10); // he comes in behind the gun, which faces right from x 60
     var lasers: usize = 0;
     while (m.ram[map.player_status] == @intFromEnum(player.Status.playing)) {
         hold(m, machine.joy.right, 2);
@@ -566,39 +566,32 @@ test "ray guns: along the floor, the gun shoots him" {
     }
     try std.testing.expectEqual(@intFromEnum(player.Status.dead), m.ram[map.player_status]);
     try std.testing.expectEqual(1, lasers); // one at a time
-    try std.testing.expect(feet(m) < 124); // in front of the gun
+    try std.testing.expect(feet(m) > 68 and feet(m) < 140); // past the muzzle, short of the bell
 }
 
 test "ray guns: steer the gun up from its panel, then run past it" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
     inRoom(m, 10);
-    const gun = m.view(castle.RayGun, room.first(m, .ray_gun).?);
-    while (feet(m) < 57) hold(m, machine.joy.right, 2); // the ladder, at x 56
-    hold(m, machine.joy.up, 200);
-    while (feet(m) > 44) hold(m, machine.joy.left, 2); // the panel, at x 40
-    try std.testing.expectEqual(128 - 21, explorer(m).box.y);
-    const before = gun.gun_y;
-    hold(m, 0, 40); // standing at it, the gun holds still
-    try std.testing.expectEqual(before, gun.gun_y);
-    while (gun.gun_y != gun.y) hold(m, machine.joy.up, 2); // up to the top of its track
-    hold(m, machine.joy.fire, 4); // and fire it, over his head
-    hold(m, 0, 8); // the gun hears it on its next turn
-    try std.testing.expectEqual(1, count(m, .laser));
-    try std.testing.expect(gun.state.shot);
-    hold(m, 0, 60);
-    try std.testing.expectEqual(0, count(m, .laser));
-    try std.testing.expect(!gun.state.shot);
+    try escapeRayGuns(m);
+}
 
-    // Down, and along the floor past the gun, while it comes back down.
-    while (feet(m) < 57) hold(m, machine.joy.right, 2);
-    hold(m, machine.joy.down, 200);
-    while (feet(m) < 143) hold(m, machine.joy.right, 2); // to the bell
-    hold(m, machine.joy.fire, 4);
-    hold(m, machine.joy.right, 60);
-    hold(m, machine.joy.up | machine.joy.right, 4);
-    try std.testing.expectEqual(@intFromEnum(player.Status.doorway), m.ram[map.player_status]);
-    try std.testing.expectEqual(11, m.ram[map.room_number]);
+test "ray guns: shot once, the room can still be won from its door" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom(m, 10);
+    while (m.ram[map.player_status] == @intFromEnum(player.Status.playing)) hold(m, machine.joy.right, 2);
+    hold(m, 0, 100); // back at the castle's start, the gun left on the floor's row
+    try std.testing.expectEqual(0, m.ram[map.room_number]);
+    for (0..10) |_| { // N ten times: by door 0, the gun where it was
+        m.input = .{ .key = 'N' };
+        _ = m.runFrame(@This());
+        m.input = .{};
+        hold(m, 0, 14);
+    }
+    try std.testing.expectEqual(10, m.ram[map.room_number]);
+    try std.testing.expect(m.view(castle.RayGun, room.first(m, .ray_gun).?).gun_y > 166); // in range of the floor
+    try escapeRayGuns(m);
 }
 
 test "under fire: the forcefield stops the lasers, and without it they hit" {
@@ -665,6 +658,32 @@ test "with all eight sprites busy, the gun holds its fire until one is free" {
 /// The explorer's actor slot.
 fn explorer(m: *Machine) *align(1) actors.Actor {
     return actors.slot(m, @intCast(m.ram[map.player_actor]));
+}
+
+/// From the Ray Guns room's door 0: the panel, the gun to the top of its
+/// track and a shot from there, then along the floor and out by door 1.
+fn escapeRayGuns(m: *Machine) !void {
+    const gun = m.view(castle.RayGun, room.first(m, .ray_gun).?);
+    while (feet(m) < 41) hold(m, machine.joy.right, 2); // the panel, at x 40
+    const before = gun.gun_y;
+    hold(m, 0, 40); // standing at it, the gun holds still
+    try std.testing.expectEqual(before, gun.gun_y);
+    while (gun.gun_y != gun.y) hold(m, machine.joy.up, 2); // up to the top of its track
+    hold(m, machine.joy.fire, 4); // and fire it, high over the room
+    hold(m, 0, 8); // the gun hears it on its next turn
+    try std.testing.expectEqual(1, count(m, .laser));
+    try std.testing.expect(gun.state.shot);
+    hold(m, 0, 60);
+    try std.testing.expectEqual(0, count(m, .laser));
+    try std.testing.expect(!gun.state.shot);
+
+    // Along the floor past the gun, while it comes back down.
+    while (feet(m) < 143) hold(m, machine.joy.right, 2); // to the bell
+    hold(m, machine.joy.fire, 4);
+    hold(m, machine.joy.right, 60);
+    hold(m, machine.joy.up | machine.joy.right, 4);
+    try std.testing.expectEqual(@intFromEnum(player.Status.doorway), m.ram[map.player_status]);
+    try std.testing.expectEqual(11, m.ram[map.room_number]);
 }
 
 /// Where his feet are, across the room.

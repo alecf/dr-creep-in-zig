@@ -298,13 +298,11 @@ pub const plan: author.Castle(Room) = .{
                 .{ .x = 16, .y = 160, .to = .keys, .to_door = 1 },
                 .{ .x = 156, .y = 160, .to = .mummy },
             },
-            .walkway = &.{ floor, upper_left },
-            .ladder = &.{ladder_left},
+            .walkway = &.{floor},
             .bell = &.{.{ .x = 140, .y = 168, .door = 1 }},
-            // Facing left, down the room, from a track that runs from
-            // the upper floor's height to the lower's. Its panel is
-            // upstairs, beside the ladder.
-            .ray_gun = &.{.{ .state = .{ .left = true }, .x = 132, .y = 96, .length = 12, .gun_y = 152, .control_x = 40, .control_y = 104 }},
+            // Facing right, down the room, from a track that runs from
+            // high up to the floor. You come in behind it, by its panel.
+            .ray_gun = &.{.{ .state = .{}, .x = 56, .y = 96, .length = 12, .gun_y = 171, .control_x = 40, .control_y = 168 }},
             .text = says("RAY GUNS", &.{
                 "A RAY GUN SLIDES UP",
                 "AND DOWN ITS TRACK,",

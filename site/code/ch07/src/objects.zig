@@ -127,8 +127,8 @@ pub fn add(m: *Machine, kind: Kind, box: actors.Box, record: u16) ?u8 {
 }
 
 /// One engine step for the objects: the ones that asked to run, run.
-/// Everything else costs one test of one bit. A picked-up object leaves
-/// the table on the spot.
+/// Everything else costs one test of one bit. An object picked up in the
+/// actors' step just before leaves the table here.
 pub fn step(m: *Machine) void {
     var n: u8 = 0;
     while (n < m.peek(map.engine_objects)) : (n += 1) {

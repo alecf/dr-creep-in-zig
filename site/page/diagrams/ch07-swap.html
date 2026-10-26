@@ -7,9 +7,9 @@
 .ch07-sw .ch07-sw-cell > span { grid-area: 1 / 1; display: flex; justify-content: space-between; gap: 8px; }
 .ch07-sw small { color: var(--ink-soft); font-size: .7rem; }
 .ch07-sw .ch07-sw-key { color: var(--accent); }
-.ch07-sw .ch07-sw-a { animation: ch07-sw-a 6s step-end infinite; }
-.ch07-sw .ch07-sw-b { animation: ch07-sw-b 6s step-end infinite; opacity: 0; }
-.ch07-sw .ch07-sw-ghost { position: absolute; left: calc(4.2em + 8px); right: 0; top: 68px; height: 30px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; border-radius: 4px; background: var(--accent); color: var(--sheet); opacity: 0; animation: ch07-sw-move 6s linear infinite; }
+.ch07-sw .ch07-sw-a { animation: ch07-sw-a 6s step-end infinite; animation-delay: -3.6s; }
+.ch07-sw .ch07-sw-b { animation: ch07-sw-b 6s step-end infinite; animation-delay: -3.6s; opacity: 0; }
+.ch07-sw .ch07-sw-ghost { position: absolute; left: calc(4.2em + 8px); right: 0; top: 68px; height: 30px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; border-radius: 4px; background: var(--accent); color: var(--sheet); opacity: 0; animation: ch07-sw-move 6s linear infinite; animation-delay: -3.6s; }
 .ch07-sw .ch07-sw-ghost small { color: inherit; opacity: .8; }
 .ch07-sw .ch07-sw-count { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
 .ch07-sw p { margin: 0; font-size: .74rem; color: var(--ink-soft); max-width: 40ch; }

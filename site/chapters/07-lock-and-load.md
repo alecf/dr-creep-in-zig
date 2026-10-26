@@ -41,12 +41,14 @@ pocket.includes(5);        // true: open the green lock
 
 `push` asks for more memory whenever the array runs out. The engine
 behind it finds a bigger block somewhere, copies the array across and
-lets the old one go. That's fine when there's plenty of memory and
-something to tidy up after you. We have neither.
+lets the old one go, and a garbage collector frees the old block later.
+That's fine when there's plenty of memory and a collector to clean up.
+We have neither.
 
 So our pocket is a byte that counts the keys, and a fixed list of 32
 bytes after it. Taking a key writes its number at `list[count]` and adds
-one to the count. Looking for a key reads the list from 0 to `count`.
+one to the count. Looking for a key reads the list from 0 up to
+`count − 1`.
 Nothing ever grows, nothing is ever copied, and the pocket can't be
 bigger than 33 bytes. 32 keys is more than any castle has.
 :::
@@ -67,7 +69,7 @@ pub const pocket = 32; // keys a player can carry
 ```
 
 `keys_held + count` is where player 1's next key goes. Player 2's count is
-the byte after his, and player 2's list starts 32 bytes after his list.
+the byte after player 1's, and his list starts 32 bytes after player 1's.
 Player 2 arrives in Chapter 9, and his pocket is already there.
 
 ### The records
@@ -241,8 +243,8 @@ pub const Kind = enum(u8) { door, bell, machine, lever, button, trapdoor, plate,
 
 ```zig
 /// One engine step for the objects: the ones that asked to run, run.
-/// Everything else costs one test of one bit. A picked-up object leaves
-/// the table on the spot.
+/// Everything else costs one test of one bit. An object picked up in the
+/// actors' step just before leaves the table here.
 pub fn step(m: *Machine) void {
     var n: u8 = 0;
     while (n < m.peek(map.engine_objects)) : (n += 1) {
@@ -261,8 +263,9 @@ pub fn step(m: *Machine) void {
 The loop reads the count from memory every time round now, because the
 count can go down while the loop is running. After a removal, slot `n`
 holds an object that hasn't had its turn. The `continue` moves on
-anyway, so that object waits for the next step. That's 1984's rule, and
-it costs nothing: nothing in the game is in such a hurry.
+anyway, so that object waits for the next step. That's 1984's rule.
+Waiting one step, a 25th of a second, never matters to anything in this
+game.
 
 **`src/objects.zig`** (add below `step`)
 
@@ -281,8 +284,7 @@ One thing *does* keep a slot number: the explorer remembers which
 trapdoor plate he was standing on, by its slot, from one turn to the
 next. Pick up a key in a room with a plate, and the plate might move
 into the key's slot. The 1984 game has the same quirk. No room puts a
-key and a plate together, and Chapter 9 gives each player his own plate
-bytes anyway.
+key and a plate together, so it never bites.
 :::
 
 ### Taking a key
@@ -372,8 +374,9 @@ pub fn take(m: *Machine, n: u8, who: u3) void {
 Like a doorbell, it wants the explorer, playing, and a press of fire.
 If his pocket is full, the key stays where it is. Otherwise it puts the
 key's number in his pocket, writes 0 into the castle record, and rubs
-out the picture. Last, it raises two flags. `picked` tells the table to
-let the key go at the end of the step. `disable` stops anyone else
+out the picture. Last, it raises two flags. `picked` tells the object
+table to let the key go when the objects take their turn, right after
+the actors'. `disable` stops anyone else
 standing in front of it before then, so a key can't go into two
 pockets.
 
@@ -638,15 +641,15 @@ separate object that only knows its own job.
 ## Ray guns
 
 Now the nasty one. A ray gun hangs on a vertical track. It slides up and
-down, always towards your row. When it's level with you, it fires. Across
-the room is a control panel with an up arrow, a fire button and a down
-arrow. Stand at the panel and the gun is yours.
+down, always towards your row. When it's level with you, it fires.
+Somewhere in the room is a control panel with an up arrow, a fire button
+and a down arrow. Stand at the panel and the gun is yours.
 
 ### A gun in one byte
 
 Everything a gun is doing fits in its record's first byte, eight flags
-that the castle and the game share. Two of them come from the castle
-file: which way the gun faces, and whether it has a gun at all. The rest
+that the castle and the game share. Two of them, plus `end`, come from
+the castle file: which way the gun faces, and whether it has a gun at all. The rest
 are written while the room runs: moving up, moving down, being steered,
 fire pressed, a shot in the air.
 
@@ -690,9 +693,8 @@ already stops at `0x80`.
 :::
 
 `gun_y` was called `runtime` until now. It's where the gun is on its
-track, and it's in the record, so the castle remembers where you left
-the gun. Leave the room and come back, and it's still up where you sent
-it.
+track, and it's in the record, so the castle remembers where the gun
+was when you left the room. Come back, and that's where it starts.
 
 The track, four gun pictures each way, and the panel:
 
@@ -826,9 +828,9 @@ pub const panel = room(.{ .grey, .red, .light_grey }, &.{
 ```
 :::
 
-The four gun pictures differ only in where the white marks on the wheel
-are. Slide the gun one row and the next picture goes up, so the wheel
-turns as it rolls. The left-facing ones are `mirror`ed from the right.
+The four gun pictures differ only in where the marks on the wheel are.
+Slide the gun one row and the next picture is drawn, so the wheel turns
+as it rolls. The left-facing ones are `mirror`ed from the right.
 
 ### Two new objects
 
@@ -877,12 +879,13 @@ const guns = @import("guns.zig");
     .ray_gun = guns.prepare,
 ```
 
-Only the monsters are left in `later` now:
+Only the monsters and the title screens' pattern are left in `later`
+now:
 
 **`src/room.zig`** (replace the comment above `later`)
 
 ```zig
-/// The monsters come alive in the next chapter.
+/// The monsters come alive in the next chapter, the title screens' pattern later.
 ```
 
 A new file. The constants say what a gun is and what the panel reads
@@ -1114,8 +1117,9 @@ gun shooting. Ours sets it on a fresh press, like every other control in
 this game, and the gun clears it when it fires. One press, one shot.
 :::
 
-The Ray Guns room gets a gun facing left from the right of the room, and
-its panel upstairs, right beside the top of the ladder:
+The Ray Guns room gets a gun near door 0, facing right, down the room,
+on a track that runs from high up to the floor. You come in behind it,
+and its panel stands on the floor between the door and the track:
 
 **`src/training.zig`** (replace the `ray_guns` room)
 
@@ -1127,13 +1131,11 @@ its panel upstairs, right beside the top of the ladder:
                 .{ .x = 16, .y = 160, .to = .keys, .to_door = 1 },
                 .{ .x = 156, .y = 160, .to = .mummy },
             },
-            .walkway = &.{ floor, upper_left },
-            .ladder = &.{ladder_left},
+            .walkway = &.{floor},
             .bell = &.{.{ .x = 140, .y = 168, .door = 1 }},
-            // Facing left, down the room, from a track that runs from
-            // the upper floor's height to the lower's. Its panel is
-            // upstairs, beside the ladder.
-            .ray_gun = &.{.{ .state = .{ .left = true }, .x = 132, .y = 96, .length = 12, .gun_y = 152, .control_x = 40, .control_y = 104 }},
+            // Facing right, down the room, from a track that runs from
+            // high up to the floor. You come in behind it, by its panel.
+            .ray_gun = &.{.{ .state = .{}, .x = 56, .y = 96, .length = 12, .gun_y = 171, .control_x = 40, .control_y = 168 }},
             .text = says("RAY GUNS", &.{
                 "A RAY GUN SLIDES UP",
                 "AND DOWN ITS TRACK,",
@@ -1145,9 +1147,10 @@ its panel upstairs, right beside the top of the ladder:
         },
 ```
 
-The test climbs to the panel and checks that the gun holds still while
-he stands there. Then he steers it to the top of its track, goes back
-down and walks along the floor and out:
+The test walks to the panel and checks that the gun holds still while
+he stands there. Then he steers it to the top of its track and runs
+along the floor, past the gun and out. That way out is a helper of its
+own, because a test later in the chapter takes it too:
 
 :::type-in The steering test
 **`src/main.zig`** (add above `explorer`)
@@ -1157,19 +1160,24 @@ test "ray guns: steer the gun up from its panel, then run past it" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
     inRoom(m, 10);
+    try escapeRayGuns(m);
+}
+```
+
+**`src/main.zig`** (add above `feet`)
+
+```zig
+/// From the Ray Guns room's door 0: the panel, the gun to the top of its
+/// track and a shot from there, then along the floor and out by door 1.
+fn escapeRayGuns(m: *Machine) !void {
     const gun = m.view(castle.RayGun, room.first(m, .ray_gun).?);
-    while (feet(m) < 57) hold(m, machine.joy.right, 2); // the ladder, at x 56
-    hold(m, machine.joy.up, 200);
-    while (feet(m) > 44) hold(m, machine.joy.left, 2); // the panel, at x 40
-    try std.testing.expectEqual(128 - 21, explorer(m).box.y);
+    while (feet(m) < 41) hold(m, machine.joy.right, 2); // the panel, at x 40
     const before = gun.gun_y;
     hold(m, 0, 40); // standing at it, the gun holds still
     try std.testing.expectEqual(before, gun.gun_y);
     while (gun.gun_y != gun.y) hold(m, machine.joy.up, 2); // up to the top of its track
 
-    // Down, and along the floor past the gun, while it comes back down.
-    while (feet(m) < 57) hold(m, machine.joy.right, 2);
-    hold(m, machine.joy.down, 200);
+    // Along the floor past the gun, while it comes back down.
     while (feet(m) < 143) hold(m, machine.joy.right, 2); // to the bell
     hold(m, machine.joy.fire, 4);
     hold(m, machine.joy.right, 60);
@@ -1180,10 +1188,14 @@ test "ray guns: steer the gun up from its panel, then run past it" {
 ```
 :::
 
-Run it and play. The gun follows you up the ladder, one row at a time,
-its arrows blinking green. At the panel it stops dead. Push up and it
-climbs. It's a fine piece of machinery, and completely harmless. Let's
-give it something to fire.
+Run it and play. Walk in, and the gun slides down its track to your
+row, its down arrow lit red. At the panel it stops dead. Push up and it
+climbs, its up arrow lit green.
+
+![The Ray Guns room: the explorer stands at the control panel on the floor, just inside the left-hand door, and the gun has climbed halfway up its track](images/07-panel.png)
+
+It's a fine piece of machinery, and completely harmless. Let's give it
+something to fire.
 
 ## Lasers
 
@@ -1197,7 +1209,8 @@ first slot whose `unused` flag is set. An actor's `destroy` flag gives it
 a last turn, and `free` empties the slot at the end of the step. A
 laser just uses all of it, all the time.
 
-First, the actor table's comment and a new kind:
+First, the actor table's comment, and `guns`, which will hold the
+laser's code:
 
 **`src/actors.zig`** (replace the comment at the top)
 
@@ -1213,57 +1226,6 @@ First, the actor table's comment and a new kind:
 ```zig
 const guns = @import("guns.zig");
 ```
-
-**`src/actors.zig`** (replace `Kind`)
-
-```zig
-/// Every kind of actor, numbered as in 1984. Number 3 is the mummy's,
-/// who comes alive in the next chapter.
-pub const Kind = enum(u8) { player, lightning, forcefield, laser = 4, _ };
-```
-
-The kinds keep the 1984 game's numbers, because castles and the engine
-both mean the same thing by "kind 4". Number 3 is the mummy, who comes
-in the next chapter, so the laser is `laser = 4`. A Zig enum can give
-any tag an explicit number like that, and the tags after it count on
-from there.
-
-Its entry in the table:
-
-**`src/actors.zig`** (in `kinds`, add below the forcefield's entry)
-
-```zig
-    .laser = .{ .turn = guns.fly, .flickers = false, .hit = guns.blocked, .touch = guns.strike, .group = 0b100 },
-```
-
-Build now, and `directEnumArray` refuses:
-
-```
-Cannot create a direct enum array for actors.Kind. It would have 1 unused slots, but only 0 are allowed.
-```
-
-The table is an array indexed by the kind's number, so a laser at 4
-needs five entries, and the mummy's entry, number 3, would be empty. The
-third argument to `directEnumArray` is how many gaps we allow, and we
-said 0. Make it 1:
-
-**`src/actors.zig`** (replace the first line of `kinds` and the comment above it)
-
-```zig
-/// One entry for every kind, found by number. The compiler won't build
-/// the table with a kind missing, and allows one gap: the mummy's.
-const kinds = std.enums.directEnumArray(Kind, Behaviour, 1, .{
-```
-
-The gap's entry is filled with `undefined`, so nothing may be made with
-kind 3 until the mummy arrives. The compiler stops a missing entry for a
-named kind. A gap with no name, it can only count.
-
-A laser's group is `0b100`, the same as lightning's. The two share a
-bit, so a laser flies straight through a bolt. The explorer's group is
-0, so a laser always finds him. The forcefield's `0b011` shares nothing
-with `0b100`, so a laser and a field meet, and that's the next room's
-whole idea.
 
 The laser's picture is two rows of yellow, 8 fat pixels long:
 
@@ -1342,8 +1304,8 @@ gun waits.
 
 ```zig
 /// Fire: a laser from the muzzle, flying the way the gun faces. If all
-/// eight sprites are busy, there's no laser, and the gun tries again on
-/// its next turn.
+/// eight sprites are busy, there's no laser. A gun on its own fires on
+/// its next turn; a press at the panel is lost.
 fn shoot(m: *Machine, o: *align(1) objects.Object, g: *align(1) castle.RayGun) void {
     const n = actors.add(m, .laser) orelse return;
     const a = actors.slot(m, n);
@@ -1359,20 +1321,21 @@ fn shoot(m: *Machine, o: *align(1) objects.Object, g: *align(1) castle.RayGun) v
 `shoot` is where a laser is born. `actors.add` takes the first free
 slot, and if every slot is taken it returns null and `shoot` gives up
 quietly. There are only eight sprites, and there is no ninth to give.
-The laser starts just past the muzzle, on the barrel's row. `shot` goes
-up, and the gun keeps the laser's slot in its `actor` byte, the same
-link Chapter 6's machines keep to their bolts.
+A gun on its own fires on a later turn, when it's still near him. A
+press at the panel is lost, and he presses again. The laser starts just
+past the muzzle, on the barrel's row. `shot` goes up, and the gun keeps
+the laser's slot in its `actor` byte, the same link Chapter 6's machines
+keep to their bolts.
 
 :::diagram ch07-slots
 :::
 
 :::inside-the-disk Slot zero, overwritten
-The 1984 game's slot finder has the same answer for "the table is
-full": it sets the processor's carry flag. The laser maker doesn't look
-at the flag. It goes ahead with slot number 0, whatever is in it. In a
-room full of monsters, a gun firing could take over the first actor's
-sprite. Usually that's player 1. Our gun checks for null and simply
-fires on a later turn.
+The 1984 game's slot finder also says when the table is full: it raises
+a one-bit signal in the processor. The laser maker never looks at it.
+It goes ahead with slot 0, whatever is in it. In a room full of
+monsters, a gun firing could take over the first actor's sprite, and
+that's usually player 1. Ours checks for null and doesn't fire at all.
 :::
 
 ### The flight
@@ -1418,12 +1381,12 @@ fn gunOf(m: *Machine, n: u3) ?*align(1) objects.Object {
 set its pace to 1. It moves 4 fat pixels the way the gun faces. Off the
 edge of the screen, it sets its own `destroy`.
 
-`destroy` is Chapter 5's last turn. The engine calls `fly` once more,
-and this time it tidies up. It sets `free`, which empties the slot at
-the end of the step. Then it finds its gun and clears `shot`, so the gun
-can fire again. The gun keeps the laser's slot, and `gunOf` looks for
-the gun that holds it. It's the link Chapter 6 taught, followed
-backwards.
+`destroy` is Chapter 5's flag for an actor's last turn. The engine calls
+`fly` once more, and this time it tidies up. It sets `free`, which
+empties the slot at the end of the step. Then it finds its gun and
+clears `shot`, so the gun can fire again. The gun keeps the laser's
+slot, and `gunOf` looks for the gun that holds it. It's the link
+Chapter 6 taught, followed backwards.
 
 What does a laser hit?
 
@@ -1461,6 +1424,61 @@ step, because it starts right next to the gun's muzzle.
 The explorer's side is already written. Chapter 6's `player.hit` kills
 him on any sprite but a forcefield, and a laser isn't a forcefield.
 
+### A new kind of actor
+
+Now the laser can go in the actor table:
+
+**`src/actors.zig`** (replace `Kind`)
+
+```zig
+/// Every kind of actor, numbered as in 1984. Number 3 is the mummy's,
+/// who comes alive in the next chapter.
+pub const Kind = enum(u8) { player, lightning, forcefield, laser = 4, _ };
+```
+
+The kinds keep the 1984 game's numbers, because castles and the engine
+both mean the same thing by "kind 4". Number 3 is the mummy, who comes
+in the next chapter, so the laser is `laser = 4`. A Zig enum can give
+any tag an explicit number like that, and the tags after it count on
+from there.
+
+Its entry in the table:
+
+**`src/actors.zig`** (in `kinds`, add below the forcefield's entry)
+
+```zig
+    .laser = .{ .turn = guns.fly, .flickers = false, .hit = guns.blocked, .touch = guns.strike, .group = 0b100 },
+```
+
+Build now, and `directEnumArray` refuses:
+
+```
+Cannot create a direct enum array for actors.Kind. It would have 1 unused slots, but only 0 are allowed.
+```
+
+The table is an array indexed by the kind's number, so a laser at 4
+needs five entries, and the mummy's entry, number 3, would be empty. The
+third argument to `directEnumArray` is how many gaps we allow, and we
+said 0. Make it 1:
+
+**`src/actors.zig`** (replace the first line of `kinds` and the comment above it)
+
+```zig
+/// One entry for every kind, found by number. The compiler won't build
+/// the table with a kind missing, and allows one gap: the mummy's.
+const kinds = std.enums.directEnumArray(Kind, Behaviour, 1, .{
+```
+
+The gap's entry is filled with `undefined`, so nothing may be made with
+kind 3 until the mummy arrives. The compiler stops a missing entry for a
+named kind. For a gap with no name, all it can do is count.
+
+A laser's group is `0b100`, the same as lightning's. The two share a
+bit, so a laser flies straight through a bolt. The explorer's group is
+0, so a laser always finds him. The forcefield's `0b011` shares nothing
+with `0b100`, so a laser and a field meet, and that's the next room's
+whole idea.
+
 ### Tests
 
 `main.zig` needs `guns` now:
@@ -1471,16 +1489,16 @@ him on any sprite but a forcefield, and a laser isn't a forcefield.
 const guns = @import("guns.zig");
 ```
 
-Walk along the floor, straight at the gun, and count the lasers on the
-way:
+Walk along the floor, past the panel and the gun's muzzle, and count
+the lasers on the way:
 
 **`src/main.zig`** (add above the steering test)
 
 ```zig
-test "ray guns: along the floor, the gun shoots him" {
+test "ray guns: past the muzzle, the gun shoots him" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
-    inRoom(m, 10); // the gun faces left from x 124; he comes in on the left
+    inRoom(m, 10); // he comes in behind the gun, which faces right from x 60
     var lasers: usize = 0;
     while (m.ram[map.player_status] == @intFromEnum(player.Status.playing)) {
         hold(m, machine.joy.right, 2);
@@ -1488,23 +1506,49 @@ test "ray guns: along the floor, the gun shoots him" {
     }
     try std.testing.expectEqual(@intFromEnum(player.Status.dead), m.ram[map.player_status]);
     try std.testing.expectEqual(1, lasers); // one at a time
-    try std.testing.expect(feet(m) < 124); // in front of the gun
+    try std.testing.expect(feet(m) > 68 and feet(m) < 140); // past the muzzle, short of the bell
 }
 ```
 
-The steering test learns to fire. At the top of the track, the laser
-flies above his head:
+The way out learns to fire. At the top of the track, the laser flies
+high over the room:
 
-**`src/main.zig`** (in the steering test, add below the `// up to the top of its track` line)
+**`src/main.zig`** (in `escapeRayGuns`, add below the `// up to the top of its track` line)
 
 ```zig
-    hold(m, machine.joy.fire, 4); // and fire it, over his head
+    hold(m, machine.joy.fire, 4); // and fire it, high over the room
     hold(m, 0, 8); // the gun hears it on its next turn
     try std.testing.expectEqual(1, count(m, .laser));
     try std.testing.expect(gun.state.shot);
     hold(m, 0, 60);
     try std.testing.expectEqual(0, count(m, .laser));
     try std.testing.expect(!gun.state.shot);
+```
+
+Now a room you can lose for good. When he dies on the floor, the gun
+stops on the floor's row, and the castle remembers it there. Come back
+by door 0 and you're behind it, so the panel is still yours:
+
+**`src/main.zig`** (add above `explorer`)
+
+```zig
+test "ray guns: shot once, the room can still be won from its door" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom(m, 10);
+    while (m.ram[map.player_status] == @intFromEnum(player.Status.playing)) hold(m, machine.joy.right, 2);
+    hold(m, 0, 100); // back at the castle's start, the gun left on the floor's row
+    try std.testing.expectEqual(0, m.ram[map.room_number]);
+    for (0..10) |_| { // N ten times: by door 0, the gun where it was
+        m.input = .{ .key = 'N' };
+        _ = m.runFrame(@This());
+        m.input = .{};
+        hold(m, 0, 14);
+    }
+    try std.testing.expectEqual(10, m.ram[map.room_number]);
+    try std.testing.expect(m.view(castle.RayGun, room.first(m, .ray_gun).?).gun_y > 166); // in range of the floor
+    try escapeRayGuns(m);
+}
 ```
 
 And the cap. Fill all eight sprite slots, and the gun can't fire. Free
@@ -1536,15 +1580,15 @@ test "with all eight sprites busy, the gun holds its fire until one is free" {
 ```
 
 That last test is the only one in the chapter that sets the gun's flags
-directly. It's a test of `run` itself, not of a room, so it's allowed.
-The room tests play through the stick, as a player would.
+directly. That's fine for a test of `run` on its own. The room tests
+play through the stick, as a player would.
 
-![The Ray Guns room: the explorer walks along the floor towards the gun, and its laser has just reached him](images/07-shot.png)
+![The Ray Guns room: the explorer has walked past the gun's muzzle along the floor, and its laser has just reached him](images/07-shot.png)
 
-**Zapped!** Walk in along the floor and the gun gets you before you're
-halfway across. The way through is upstairs. Climb to the panel, push
-the gun to the top of its track and run for it. It takes about ten
-seconds to come back down, and you need four.
+**Zapped!** Walk past the muzzle along the floor and the gun gets you
+long before the far door. The way through is the panel. Push the gun to
+the top of its track and run for the bell. It takes about eleven seconds
+to come back down, and you need about six.
 
 ## Under Fire
 
@@ -1652,9 +1696,9 @@ inside the loop caught it. The field was supposed to be his shield!
 
 Let's see what happened. He stands with his left edge at x 92, up
 against the field's sprite, which runs from 88 to 95. So his sprite
-touches the field's, and the VIDEO chip sets his sprite-to-sprite bit.
-A laser arrives at x 84. It covers 84 to 91, touches the field, and gets
-its bit too.
+overlaps the field's, by four fat pixels, and the VIDEO chip sets his
+sprite-to-sprite bit. A laser arrives at x 84. It covers 84 to 91,
+overlapping the field too, and gets its bit.
 
 Now `hitting` runs for him. His bit is set, and so is the laser's. Which
 sprite did he touch? The register can't say, so we compare boxes. The
@@ -1692,15 +1736,15 @@ they pass. Lean on the field as long as you like.
 
 :::inside-the-disk The same test, edge and all
 The 1984 game compares sprite boxes with the edge included, the same
-test as for objects, so its explorer can die like ours did. We changed
+test as for objects, so its explorer could die the same way. We changed
 it, because this room is built to teach the field as a shield, and a
 shield that kills you teaches the wrong thing.
 :::
 
-![Under Fire: the gun is at the top of its track and the field is down, as the explorer runs along the floor towards the door](images/07-escape.png)
+![Under Fire: the gun is high on its track and coming back down, the field is down, and the explorer runs for the bell](images/07-escape.png)
 
 **Every Training Castle room with a key or a gun works!** Rooms 9, 10,
-15 and 17: four locks and guns, and a pocket full of colours.
+15 and 17: two locks, two keys and two guns.
 
 :::power-up The Last-One-In Power-Up
 To take something out of a packed table, copy the last one over it and
@@ -1712,8 +1756,8 @@ slot number, and that's every table that links by number instead.
 :::power-up The Spawn-and-Free Power-Up
 A short-lived actor takes the first unused slot and frees its own on
 its last turn. Whoever made it keeps the slot number, so it knows when
-the actor's gone. If `add` says null, the table is full: wait a turn and
-try again, never take someone else's slot.
+the actor's gone. If `add` says null, the table is full: try again on
+a later turn, or let that shot go, but never take someone else's slot.
 :::
 
 :::byte-budget Chapter 7
@@ -1721,17 +1765,16 @@ try again, never take someone else's slot.
 `$7813`–`$7854`: two counts, then two lists of 32. A gun's state is the
 first byte of its record. The object slot stays 16 bytes. The shape
 table grew by 509 bytes, to 3,774, for 13 new pictures. The castle is
-4,496 bytes, 61 more: two keys, two locks, two guns, a forcefield, a
-teleport and a pole.
+4,496 bytes, 61 more.
 
-**Time.** Taking a key out of the table costs 120 cycles, most of it the
-16-byte copy. A gun moving a row costs about 1,430 cycles, mostly
+**Time.** Taking a key out of the table adds 120 cycles to that step:
+the 16-byte copy, 128, less one slot's worth of loop. A gun moving a row costs about 1,430 cycles, mostly
 rubbing out its picture and drawing it again, every fourth step. A gun's
 turn on the other three steps costs 4. Firing adds about 650 more, to
 unpack the laser's sprite. A laser's own turn is 16 cycles in the air
-and 52 on its last turn. The busiest step of the Boss Battle is 3,622
-cycles in the objects' bucket, in the Ray Guns room: the gun moving a
-row while the door opens. That's less than a fifth of a frame.
+and 52 on its last turn. The busiest step of the Boss Battle is 2,204
+cycles in the objects' bucket, in the Under Fire room, each time the gun
+takes its turn and fires at the field. That's about a ninth of a frame.
 :::
 
 :::game-over Common mistakes
@@ -1757,7 +1800,7 @@ From your project folder:
 ```
 zig build
 zig build test
-zig build run -- --frames 4760 --press 20:f:5 --key 45:N --key 60:N --key 75:N --key 90:N --key 105:N --key 120:N --key 135:N --key 150:N --key 165:N --press 185:l:230 --press 415:f:5 --press 440:r:126 --press 566:u:70 --press 636:r:130 --press 766:f:5 --press 781:l:114 --press 895:d:70 --press 965:l:126 --press 1091:f:5 --press 1096:l:60 --press 1156:ur:10 --press 1326:r:64 --press 1390:u:70 --press 1460:l:26 --press 1506:u:464 --press 1970:f:5 --press 2015:r:26 --press 2041:d:70 --press 2111:r:172 --press 2283:f:5 --press 2288:r:60 --press 2348:ur:10 --key 2518:N --key 2533:N --key 2548:N --key 2563:N --press 2598:l:140 --press 2798:r:36 --press 2834:u:70 --press 2904:r:16 --press 2920:u:514 --press 3434:l:12 --press 3446:d:70 --press 3516:r:56 --press 3572:f:5 --press 3577:l:182 --press 3759:f:5 --press 3764:l:60 --press 3824:ur:10 --key 3994:N --press 4029:l:64 --press 4093:f:5 --press 4108:r:90 --press 4198:f:5 --press 4213:l:138 --press 4351:d:70 --press 4421:l:102 --press 4523:f:5 --press 4528:l:60 --press 4588:ur:10 --dump-every 10
+zig build run -- --frames 4745 --press 20:f:5 --key 45:N --key 60:N --key 75:N --key 90:N --key 105:N --key 120:N --key 135:N --key 150:N --key 165:N --press 185:l:230 --press 415:f:5 --press 440:r:126 --press 566:u:70 --press 636:r:130 --press 766:f:5 --press 781:l:114 --press 895:d:70 --press 965:l:126 --press 1091:f:5 --press 1096:l:60 --press 1156:ur:10 --press 1326:r:32 --press 1398:u:596 --press 1994:f:5 --press 2059:r:204 --press 2263:f:5 --press 2268:r:60 --press 2328:ur:10 --key 2498:N --key 2513:N --key 2528:N --key 2543:N --press 2578:l:140 --press 2778:r:36 --press 2814:u:70 --press 2884:r:16 --press 2900:u:514 --press 3414:l:12 --press 3426:d:70 --press 3496:r:56 --press 3552:f:5 --press 3557:l:182 --press 3739:f:5 --press 3744:l:60 --press 3804:ur:10 --key 3978:N --press 4013:l:64 --press 4077:f:5 --press 4092:r:90 --press 4182:f:5 --press 4197:l:138 --press 4335:d:70 --press 4405:l:102 --press 4507:f:5 --press 4512:l:60 --press 4572:ur:10 --dump-every 10
 ```
 
 The run presses N nine times for the Keys room and plays it. It goes on
@@ -1765,15 +1808,15 @@ through the Ray Guns room, presses N four times for Under Fire, and once
 more for Locked Away. It prints:
 
 ```
-ran 4760 frames (4555 calls to frame)
-cycles: max 236486 (1203%), avg 1602 (8%) of 19656
+ran 4745 frames (4541 calls to frame)
+cycles: max 236486 (1203%), avg 1595 (8%) of 19656
   bucket 0: max 326, avg 27
-  bucket 1: max 235206, avg 936
+  bucket 1: max 235206, avg 937
   bucket 2: max 1274, avg 166
-  bucket 3: max 2138, avg 335
-  bucket 4: max 3622, avg 136
+  bucket 3: max 2002, avg 330
+  bucket 4: max 2204, avg 133
 overruns: 0, loading pauses: 20
-last frame: frames/frame_04759.ppm
+last frame: frames/frame_04744.ppm
 ```
 
 `frame_00740.ppm` has the explorer upstairs at the green key.
@@ -1790,9 +1833,9 @@ zig build wasm
 python3 -m http.server -d web
 ```
 
-Open <http://localhost:8000>. Walk into the Ray Guns room and stand
-still in the doorway, and watch the gun come for you. Then try the
-panel, and fire the gun at the empty walkway.
+Open <http://localhost:8000>. Walk into the Ray Guns room and along the
+floor, past the gun, and see how far you get. Then come back, try the
+panel, and fire the gun high over the room.
 
 **Locked and loaded!** Keys, locks, guns and their lasers all work. Next
 chapter, the monsters.
@@ -1817,7 +1860,7 @@ rm -rf my-creep/.zig-cache my-creep/zig-out my-creep/web
   of the screen, one small square of each colour, from the pocket list.
 - **A faster gun.** Let a gun move every other step instead of every
   fourth. How much harder does Ray Guns get?
-- **Two guns, one panel.** Give the Ray Guns room a second gun on its
+- **Two guns, two panels.** Give the Ray Guns room a second gun on its
   own track. Each gun has its own panel in the record. Put them side by
   side, and steer them in turn.
 - **A gun with no gun.** Set `no_gun` on a record and see what's left:

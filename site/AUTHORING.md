@@ -1849,3 +1849,57 @@ Castle rooms (ch03)".
   scratch state. ch10: sounds (key pickup, gun fire, lock). ch11: real
   castles' gun records with `no_gun`, panels at X < 16 (the ch06 tint
   note applies to `lamps`).
+- **ch07 review fixes (supersede the ch07 entries above where they
+  differ).** *Room 10 re-laid so it stays winnable from door 0 after a
+  death on the floor* (the gun's row is in the castle, so a gun parked on
+  the floor's row in front of door 0 shot him as he came in, and nothing
+  resets it until ch9): gun `{right, x 56, y 96, length 12, gun_y 171,
+  control 40, 168}` (gun at 60–67, lasers from 68 run right along the
+  floor); door 0 (16, 160) → keys door 1, door 1 (156, 160); floor walkway
+  only, no ladder; bell (140, 168) for door 1. He arrives at x 22 behind the
+  muzzle with the panel between him and the track. Walking the floor past
+  the muzzle gets him shot between feet 68 and 140. Solution: panel, push
+  up to the top (96), fire (the laser goes high over the room), walk right
+  to the bell and out. Timings: from the top the gun reaches the floor's
+  firing range in 70 rows × 8 frames ≈ 11 s; panel → bell → doorway ≈ 280
+  frames ≈ 6 s ("about eleven seconds … about six"). The first-visit
+  "shot in ≈ 3 s in the doorway" is gone (behind the gun it can't hit him).
+  *One-way rooms, accepted:* coming back into room 10 by door 1, or room 15
+  by door 1, puts him in front of the muzzle; with the gun low he's shot
+  walking back. 1984 castles have one-way rooms too; the chapter's routes
+  never come back that way (Writer response in the review). *Tests (42 in
+  `zig build test`):* death test is "past the muzzle" (one laser, dies at
+  68 < feet < 140); the steering test is `inRoom` + a new helper
+  `escapeRayGuns` (walk to the panel, gun holds still 40 frames, up to the
+  top, fire, laser comes and goes, walk to the bell, out to room 11); new
+  regression test "shot once, the room can still be won from its door"
+  (die on the floor, back at room 0, N×10 through the stick, `gun_y > 166`
+  on arrival, then `escapeRayGuns`). *Listings (67):* C19 adds
+  `escapeRayGuns` (without the firing lines, which D15 adds). The lasers
+  section is reordered so every intermediate build compiles except the
+  one the chapter means to fail: D1–D4 (actors comment, `guns` import,
+  laser Id, picture), D5–D9 (AIM, `run`, `shoot`, `fly`/`gunOf`,
+  `blocked`/`strike`), then D10 `Kind`, D11 the entry, "Build now" and the
+  error, D12 the gap of 1, then tests D13–D17. `rebuild.py` keeps a copy
+  of the project right after D11 (`SNAP` in `listings.py`); `errs.py`
+  builds that copy as-is and requires exactly one error, so the quoted
+  `directEnumArray` message comes from the reader's project at that
+  point. *Runs:* `ROOM10` rewritten; Boss F is 4,745 frames (room 10 from
+  1,326, N×4 from 2,498, room 15 from 2,578, N at 3,978, room 17 from
+  4,013): 4,541 calls, max 236,486, buckets 326 / 235,206 / 1,274 / 2,002
+  / 2,204 (bucket 4 max in room 15, a gun turn that fires at the field), 20
+  loading pauses, 0 overruns; named frames 740, 1720, 2740, 3680, 4110
+  (re-checked on the new run), last frame room 18. *Images:* `07-shot.png`
+  = D 312 (the laser touching him past the muzzle), `07-panel.png` = C 500
+  (at the floor panel, gun climbing; now used after "Run it and play").
+  *Diagrams:* `ch07-swap` rests on the result (animation-delay −3.6 s:
+  lock in slot 2, count 3); `ch07-gun-byte` bit 5 reads `steered`.
+  *Prose:* "overlaps by four fat pixels" in the box story; a lost panel
+  press when the table is full (box, `shoot` comment, Power-Up); plainer
+  slot-zero and plain-words rewrites; "could die the same way"; removal
+  "adds 120 cycles to that step"; castle size without the list; "two
+  locks, two keys and two guns"; `later` keeps the monsters and the title
+  pattern; wheel marks not white; "Two of them, plus `end`"; Bonus Stage
+  "Two guns, two panels"; stale-plate box without the ch9 clause; escape
+  caption; Boss invitation no longer suggests standing in the doorway.
+  Prose ≈ 5,220 words.
