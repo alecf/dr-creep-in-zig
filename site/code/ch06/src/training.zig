@@ -194,14 +194,15 @@ pub const plan: author.Castle(Room) = .{
             },
             .walkway = &.{floor},
             .bell = &.{.{ .x = 44, .y = 168, .door = 1 }},
-            .trapdoor = &.{.{ .state = castle.trapdoor_open, .x = 72, .y = 192, .switch_x = 112, .switch_y = 184 }},
+            // Shut, with its switch beyond it: it opens behind you.
+            .trapdoor = &.{.{ .state = 0, .x = 72, .y = 192, .switch_x = 32, .switch_y = 184 }},
             .text = says("TRAPDOORS", &.{
-                "A TRAPDOOR IS OPEN.",
-                "YOU CAN'T WALK OVER",
-                "THE HOLE. STEP ON",
-                "ITS SWITCH AND IT",
-                "SHUTS. STEP ON IT",
-                "AGAIN AND IT OPENS.",
+                "THIS TRAPDOOR IS",
+                "SHUT. STEP ON ITS",
+                "SWITCH AND IT OPENS",
+                "BEHIND YOU. STEP ON",
+                "IT AGAIN AND IT",
+                "SHUTS.",
             }),
         },
         .conveyors = .{
@@ -211,9 +212,14 @@ pub const plan: author.Castle(Room) = .{
                 .{ .x = 156, .y = 160, .to = .trapdoors, .to_door = 1 },
                 .{ .x = 16, .y = 160, .to = .transmitter },
             },
-            .walkway = &.{floor},
+            // The floor runs into an open trapdoor, and its switch is on
+            // the far side. The high road goes round: up the ladder, along,
+            // and down the pole.
+            .walkway = &.{ floor, .{ .length = 22, .x = 32, .y = 128 } },
+            .ladder = &.{ladder_right},
+            .pole = &.{.{ .length = 8, .x = 36, .y = 128 }},
             .bell = &.{.{ .x = 44, .y = 168, .door = 1 }},
-            .trapdoor = &.{.{ .state = castle.trapdoor_open, .x = 52, .y = 192, .switch_x = 124, .switch_y = 184 }},
+            .trapdoor = &.{.{ .state = castle.trapdoor_open, .x = 52, .y = 192, .switch_x = 28, .switch_y = 184 }},
             .conveyor = &.{.{ .state = castle.conveyor_on | castle.conveyor_left, .x = 60, .y = 184, .control_x = 96, .control_y = 160 }},
             .text = says("CONVEYORS", &.{
                 "A BELT CARRIES YOU,",
@@ -221,7 +227,7 @@ pub const plan: author.Castle(Room) = .{
                 "CONTROL STOPS IT,",
                 "THEN STARTS IT THE",
                 "OTHER WAY. THIS ONE",
-                "RUNS TO A TRAPDOOR!",
+                "RUNS INTO A HOLE!",
             }),
         },
         .transmitter = .{

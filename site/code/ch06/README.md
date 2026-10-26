@@ -12,10 +12,12 @@ Training Castle rooms 4 to 8 work:
 - **Forcefields**: the field is an actor and a wall in the navigation grid.
   Its button takes it down; the gauge counts 240 engine steps back up.
 - **Trapdoors**: an open trapdoor is a wall in the grid. Step onto its
-  switch and it flips, once. Fall in (a belt can carry you) and you die.
+  switch and it flips, once. In the Trapdoors room it opens behind you.
+  Fall in and you die.
 - **Conveyors**: the belt carries whoever stands on it. Its control box
   stops it, and starts it again the other way. The slats move by
-  recolouring cells, not by drawing.
+  recolouring cells, not by drawing. This one runs into an open trapdoor;
+  the way on is the high walkway, up the ladder and down the pole.
 - **The transmitter**: push up in the booth to move the lamp to the next
   pad's colour, press fire to go there.
 
@@ -58,7 +60,7 @@ The Boss Battle run walks rooms 4 to 8 from the Lightning room (four N
 presses) to the Keys room:
 
 ```
-zig build run -- --frames 2900 --press 20:f:5 --key 45:N --key 60:N --key 75:N --key 90:N --press 110:r:64 --press 180:u:80 --press 265:l:46 --press 315:d:6 --press 330:r:46 --press 380:d:80 --press 465:r:172 --press 640:f:5 --press 700:r:40 --press 760:ur:10 --press 920:l:76 --press 1000:f:5 --press 1010:l:160 --press 1172:f:5 --press 1240:l:30 --press 1272:ur:10 --press 1420:l:236 --press 1660:f:5 --press 1720:l:30 --press 1752:ur:10 --press 1900:l:124 --press 2026:f:5 --press 2034:l:112 --press 2150:f:5 --press 2210:l:30 --press 2242:ur:10 --press 2390:l:92 --press 2486:u:34 --press 2524:f:5 --press 2534:l:32 --press 2570:f:5 --press 2630:l:28 --press 2662:ur:10 --dump-every 10
+zig build run -- --frames 3120 --press 20:f:5 --key 45:N --key 60:N --key 75:N --key 90:N --press 110:r:64 --press 180:u:80 --press 265:l:46 --press 315:d:6 --press 330:r:46 --press 380:d:80 --press 465:r:172 --press 640:f:5 --press 700:r:40 --press 760:ur:10 --press 920:l:76 --press 1000:f:5 --press 1010:l:160 --press 1172:f:5 --press 1240:l:30 --press 1272:ur:10 --press 1420:l:236 --press 1660:f:5 --press 1720:l:30 --press 1752:ur:10 --press 1900:l:104 --press 2006:u:130 --press 2140:l:150 --press 2292:d:100 --press 2394:r:14 --press 2412:f:5 --press 2420:l:40 --press 2462:ur:10 --press 2610:l:92 --press 2706:u:34 --press 2744:f:5 --press 2754:l:32 --press 2790:f:5 --press 2850:l:28 --press 2882:ur:10 --dump-every 10
 zig build wasm && python3 -m http.server -d web
 zig build test
 ```

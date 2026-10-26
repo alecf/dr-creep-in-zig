@@ -429,40 +429,57 @@ test "a forcefield stops him until its button takes it down, for 240 steps" {
     try std.testing.expectEqual(76, explorer(m).box.x + player.feet_x); // walled in again, from this side
 }
 
-test "a trapdoor's switch flips it once each time he steps onto it" {
+test "a trapdoor's switch opens it behind him, and the open hole stops him" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
-    inRoom(m, 6); // Trapdoors: in on the right, the switch at x 112, the hole at x 76
+    inRoom(m, 6); // Trapdoors: in on the right, the hole at x 76, its switch at x 32
     const record = m.view(castle.Trapdoor, room.first(m, .trapdoor).?);
-    try std.testing.expect(record.state & castle.trapdoor_open != 0);
-    hold(m, machine.joy.left, 120); // over the switch, and on
     try std.testing.expect(record.state & castle.trapdoor_open == 0);
-    hold(m, machine.joy.left, 120);
-    try std.testing.expect(explorer(m).box.x < 60); // over the shut trapdoor
-    hold(m, machine.joy.right, 200); // back over the switch: open again
-    try std.testing.expect(record.state & castle.trapdoor_open != 0);
-    try std.testing.expect(explorer(m).box.x > 116);
+    while (explorer(m).box.x + player.feet_x > 33) hold(m, machine.joy.left, 2); // over it, onto the switch
+    hold(m, 0, 10);
+    try std.testing.expect(record.state & castle.trapdoor_open != 0); // open, behind him
+    hold(m, machine.joy.right, 200); // back the way he came
+    try std.testing.expectEqual(@intFromEnum(player.Status.playing), m.ram[map.player_status]);
+    try std.testing.expectEqual(72, explorer(m).box.x + player.feet_x); // stopped in the cell beside the hole
+    while (explorer(m).box.x + player.feet_x > 33) hold(m, machine.joy.left, 2); // onto the switch again
+    hold(m, 0, 10);
+    try std.testing.expect(record.state & castle.trapdoor_open == 0); // shut
 }
 
-test "a conveyor carries him into the open trapdoor, and its control stops it" {
+test "a conveyor carries him into the open trapdoor, and the high road goes round" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
     inRoom(m, 7); // Conveyors: the belt runs left from x 60 to 91, into the hole at x 56
-    explorer(m).box.x = 80; // on the belt, past the switch that would have shut the trapdoor
-    hold(m, 0, 60);
+    // Along the floor and onto the belt, which carries him into the hole.
+    while (m.ram[map.player_status] == @intFromEnum(player.Status.playing)) hold(m, machine.joy.left, 2);
     try std.testing.expectEqual(@intFromEnum(player.Status.dead), m.ram[map.player_status]);
+    try std.testing.expect(explorer(m).box.x + player.feet_x < 60); // past the belt's end, over the hole
 
     inRoom(m, 7);
     const belt = m.view(castle.Conveyor, room.first(m, .conveyor).?);
-    while (explorer(m).box.x > 98) hold(m, machine.joy.left, 2); // to the control box
+    while (explorer(m).box.x + player.feet_x > 101) hold(m, machine.joy.left, 2); // to the control box
     hold(m, machine.joy.fire, 4);
     try std.testing.expectEqual(castle.conveyor_held, belt.state); // stopped, and turned round
     hold(m, 0, 4);
     hold(m, machine.joy.fire, 4);
     try std.testing.expectEqual(castle.conveyor_on | castle.conveyor_held, belt.state); // running right
-    explorer(m).box.x = 70;
-    hold(m, 0, 20);
-    try std.testing.expect(explorer(m).box.x > 78); // carried right
+    hold(m, machine.joy.left, 200);
+    try std.testing.expect(explorer(m).box.x + player.feet_x >= 90); // walking against it, he gets no further than its end
+
+    // The high road: up the ladder (x 112), along, down the pole (x 36).
+    while (explorer(m).box.x + player.feet_x < 113) hold(m, machine.joy.right, 2);
+    hold(m, machine.joy.up, 200);
+    while (explorer(m).box.x + player.feet_x > 39) hold(m, machine.joy.left, 2);
+    try std.testing.expectEqual(128 - 21, explorer(m).box.y); // on the high walkway
+    hold(m, machine.joy.down, 200);
+    try std.testing.expectEqual(192 - 21, explorer(m).box.y);
+    const trapdoor = m.view(castle.Trapdoor, room.first(m, .trapdoor).?);
+    while (explorer(m).box.x + player.feet_x > 31) hold(m, machine.joy.left, 2); // onto the switch (x 28)
+    hold(m, 0, 10);
+    try std.testing.expect(trapdoor.state & castle.trapdoor_open == 0);
+    hold(m, machine.joy.right, 200); // off it the way he came: over the shut trapdoor, and the belt carries him
+    try std.testing.expectEqual(@intFromEnum(player.Status.playing), m.ram[map.player_status]);
+    try std.testing.expect(explorer(m).box.x + player.feet_x > 100);
 }
 
 test "the transmitter's lamp picks a pad, and fire sends him there" {

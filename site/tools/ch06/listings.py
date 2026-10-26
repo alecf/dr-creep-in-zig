@@ -159,7 +159,7 @@ DRAW_OLD = '''            m.poke(hw.control, 0);
             player.add(m);
 '''
 DRAW_NEW = lines_of('src/main.zig', '        .draw_room => {', '            player.add(m);').split('\n', 1)[1]
-step('A31', '**`src/main.zig`** (in the `.draw_room` branch, replace everything up to `player.add`)', 'replace_text',
+step('A31', '**`src/main.zig`** (in the `.draw_room` branch, replace its first seven lines, from `m.poke(hw.control, 0);` through `player.add(m);`)', 'replace_text',
      DRAW_NEW, arg=DRAW_OLD)
 
 TR = f6('src/training.zig')
@@ -187,7 +187,7 @@ T_LIGHT_A = rep(T_LIGHT,
 '''))
 COUNT = fn('src/main.zig', 'count')
 step('A34', '**`src/main.zig`** (add above `explorer`, near the end of the file)', 'before_text', T_LIGHT_A, arg=HELPERS)
-step('A35', '**`src/main.zig`** (add above `hold`, at the very end)', 'before_text', COUNT + '\n',
+step('A35', '**`src/main.zig`** (add above `hold`, the last function in the file)', 'before_text', COUNT + '\n',
      arg='/// Hold joystick 1\'s', run='A')
 
 # ============================================================================
@@ -227,7 +227,17 @@ pub fn hit(m: *Machine, n: u3, other: u3) bool {
 '''
 step('B5', '**`src/player.zig`** (replace `kill`, and add two functions below it)', 'replace_text',
      fn('src/player.zig', 'kill') + '\n' + fn('src/player.zig', 'die') + '\n' + HIT_B, arg=KILL_OLD)
-step('B6', '**`src/main.zig`** (replace the lightning test)', 'replace_text', T_LIGHT, arg=T_LIGHT_A, run='B')
+step('B6', '**`src/main.zig`** (in the lightning test, replace its first line)', 'replace_text',
+     'test "lightning: the bolts kill, and the switch upstairs stops both machines" {\n',
+     arg='test "lightning: the switch upstairs stops both machines" {\n')
+step('B6b', '**`src/main.zig`** (in the same test, replace the `// Up the ladder` comment)', 'replace_text',
+     '''    // Along the floor, into the first bolt.
+    hold(m, machine.joy.right, 200);
+    try std.testing.expectEqual(@intFromEnum(player.Status.dead), m.ram[map.player_status]);
+
+    // Again, the other way: up the ladder (x 56) to the switch (x 32).
+    inRoom(m, 4);
+''', arg='    // Up the ladder (x 56) to the switch (x 32).\n', run='B')
 
 # ============================================================================
 # C: forcefields
@@ -322,7 +332,7 @@ step('D21', '**`src/trapdoors.zig`** (add at the end)', 'append', fn('src/trapdo
 step('D22', '**`src/trapdoors.zig`** (add at the end)', 'append', fn('src/trapdoors.zig', 'flip') + '\n' + fn('src/trapdoors.zig', 'swing'))
 step('D23', '**`src/training.zig`** (replace the `trapdoors` room)', 'replace_text',
      room_of(TR, 'trapdoors', 'conveyors'), arg=room_of(TR5, 'trapdoors', 'conveyors'))
-step('D24', '**`src/main.zig`** (in the searching test, replace the comment and the `walls` line)', 'replace_text',
+step('D24', '**`src/main.zig`** (in the searching test, replace the comment and the two lines below it)', 'replace_text',
      lines_of('src/main.zig', '        // The search reads only the castle', '        for (plan.trapdoor)'),
      arg='''        // The search reads only the castle, so it walks through every
         // raised forcefield: two cells each.

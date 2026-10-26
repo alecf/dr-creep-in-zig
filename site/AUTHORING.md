@@ -1654,3 +1654,51 @@ Castle rooms (ch03)".
   `conveyor_players`, player-vs-player groups, `player_plate` per player),
   the final room back in the search test. ch10: sounds (switch, forcefield
   tick, trapdoor swing, conveyor switch, teleport change/send).
+- **ch06 review fixes (supersede the ch06 entries above where they
+  differ).** *Rooms 6 and 7 re-laid so the reader meets the open hole in
+  normal play* (with one plate between entry and hole, 1984's step-on rule
+  makes every crossing flip, so a hole met open can only be crossed by
+  turning round *on* the plate; hence:) 6 Trapdoors: trapdoor `{0 (shut),
+  72, 192, switch 32, 184}`, switch beyond the hole: it opens behind him on
+  the way to door 1, and walking back the hole stops him at feet 72; sign
+  "THIS TRAPDOOR IS / SHUT. STEP ON ITS / SWITCH AND IT OPENS / BEHIND YOU.
+  STEP ON / IT AGAIN AND IT / SHUTS." 7 Conveyors: trapdoor `{open, 52,
+  192, switch 28, 184}` (beyond the hole), belt unchanged (runs left into
+  the hole: walking in along the floor kills him), plus a high walkway
+  `{22, 32, 128}`, `ladder_right` (x 112) and a pole `{8, 36, 128}`: the
+  way on is up, along and down the pole; last line of the sign "RUNS INTO A
+  HOLE!". Tests rewritten without setting `box.x`: trapdoor (shut → step on
+  switch → open behind → walk back, stopped alive at 72 → step on again →
+  shut); conveyor (walk in → carried into the hole → dead; control stops
+  and reverses; walking left against the right-running belt he gets no
+  further than 90; ladder, high walkway, pole, onto the switch → shut, then
+  carried right past 100). Search test: room 7's open trapdoor is the only
+  trapdoor wall now. Castle 4,435 bytes (was 4,438 before the review; ch05 4,333). *Runs:* E = straight along the floor
+  into the hole (500 frames); `ROOM7` takes the high road; Boss F is 3,120
+  frames (room 8 from 2,610): 3,006 calls, bucket 3 max 2,750 (the switch
+  throw, frame 318; 3,042 with bucket 4), bucket 4 max 2,420, 11 loading
+  pauses, 0 overruns; named frames 330, 1010, 1760, 2200, 2350, 2770, 3119.
+  *Images:* `06-switch.png` = A 370 (he has stepped away; lever visible),
+  `06-conveyor.png` = E 320 (walking left on the running belt towards the
+  open hole), new `06-trapdoor.png` = F 1760 (trapdoor open behind him at
+  the door), `06-transmitter.png` = F 2740 (same picture as before). Every
+  image now comes from a `runs.py` run. *Listings:* stage B's lightning test
+  is two edits (B6 the name line, B6b the death block replacing the
+  `// Up the ladder` comment), 110 listings; labels A31/A35/D24 corrected.
+  *Diagrams:* `ch06-wall` rests on "wall up" and its hole marker is
+  `--ink-soft`; `ch06-belt` delays −0.17 s/−0.33 s so the paused figure
+  shows three shades; `ch06-links` caption dropped (its small print stays).
+  *Prose:* `find` costs 52–64 cycles (76 was a miss); the forcefield
+  press-vs-held difference is told (1984 re-arms while fire is held, so a
+  second player can hold a field down; ch9 may restore it); the conveyor's
+  `held` bit is explained (1984 reads the held button; room for P2), and
+  the Game Over symptom is now "keeps reversing: clear `pressed`"; the
+  Inside the Disk box no longer quotes a name for the direction bit; ch3's
+  transmitter-sign mistake is owned in the prose, not the lore box; ch1's
+  Edge Detector and ch3's `inline for` are referred back to. Prose ≈ 5,570
+  words.
+- **Note for ch11 (from the ch06 review).** `room.tint`, `room.unplace` and
+  `screen.erase` compute `x − castle.left_edge` and `x / 4` with no
+  off-left handling: a machine at castle X < 16 overflows (panics in Debug
+  and ReleaseSafe). Add them to the "check the real castles for X < 16"
+  list when real castles load.

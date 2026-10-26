@@ -15,7 +15,7 @@ you somewhere you'd rather not go, and a booth sends you across the room
 in a flash. The explorer can die for real now, too: touch a bolt or fall
 through a hole and he's gone.
 
-![The Lightning room: two machines hang from the ceiling with jagged bolts crackling beneath them, and the explorer climbs the ladder towards the switch upstairs](images/06-lightning.png)
+![The Lightning room: two machines hang in the air with jagged bolts crackling beneath them, and the explorer climbs the ladder towards the switch upstairs](images/06-lightning.png)
 
 All five machines are one idea used five times: a **control** that the
 explorer works, linked to a **device** that does something.
@@ -26,10 +26,9 @@ New under the hood: **linking things by index instead of by pointer**.
 ## One pattern, five machines
 
 Look at any room in the later castles and you'll find the same shape. A
-switch on one wall, a machine on the other. A button by the door, a
-forcefield in the corridor. A plate in the floor, a trapdoor further
-along. The explorer works the **control**, and something happens to the
-**device**, sometimes on the far side of the room.
+switch on one wall, a machine on the other. A plate in the floor, a
+trapdoor further along. The explorer works the **control**, and
+something happens to the **device**, often across the room.
 
 Both halves are things we already know how to build. A control is an
 object with an `in_front` handler, like the doorbell. A device is an
@@ -48,11 +47,10 @@ sw.machines.forEach(m => m.on = !m.on);
 ```
 
 The array holds **references**, hidden pointers to the two machine
-objects. That works fine while everything is in memory. Now save the
-room with `JSON.stringify` and load it back. The file has no way to say
-"that object over there". It writes a full copy of each machine inside
-the switch. The switch you load has two machines of its own, and
-throwing it flips machines that aren't in the room.
+objects. Fine in memory. Now save the room with `JSON.stringify` and
+load it back. The file can't say "that object over there", so it writes
+a copy of each machine inside the switch, and the switch you load flips
+machines that aren't in the room.
 
 The fix in JavaScript is to give every machine an id and store the ids.
 A castle file is saved and loaded too, so the 1984 game does exactly
@@ -69,15 +67,12 @@ the actor's slot number. Here's the switch in the Lightning room,
 followed all the way to the sprite it turns off:
 
 :::diagram ch06-links
-A switch's machines are distances in the castle, then object numbers,
-then a sprite slot. No addresses anywhere.
 :::
 
-An index is one byte where an address takes two. It means the same
-thing wherever the castle happens to be loaded. You can also check it.
-`$FF` can mean "none", and a number can be compared with the table's
-size. A pointer to a slot that was freed and reused looks just as good
-as a pointer to the right one.
+An index has one weakness it shares with a pointer. If the thing it
+names goes away and its slot is reused, the number still looks fine. So
+whoever lets go of a slot writes `$FF` ("none") back straight away, as
+the machine does when its bolt goes.
 
 ### The records
 
@@ -128,14 +123,15 @@ pub const Frankenstein = extern struct { state: u8, x: u8, y: u8, runtime: [4]u8
 ```
 
 `lightning_on` and `lightning_switch` are single bits in the `state`
-byte, like the door's open bit in Chapter 5. Throwing a switch flips one
-of them with `^=`, which turns over the bits that are set on its right
-and leaves every other bit alone. `state ^= lightning_on` turns a
-running machine off and a stopped one on, without reading it first.
+byte, like the door's open bit in Chapter 5. Throwing a switch flips
+`lightning_on` with `^=`. `state ^= mask` turns over every bit that is
+set in `mask` and leaves the others alone (JavaScript's `^=` does the
+same). So `state ^= lightning_on` turns a running machine off and a
+stopped one on, without reading it first.
 
 ## Lightning
 
-The machine is a pole hanging from the ceiling with an emitter at the
+The machine is a pole hanging in the air, with an emitter at the
 bottom. Below that crackles a bolt, which is a sprite, because it changes
 shape every few steps and anything touching it should die. The pole
 hums: its zigzag stripes crawl downwards while it runs.
@@ -344,8 +340,7 @@ pub const lever_down = room(.{ .grey, .light_grey, .red }, &.{
 
 ### Objects that find each other
 
-The object table needs two new things. Its comment says what lives there
-now:
+The object table's comment says what lives there now:
 
 **`src/objects.zig`** (replace the comment at the top)
 
@@ -362,10 +357,10 @@ now:
 const lightning = @import("lightning.zig");
 ```
 
-Five of the spare bytes in each object slot get names. `number` was the
-door's place among the doors. Now it's whatever number links this object
-to others. `actor` holds the slot of an actor the object runs, and
-`timer` counts steps for anything that ticks:
+Two of the five spare bytes get names, and three old fields get wider
+jobs. `number` was the door's place among the doors. Now it's whatever
+number links this object to others. `actor` holds the slot of an actor
+the object runs, and `timer` counts steps for anything that ticks:
 
 **`src/objects.zig`** (in `Object`, replace the last four fields)
 
@@ -552,9 +547,8 @@ pub fn first(m: *Machine, kind: castle.Kind) ?u16 {
 this chapter. Back in Chapter 2, each cell's colours for codes 01 and 10
 were one byte in the screen plane. Change that byte and every pixel of
 those codes in the cell changes colour at once, without a single pixel
-being drawn. The pole's stripes are drawn in codes 01 and 10. Give its
-cells three colour pairs in turn, and the stripes seem to crawl. That's
-`tint`: one byte a cell. Drawing the same cells is a byte for every row.
+being drawn. Give the pole's cells three colour pairs in turn, and its
+stripes seem to crawl, at one byte a cell.
 
 `boxOf` gives an object the box of the picture it's drawn as. `first`
 walks the room's records for the first one of a kind, which is where a
@@ -717,7 +711,7 @@ machine off, the machine searches all eight sprite slots for a bolt
 carrying its number. We keep the bolt's slot in the machine's object
 instead, so turning it off is one lookup. The 1984 pole doesn't
 recolour cells either: it rewrites the colour bytes inside the pole's
-picture and draws all six pieces again, every fourth step.
+picture and draws every piece of the pole again, every fourth step.
 :::
 
 ### Throwing the switch
@@ -838,7 +832,7 @@ One change in `main.zig`. The forcefield coming later in this chapter
 adds its actor while the room is being prepared, so the actor table must
 be cleared *before* the room is drawn:
 
-**`src/main.zig`** (in the `.draw_room` branch, replace everything up to `player.add`)
+**`src/main.zig`** (in the `.draw_room` branch, replace its first seven lines, from `m.poke(hw.control, 0);` through `player.add(m);`)
 
 ```zig
             m.poke(hw.control, 0);
@@ -924,7 +918,7 @@ test "lightning: the switch upstairs stops both machines" {
 }
 ```
 
-**`src/main.zig`** (add above `hold`, at the very end)
+**`src/main.zig`** (add above `hold`, the last function in the file)
 
 ```zig
 /// How many actors of `kind` are in the room.
@@ -938,13 +932,13 @@ fn count(m: *Machine, kind: actors.Kind) usize {
 ```
 :::
 
-Build, press N four times for the Lightning room, and climb. At the top,
-walk left to the switch and pull down:
+Build, press N four times for the Lightning room, climb to the switch,
+and pull down:
 
-![The Lightning room with the lever down: both poles are dull grey and the bolts have gone, and the explorer stands at the switch on the upper walkway](images/06-switch.png)
+![The Lightning room with the lever down: both poles are dull grey and the bolts have gone, and the explorer walks away from the switch on the upper walkway](images/06-switch.png)
 
-**Both machines die at once!** The bolts vanish, the poles go grey, and
-the lever drops. Push up and they're back, crackling. Walk into a bolt,
+**Both machines die at once!** The bolts vanish and the poles go grey.
+Step away from the switch and you'll see the lever down. Push up and they're back, crackling. Walk into a bolt,
 though, and nothing happens. Let's fix that.
 
 ## Touching lightning
@@ -1056,40 +1050,27 @@ pub fn hit(m: *Machine, n: u3, other: u3) bool {
 }
 ```
 
-`die` is the part of `kill` that any hazard can use: only if he's
-playing, he's now dead. `kill` (the X key) flashes him itself, while
-`hit` returns true and lets `hitting` do it. Add the death to the test:
+`die` is the part of `kill` every hazard shares: if he's playing, he's
+dead now, and it says whether that happened. `kill` (the X key) flashes him itself, while
+`hit` returns true and lets `hitting` do it. Add a death to the test, and
+a new name:
 
-:::type-in The lightning test, with a death
-**`src/main.zig`** (replace the lightning test)
+**`src/main.zig`** (in the lightning test, replace its first line)
 
 ```zig
 test "lightning: the bolts kill, and the switch upstairs stops both machines" {
-    const m = try std.testing.allocator.create(Machine);
-    defer std.testing.allocator.destroy(m);
-    inRoom(m, 4); // Lightning: in at door 0, on the left
-    hold(m, 0, 4); // the machines' first step makes their bolts
-    try std.testing.expectEqual(2, count(m, .lightning));
+```
 
+**`src/main.zig`** (in the same test, replace the `// Up the ladder` comment)
+
+```zig
     // Along the floor, into the first bolt.
     hold(m, machine.joy.right, 200);
     try std.testing.expectEqual(@intFromEnum(player.Status.dead), m.ram[map.player_status]);
 
     // Again, the other way: up the ladder (x 56) to the switch (x 32).
     inRoom(m, 4);
-    while (explorer(m).box.x + player.feet_x < 57) hold(m, machine.joy.right, 2);
-    hold(m, machine.joy.up, 200);
-    while (explorer(m).box.x + player.feet_x > 34) hold(m, machine.joy.left, 2);
-    try std.testing.expectEqual(128 - 21, explorer(m).box.y); // on the upper walkway
-    hold(m, machine.joy.down, 4); // throw it down
-    hold(m, 0, 4);
-    try std.testing.expectEqual(0, count(m, .lightning));
-    hold(m, machine.joy.up, 4); // and up again: both run again
-    hold(m, 0, 4);
-    try std.testing.expectEqual(2, count(m, .lightning));
-}
 ```
-:::
 
 Now walk right along the floor:
 
@@ -1137,11 +1118,8 @@ pub fn wall(m: *Machine, col: u8, row: u8, raised: bool) void {
 A wall changes two bits, in the cells on either side.
 :::
 
-A wall goes up in one cell, but no bit in that cell changes. The cell on
-its left loses its way right, and the cell on its right loses its way
-left. Nothing can walk in from either side. This is the 1984 game's own
-trick, and it has a nice side effect: anything already standing in the
-cell can still walk out. A wall can never trap him inside it.
+This is the 1984 game's own trick, and it has a nice side effect: a
+wall can never trap him inside it.
 
 The field's pictures, and the button's:
 
@@ -1476,6 +1454,10 @@ one more row, from the bottom. When the eighth is lit, the field goes
 back up. Each gauge row is one byte of the bitmap, copied from the
 `button_lit` picture, so lighting it costs one poke.
 
+In 1984, holding fire at the button keeps restarting the gauge, so a
+second player can hold a field down for the first. Ours wants a fresh
+press each time. Chapter 9's second player may want the 1984 way back.
+
 The field's own turn is the shimmer, two pictures taking turns:
 
 **`src/forcefields.zig`** (add at the end)
@@ -1500,7 +1482,7 @@ pub fn shimmer(m: *Machine, n: u3) void {
 In the 1984 game, the field doesn't take orders from its button. The
 button writes a 1 or a 0 into a little table of flags, one per field, and
 every field reads its flag on each of its turns to decide whether it
-should be up. It's another link by number, just pointing the other way.
+should be up. It's another link by number, pointing the other way.
 We let the button set the field's picture directly, so the field's turn
 has nothing to look up.
 :::
@@ -1569,11 +1551,10 @@ test "searching the castle gives the grid's answer, except at a machine's walls"
 }
 ```
 
-`inline for` unrolls the loop at compile time, so `name` is known to the
-compiler on every pass. `@field(training.plan.rooms, @tagName(name))`
-can then pick the room's plan by its name, and count its forcefields.
-The final room isn't in the plan, so the loop now stops before it.
-Chapter 9 builds that room properly.
+The loop is Chapter 3's: `inline for` over the room names, so `@field`
+can pick each room's plan and count its forcefields. The final room's
+plan is `plan.final`, not one of `plan.rooms`, so this loop leaves it
+out. It has no machines to check.
 
 :::type-in The forcefield's test
 **`src/main.zig`** (add above `explorer`)
@@ -1613,12 +1594,12 @@ switch is a plate in the floor. Step onto it and the trapdoor flips, open
 to shut or shut to open.
 
 Two new things happen here. An object kills him (an *object*, not a
-sprite). And a switch that works when he **steps onto it**, not while he
+sprite). And a switch works when he **steps onto it**, not while he
 stands on it. Standing on the plate for a second must flip the trapdoor
 once, not 25 times.
 
-That second rule is an old friend. Chapter 2's fire button had the same
-problem: a press is "down now, and up last time". The plate is "under
+That second rule is Chapter 1's Edge Detector again: a press is "down
+now, and up last time". The plate is "under
 his feet now, and not under them last turn", so he needs two bytes to
 remember it in:
 
@@ -1648,7 +1629,8 @@ pub const none: u8 = 0xFF;
 The explorer finds the plate the way he finds a bell: his sprite touches
 its pixels, and `touching` (Chapter 5) box-tests the objects. Until now,
 that only called the *object's* `in_front`. A trapdoor needs the actor to
-decide, so `touching` asks the actor too:
+decide (the same hole kills an explorer, will trap a monster in Chapter
+8, and means nothing to a laser), so `touching` asks the actor too:
 
 **`src/objects.zig`** (add below the `forcefields` import)
 
@@ -1786,8 +1768,8 @@ pub fn touch(m: *Machine, n: u3, object: u8) bool {
 `touch` only *notes* the plate, and his turn does the flipping in
 `tread`. The order matters: `touching` runs before his turn in the same
 step, so `tread` sees this step's plate and last step's side by side,
-then moves one into the other. An open trapdoor under his feet is simply
-`die`.
+then copies this step's into `player_last_plate`. An open trapdoor under
+his feet is `die`.
 
 ### The trapdoor
 
@@ -1958,8 +1940,8 @@ fn wall(m: *Machine, t: *align(1) castle.Trapdoor, up: bool) void {
 ```
 
 The trapdoor and its plate are two objects, and both get the **same
-number**. Either can find the other with `objects.find`, so no one has
-to store a link. Shut, the trapdoor is `disable`d, and Chapter 5's
+number**. Either can find the other with `objects.find`, so neither has
+to store the other's slot. Shut, the trapdoor is `disable`d, and Chapter 5's
 `touching` skips it. There's nothing there to fall through.
 
 `prepare` starts by rubbing out the piece of walkway where the hole goes.
@@ -2008,7 +1990,8 @@ it when you come back. It moves the wall straight away and starts the
 swing. Opening, the trapdoor only becomes deadly when it's fully open.
 Shutting, it's safe from the first step. That's the generous way round.
 
-The Trapdoors room starts with its trapdoor open:
+In the Trapdoors room the trapdoor starts shut, with its switch on the
+far side of it:
 
 **`src/training.zig`** (replace the `trapdoors` room)
 
@@ -2022,21 +2005,22 @@ The Trapdoors room starts with its trapdoor open:
             },
             .walkway = &.{floor},
             .bell = &.{.{ .x = 44, .y = 168, .door = 1 }},
-            .trapdoor = &.{.{ .state = castle.trapdoor_open, .x = 72, .y = 192, .switch_x = 112, .switch_y = 184 }},
+            // Shut, with its switch beyond it: it opens behind you.
+            .trapdoor = &.{.{ .state = 0, .x = 72, .y = 192, .switch_x = 32, .switch_y = 184 }},
             .text = says("TRAPDOORS", &.{
-                "A TRAPDOOR IS OPEN.",
-                "YOU CAN'T WALK OVER",
-                "THE HOLE. STEP ON",
-                "ITS SWITCH AND IT",
-                "SHUTS. STEP ON IT",
-                "AGAIN AND IT OPENS.",
+                "THIS TRAPDOOR IS",
+                "SHUT. STEP ON ITS",
+                "SWITCH AND IT OPENS",
+                "BEHIND YOU. STEP ON",
+                "IT AGAIN AND IT",
+                "SHUTS.",
             }),
         },
 ```
 
 An open trapdoor is a wall too, so the search test counts it:
 
-**`src/main.zig`** (in the searching test, replace the comment and the `walls` line)
+**`src/main.zig`** (in the searching test, replace the comment and the two lines below it)
 
 ```zig
         // The search reads only the castle, so it walks through every
@@ -2050,26 +2034,35 @@ An open trapdoor is a wall too, so the search test counts it:
 **`src/main.zig`** (add above `explorer`)
 
 ```zig
-test "a trapdoor's switch flips it once each time he steps onto it" {
+test "a trapdoor's switch opens it behind him, and the open hole stops him" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
-    inRoom(m, 6); // Trapdoors: in on the right, the switch at x 112, the hole at x 76
+    inRoom(m, 6); // Trapdoors: in on the right, the hole at x 76, its switch at x 32
     const record = m.view(castle.Trapdoor, room.first(m, .trapdoor).?);
-    try std.testing.expect(record.state & castle.trapdoor_open != 0);
-    hold(m, machine.joy.left, 120); // over the switch, and on
     try std.testing.expect(record.state & castle.trapdoor_open == 0);
-    hold(m, machine.joy.left, 120);
-    try std.testing.expect(explorer(m).box.x < 60); // over the shut trapdoor
-    hold(m, machine.joy.right, 200); // back over the switch: open again
-    try std.testing.expect(record.state & castle.trapdoor_open != 0);
-    try std.testing.expect(explorer(m).box.x > 116);
+    while (explorer(m).box.x + player.feet_x > 33) hold(m, machine.joy.left, 2); // over it, onto the switch
+    hold(m, 0, 10);
+    try std.testing.expect(record.state & castle.trapdoor_open != 0); // open, behind him
+    hold(m, machine.joy.right, 200); // back the way he came
+    try std.testing.expectEqual(@intFromEnum(player.Status.playing), m.ram[map.player_status]);
+    try std.testing.expectEqual(72, explorer(m).box.x + player.feet_x); // stopped in the cell beside the hole
+    while (explorer(m).box.x + player.feet_x > 33) hold(m, machine.joy.left, 2); // onto the switch again
+    hold(m, 0, 10);
+    try std.testing.expect(record.state & castle.trapdoor_open == 0); // shut
 }
 ```
 :::
 
-Build and walk left. The hole stops him at its edge. Step on the plate
-and its middle turns from red to green, and the trapdoor swings shut.
-Walk back over the plate and it opens again behind you.
+Build and walk left, over the shut trapdoor, to the bell. Ring it and
+head for the door. On the way you step on the plate: its middle turns
+from green to red, and the trapdoor swings open behind you.
+
+![The Trapdoors room: the explorer walks into the left-hand door, and behind him the trapdoor stands open over a black hole, its switch red](images/06-trapdoor.png)
+
+Turn round and walk back, and the hole stops him in the cell beside it.
+Step on the plate again and it shuts. It flips every time you step onto
+it, from either side, so the way back takes some care: stop *on* the
+plate before you turn round.
 
 ## Conveyors
 
@@ -2078,11 +2071,9 @@ walking speed. Walk with it and you fly. Walk against it and you slowly
 go backwards. Its control box stops it, and pressing again starts it the
 other way.
 
-The belt must *look* as if it's moving, too. The obvious way is to draw
-it again a little further along each time. Remember `tint`, though. The
-slats are drawn in code 10, one cell each, and code 10's colour is that
-cell's byte in the screen plane. Give the eight cells three shades, and
-every other step give each cell the shade its neighbour had:
+The belt must *look* as if it's moving, too, and that's `tint` again.
+The slats are code 10, one to a cell. Give the eight cells three shades,
+and every other step give each cell the shade its neighbour had:
 
 :::diagram ch06-belt
 The stripes slide, and not a pixel is drawn.
@@ -2265,9 +2256,11 @@ pub fn press(m: *Machine, n: u8, who: u3) void {
 The control's arrows are two cells of the control box, and lighting one
 is a `tint` as well.
 
-The 1984 belt has room for two players' presses in its `state` byte.
 `pressed` is set by the control's `in_front` when the explorer presses
-fire there. `held` remembers last step's press:
+fire there, and `held` remembers last step's press. Our `a.fire` is
+already a press, so why both? The 1984 control reads the button while
+it's held, and these two bits are how the belt turns that into a press.
+They also keep room for player 2's bits in Chapter 9:
 
 **`src/conveyors.zig`** (add at the end)
 
@@ -2341,10 +2334,10 @@ a belt can't pull him off a ladder.
 The 1984 belt really is redrawn: four pictures of it, drawn one after
 another every other step. The trapdoor has six pictures, and the
 transmitter's lamp is redrawn in each new colour. Our belt changes 8
-bytes where theirs draws 64. One more thing: the bit we call
-`conveyor_left` is named in the 1984 data as the belt moving *right*.
-Set it and things move left. We named ours after what it does. The
-castle files keep the same bit, so they read the same either way.
+bytes where theirs draws 64. One more thing: the 1984 belt's direction
+bit is easy to read backwards. With it set, the belt's pictures run one
+way and whatever stands on it moves left. We named ours after what it
+does to you.
 :::
 
 :::power-up The Recolour Power-Up
@@ -2355,7 +2348,9 @@ is eight. Plan the art for it: put the parts that change colour in their
 own codes and their own cells.
 :::
 
-The Conveyors room gets a belt that runs left, towards a trapdoor:
+The Conveyors room gets a belt that runs left, into an open trapdoor.
+The trapdoor's switch is on the far side, and a high walkway goes round,
+up a ladder and down a pole:
 
 **`src/training.zig`** (replace the `conveyors` room)
 
@@ -2367,9 +2362,14 @@ The Conveyors room gets a belt that runs left, towards a trapdoor:
                 .{ .x = 156, .y = 160, .to = .trapdoors, .to_door = 1 },
                 .{ .x = 16, .y = 160, .to = .transmitter },
             },
-            .walkway = &.{floor},
+            // The floor runs into an open trapdoor, and its switch is on
+            // the far side. The high road goes round: up the ladder, along,
+            // and down the pole.
+            .walkway = &.{ floor, .{ .length = 22, .x = 32, .y = 128 } },
+            .ladder = &.{ladder_right},
+            .pole = &.{.{ .length = 8, .x = 36, .y = 128 }},
             .bell = &.{.{ .x = 44, .y = 168, .door = 1 }},
-            .trapdoor = &.{.{ .state = castle.trapdoor_open, .x = 52, .y = 192, .switch_x = 124, .switch_y = 184 }},
+            .trapdoor = &.{.{ .state = castle.trapdoor_open, .x = 52, .y = 192, .switch_x = 28, .switch_y = 184 }},
             .conveyor = &.{.{ .state = castle.conveyor_on | castle.conveyor_left, .x = 60, .y = 184, .control_x = 96, .control_y = 160 }},
             .text = says("CONVEYORS", &.{
                 "A BELT CARRIES YOU,",
@@ -2377,7 +2377,7 @@ The Conveyors room gets a belt that runs left, towards a trapdoor:
                 "CONTROL STOPS IT,",
                 "THEN STARTS IT THE",
                 "OTHER WAY. THIS ONE",
-                "RUNS TO A TRAPDOOR!",
+                "RUNS INTO A HOLE!",
             }),
         },
 ```
@@ -2386,33 +2386,55 @@ The Conveyors room gets a belt that runs left, towards a trapdoor:
 **`src/main.zig`** (add above `explorer`)
 
 ```zig
-test "a conveyor carries him into the open trapdoor, and its control stops it" {
+test "a conveyor carries him into the open trapdoor, and the high road goes round" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
     inRoom(m, 7); // Conveyors: the belt runs left from x 60 to 91, into the hole at x 56
-    explorer(m).box.x = 80; // on the belt, past the switch that would have shut the trapdoor
-    hold(m, 0, 60);
+    // Along the floor and onto the belt, which carries him into the hole.
+    while (m.ram[map.player_status] == @intFromEnum(player.Status.playing)) hold(m, machine.joy.left, 2);
     try std.testing.expectEqual(@intFromEnum(player.Status.dead), m.ram[map.player_status]);
+    try std.testing.expect(explorer(m).box.x + player.feet_x < 60); // past the belt's end, over the hole
 
     inRoom(m, 7);
     const belt = m.view(castle.Conveyor, room.first(m, .conveyor).?);
-    while (explorer(m).box.x > 98) hold(m, machine.joy.left, 2); // to the control box
+    while (explorer(m).box.x + player.feet_x > 101) hold(m, machine.joy.left, 2); // to the control box
     hold(m, machine.joy.fire, 4);
     try std.testing.expectEqual(castle.conveyor_held, belt.state); // stopped, and turned round
     hold(m, 0, 4);
     hold(m, machine.joy.fire, 4);
     try std.testing.expectEqual(castle.conveyor_on | castle.conveyor_held, belt.state); // running right
-    explorer(m).box.x = 70;
-    hold(m, 0, 20);
-    try std.testing.expect(explorer(m).box.x > 78); // carried right
+    hold(m, machine.joy.left, 200);
+    try std.testing.expect(explorer(m).box.x + player.feet_x >= 90); // walking against it, he gets no further than its end
+
+    // The high road: up the ladder (x 112), along, down the pole (x 36).
+    while (explorer(m).box.x + player.feet_x < 113) hold(m, machine.joy.right, 2);
+    hold(m, machine.joy.up, 200);
+    while (explorer(m).box.x + player.feet_x > 39) hold(m, machine.joy.left, 2);
+    try std.testing.expectEqual(128 - 21, explorer(m).box.y); // on the high walkway
+    hold(m, machine.joy.down, 200);
+    try std.testing.expectEqual(192 - 21, explorer(m).box.y);
+    const trapdoor = m.view(castle.Trapdoor, room.first(m, .trapdoor).?);
+    while (explorer(m).box.x + player.feet_x > 31) hold(m, machine.joy.left, 2); // onto the switch (x 28)
+    hold(m, 0, 10);
+    try std.testing.expect(trapdoor.state & castle.trapdoor_open == 0);
+    hold(m, machine.joy.right, 200); // off it the way he came: over the shut trapdoor, and the belt carries him
+    try std.testing.expectEqual(@intFromEnum(player.Status.playing), m.ram[map.player_status]);
+    try std.testing.expect(explorer(m).box.x + player.feet_x > 100);
 }
 ```
 :::
 
-![The Conveyors room: the explorer stands on the running belt, carried left towards the open trapdoor, with the control box on the wall above](images/06-conveyor.png)
+Walk in and keep walking left. The belt takes him, and walking with it
+he fairly flies, straight into the hole:
+
+![The Conveyors room: the explorer walks left on the running belt, a moment from the open trapdoor at its end, with the control box on the wall behind him](images/06-conveyor.png)
 
 Two machines in one room, and they work together without knowing about
-each other. The belt pushes, and the trapdoor's `touch` kills. That's
+each other. The belt pushes him, and his own `touch` does the rest when
+his feet are over the hole. Stopping the belt at its control doesn't
+save you, because the hole is still there. The way on is the high road:
+up the ladder, along, and down the pole. Then step on the switch and the
+trapdoor shuts. That's
 what the 1984 castles build their nastiest rooms out of.
 
 ## The matter transmitter
@@ -2647,20 +2669,22 @@ pub fn flash(m: *Machine, n: u8) void {
 }
 ```
 
-Holding up moves the lamp on every 16 steps, and `tint` repaints it.
-Fire moves him to the pad, feet on its floor, and sets the booth's
-`execute`, which flashes the pad and the lamp for 32 steps. While it's
-flashing, the booth ignores him, so he can't send himself twice.
+Holding up moves the lamp on every 16 steps. Fire moves him to the pad
+and sets the booth's `execute`, which flashes the pad and the lamp for
+32 steps. While it's flashing, the booth ignores him, so he can't send
+himself twice.
 
 :::inside-the-disk Up to choose, fire to go
 Chapter 3's sign for this room had it backwards: "press fire to pick a
 pad by its colour, push up and you're there". The 1984 booth works the other way.
 Push up and the lamp changes, once every 16 steps while you hold it.
-Press fire and you go. It's my mistake, and the sign is fixed below.
+Press fire and you go.
 :::
 
-The room gets a booth and two pads, and a pole replaces the ladder. The
-booth is the way up, and the pole the way down:
+Chapter 3's sign for this room had up and fire the wrong way round.
+That was my mistake, and this one is right. The room gets a booth and
+two pads, and a pole replaces the ladder. The booth is the way up, and
+the pole the way down:
 
 **`src/training.zig`** (replace the `transmitter` room)
 
@@ -2734,9 +2758,8 @@ test "erase takes out a shape's pixels and only those" {
 ```
 :::
 
-`erase` has been working since the lever, and now it has a test of its
-own. A walkway drawn next to a pixel that was already there is rubbed out
-again, and that pixel survives.
+`erase` has been working since the lever, and now it has a test: a
+walkway is rubbed out, and a pixel beside it survives.
 
 ![The Transmitter room: the explorer stands in the booth, its lamp glowing red to match the pad upstairs](images/06-transmitter.png)
 
@@ -2755,21 +2778,22 @@ cheap in a table of 32.
 **Memory.** Two new bytes, `player_plate` and `player_last_plate`, so the
 `player` region is now `$0200–$0206`. The object slot stays 16 bytes:
 `actor` and `timer` come out of the spare bytes. The shape table grew by
-1,220 bytes, to 3,265, for 25 new pictures. The castle is 4,438 bytes,
-105 more for the machines' records.
+1,220 bytes, to 3,265, for 25 new pictures. The castle is 4,435 bytes,
+102 more: the machines' records, the rewritten signs and the Conveyors
+room's high road.
 
 **Time.** Recolouring the belt's eight cells costs 224 cycles. Drawing
 the belt again would be 1,320, and rubbing it out and drawing it 2,972.
 The pole's glow is 88 cycles a tint against 1,704 to redraw it. Following
-a link is cheap: `objects.find` is about 76 cycles in the Lightning room,
-and `room.first` about 576. In the Lightning room the actors' bucket peaks at
-2,218 cycles, with two bolts and the explorer. The busiest step in the
-whole Boss Battle run is 2,750 cycles, a seventh of a frame.
+a link is cheap: `objects.find` takes 52–64 cycles in the Lightning
+room, and `room.first` about 576. Walking in the Lightning room, the
+actors' bucket peaks at 2,218 cycles, with two bolts and the explorer.
+Throwing the switch is the busiest step of the Boss Battle: 2,750 in the
+actors' bucket (the lever's erase and redraw happen during his turn),
+about 3,040 with the machines' own work, a sixth of a frame.
 :::
 
 :::game-over Common mistakes
-- **`error: 'place' is not marked 'pub'`.** The machines draw their own
-  pictures. Add `pub` to `place` in `src/room.zig`.
 - **The forcefield room has no field, or the explorer has vanished.**
   `actors.clear` runs after `room.draw`, wiping the field (or giving
   him its slot). Clear the table first.
@@ -2779,8 +2803,8 @@ whole Boss Battle run is 2,750 cycles, a seventh of a frame.
 - **The trapdoor flaps open and shut while he stands on the plate.**
   `tread` must compare with `player_last_plate`, and it must write it
   every turn.
-- **The belt reverses on every step while fire is held.** The `held` bit
-  isn't being kept from one step to the next.
+- **The belt keeps reversing after one press.** `run` must clear
+  `conveyor_pressed` every step.
 - **The lever shows up and down at once.** `swap`'s `old` and `new` are
   the wrong way round, or `erase` isn't removing both bits of each
   pixel.
@@ -2794,30 +2818,31 @@ From your project folder:
 ```
 zig build
 zig build test
-zig build run -- --frames 2900 --press 20:f:5 --key 45:N --key 60:N --key 75:N --key 90:N --press 110:r:64 --press 180:u:80 --press 265:l:46 --press 315:d:6 --press 330:r:46 --press 380:d:80 --press 465:r:172 --press 640:f:5 --press 700:r:40 --press 760:ur:10 --press 920:l:76 --press 1000:f:5 --press 1010:l:160 --press 1172:f:5 --press 1240:l:30 --press 1272:ur:10 --press 1420:l:236 --press 1660:f:5 --press 1720:l:30 --press 1752:ur:10 --press 1900:l:124 --press 2026:f:5 --press 2034:l:112 --press 2150:f:5 --press 2210:l:30 --press 2242:ur:10 --press 2390:l:92 --press 2486:u:34 --press 2524:f:5 --press 2534:l:32 --press 2570:f:5 --press 2630:l:28 --press 2662:ur:10 --dump-every 10
+zig build run -- --frames 3120 --press 20:f:5 --key 45:N --key 60:N --key 75:N --key 90:N --press 110:r:64 --press 180:u:80 --press 265:l:46 --press 315:d:6 --press 330:r:46 --press 380:d:80 --press 465:r:172 --press 640:f:5 --press 700:r:40 --press 760:ur:10 --press 920:l:76 --press 1000:f:5 --press 1010:l:160 --press 1172:f:5 --press 1240:l:30 --press 1272:ur:10 --press 1420:l:236 --press 1660:f:5 --press 1720:l:30 --press 1752:ur:10 --press 1900:l:104 --press 2006:u:130 --press 2140:l:150 --press 2292:d:100 --press 2394:r:14 --press 2412:f:5 --press 2420:l:40 --press 2462:ur:10 --press 2610:l:92 --press 2706:u:34 --press 2744:f:5 --press 2754:l:32 --press 2790:f:5 --press 2850:l:28 --press 2882:ur:10 --dump-every 10
 ```
 
 The run presses N to reach the Lightning room, then plays rooms 4 to 8
 in one go. It prints:
 
 ```
-ran 2900 frames (2786 calls to frame)
-cycles: max 236486 (1203%), avg 1427 (7%) of 19656
+ran 3120 frames (3006 calls to frame)
+cycles: max 236486 (1203%), avg 1369 (6%) of 19656
   bucket 0: max 326, avg 27
-  bucket 1: max 235206, avg 865
-  bucket 2: max 1278, avg 161
-  bucket 3: max 2750, avg 320
-  bucket 4: max 2192, avg 52
+  bucket 1: max 235206, avg 801
+  bucket 2: max 1278, avg 160
+  bucket 3: max 2750, avg 316
+  bucket 4: max 2420, avg 63
 overruns: 0, loading pauses: 11
-last frame: frames/frame_02899.ppm
+last frame: frames/frame_03119.ppm
 ```
 
 `frame_00330.ppm` has the lever down and both machines dull.
 `frame_01010.ppm` is him at the forcefield's button, the field down.
-`frame_01700.ppm` has him past the shut trapdoor, at the bell, `frame_02200.ppm`
-the belt stopped and him at the bell, and `frame_02540.ppm` him upstairs
-in the Transmitter room, sent there by the booth. The last frame is the
-Keys room.
+`frame_01760.ppm` has the trapdoor open behind him as he walks into the
+door. `frame_02200.ppm` has him on the high walkway over the belt, and
+`frame_02350.ppm` down the pole, past the hole. `frame_02770.ppm` has
+him upstairs in the Transmitter room, sent there by the booth. The last
+frame is the Keys room.
 
 Then play it:
 
@@ -2826,10 +2851,10 @@ zig build wasm
 python3 -m http.server -d web
 ```
 
-Open <http://localhost:8000> and work every machine. Try riding the
-belt into the trapdoor, and walking into a bolt. Press **G** in the
-Trapdoors room to see the grid: the yellow line of the floor breaks on
-either side of the open hole.
+Open <http://localhost:8000> and work every machine. Ride the belt
+into the trapdoor, and walk into a bolt. Press **G** in the Conveyors
+room to see the grid: the yellow line of the floor breaks on either side
+of the open hole.
 
 **Flip the switch!** Five machines, one pattern, and a castle that can
 kill you. Next chapter, the keys and the ray guns.
@@ -2851,10 +2876,12 @@ rm -rf my-creep/.zig-cache my-creep/zig-out my-creep/web
 
 :::bonus-stage
 - **Two switches, one machine.** Give the Lightning room a second switch
-  on the floor that works only the right-hand machine. What happens when
-  the two switches disagree?
-- **A slower gauge.** Make the forcefield's ticks depend on a byte in
-  its record, so each field in a castle can have its own time.
+  on the floor that works only the right-hand machine. Throw them in
+  different orders and watch a machine run with one lever down. 1984
+  lets that happen. Decide whether you want it to.
+- **A slower gauge.** Give each forcefield its own time, from a small
+  table of your own indexed by the field's number. (Leave the record
+  alone: real castles must still load.)
 - **A belt you can see coming.** Run the belt's shades in four colours
   instead of three, and see whether it looks faster.
 - **More pads.** Add a third pad to the Transmitter room, somewhere you
