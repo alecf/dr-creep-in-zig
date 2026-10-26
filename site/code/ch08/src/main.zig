@@ -693,6 +693,28 @@ test "the mummy: caught once, he's still out, and the room can still be won" {
     try escapeMummy(m);
 }
 
+test "mummy in a storm: one throw, and he's gone and the door is clear" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom(m, 16); // in upstairs on the right; the mummy is out, on the floor
+    hold(m, 0, 4);
+    try std.testing.expectEqual(1, count(m, .lightning)); // the one by the door
+    try stormOut(m);
+}
+
+test "mummy in a storm: caught once, the same throw still works" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom(m, 16);
+    hold(m, 0, 200); // he comes along under you
+    while (feet(m) > 102) hold(m, machine.joy.left, 2); // to the ladder, at x 100
+    while (m.ram[map.player_status] == @intFromEnum(player.Status.playing)) hold(m, machine.joy.down, 2); // and down onto him
+    hold(m, 0, 100);
+    back(m, 16);
+    try std.testing.expectEqual(castle.mummy_out, m.view(castle.Mummy, room.first(m, .mummy).?).state);
+    try stormOut(m);
+}
+
 test "Frankenstein: he sleeps until you're on his floor, then paces it end to end" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
@@ -829,28 +851,6 @@ test "Frank's ride: caught once, he's on your side, and the belt sends him back"
     try rideOut(m);
 }
 
-test "mummy in a storm: one throw, and he's gone and the door is clear" {
-    const m = try std.testing.allocator.create(Machine);
-    defer std.testing.allocator.destroy(m);
-    inRoom(m, 16); // in upstairs on the right; the mummy is out, on the floor
-    hold(m, 0, 4);
-    try std.testing.expectEqual(1, count(m, .lightning)); // the one by the door
-    try stormOut(m);
-}
-
-test "mummy in a storm: caught once, the same throw still works" {
-    const m = try std.testing.allocator.create(Machine);
-    defer std.testing.allocator.destroy(m);
-    inRoom(m, 16);
-    hold(m, 0, 200); // he comes along under you
-    while (feet(m) > 102) hold(m, machine.joy.left, 2); // to the ladder, at x 100
-    while (m.ram[map.player_status] == @intFromEnum(player.Status.playing)) hold(m, machine.joy.down, 2); // and down onto him
-    hold(m, 0, 100);
-    back(m, 16);
-    try std.testing.expectEqual(castle.mummy_out, m.view(castle.Mummy, room.first(m, .mummy).?).state);
-    try stormOut(m);
-}
-
 /// The explorer's actor slot.
 fn explorer(m: *Machine) *align(1) actors.Actor {
     return actors.slot(m, @intCast(m.ram[map.player_actor]));
@@ -921,19 +921,39 @@ fn escapeMummy(m: *Machine) !void {
     try std.testing.expectEqual(12, m.ram[map.room_number]);
 }
 
+/// Mummy in a Storm, from upstairs: to the switch, wait for him to come
+/// under you, throw it up, then down the ladder and out by the bell.
+fn stormOut(m: *Machine) !void {
+    const u = m.view(castle.Mummy, room.first(m, .mummy).?);
+    while (feet(m) > 126) hold(m, machine.joy.left, 2); // under the lever, at x 124
+    while (distance(monster(m, .mummy).?.box.x, explorer(m).box.x) >= 2) hold(m, 0, 2);
+    hold(m, machine.joy.up, 4);
+    hold(m, 0, 40);
+    try std.testing.expectEqual(castle.mummy_dead, u.state);
+    try std.testing.expectEqual(0, count(m, .mummy));
+    while (feet(m) > 102) hold(m, machine.joy.left, 2); // the ladder
+    hold(m, machine.joy.down, 70);
+    while (feet(m) > 55) hold(m, machine.joy.left, 2); // the bell, past the dead machine
+    hold(m, machine.joy.fire, 4);
+    hold(m, machine.joy.left, 60);
+    hold(m, machine.joy.up | machine.joy.right, 4);
+    try std.testing.expectEqual(@intFromEnum(player.Status.doorway), m.ram[map.player_status]);
+    try std.testing.expectEqual(17, m.ram[map.room_number]);
+}
+
 /// On the floor of A Trap for Frank, below the pole: the switch, wait
 /// for him to climb down into the hole, the switch again, then up his
 /// ladder to the door.
 fn trapFrank(m: *Machine) !void {
     const trapdoor = m.view(castle.Trapdoor, room.first(m, .trapdoor).?);
     const f = m.view(castle.Frankenstein, room.first(m, .frankenstein).?);
-    while (feet(m) > 66) hold(m, machine.joy.left, 2); // onto the switch, at x 64
+    while (feet(m) < 97) hold(m, machine.joy.right, 2); // onto the switch, at x 96
     hold(m, 0, 10);
     try std.testing.expect(trapdoor.state & castle.trapdoor_open != 0);
     while (count(m, .frankenstein) != 0) hold(m, 0, 2); // down he comes
     try std.testing.expect(f.state.dead);
     hold(m, machine.joy.left, 8); // off the switch, and on again
-    while (feet(m) < 64) hold(m, machine.joy.right, 2);
+    while (feet(m) < 97) hold(m, machine.joy.right, 2);
     hold(m, 0, 10);
     try std.testing.expect(trapdoor.state & castle.trapdoor_open == 0);
     while (feet(m) < 125) hold(m, machine.joy.right, 2); // over the trapdoor to his ladder
@@ -968,26 +988,6 @@ fn rideOut(m: *Machine) !void {
     hold(m, machine.joy.up | machine.joy.right, 4);
     try std.testing.expectEqual(@intFromEnum(player.Status.doorway), m.ram[map.player_status]);
     try std.testing.expectEqual(15, m.ram[map.room_number]);
-}
-
-/// Mummy in a Storm, from upstairs: to the switch, wait for him to come
-/// under you, throw it up, then down the ladder and out by the bell.
-fn stormOut(m: *Machine) !void {
-    const u = m.view(castle.Mummy, room.first(m, .mummy).?);
-    while (feet(m) > 126) hold(m, machine.joy.left, 2); // under the lever, at x 124
-    while (distance(monster(m, .mummy).?.box.x, explorer(m).box.x) >= 2) hold(m, 0, 2);
-    hold(m, machine.joy.up, 4);
-    hold(m, 0, 40);
-    try std.testing.expectEqual(castle.mummy_dead, u.state);
-    try std.testing.expectEqual(0, count(m, .mummy));
-    while (feet(m) > 102) hold(m, machine.joy.left, 2); // the ladder
-    hold(m, machine.joy.down, 70);
-    while (feet(m) > 55) hold(m, machine.joy.left, 2); // the bell, past the dead machine
-    hold(m, machine.joy.fire, 4);
-    hold(m, machine.joy.left, 60);
-    hold(m, machine.joy.up | machine.joy.right, 4);
-    try std.testing.expectEqual(@intFromEnum(player.Status.doorway), m.ram[map.player_status]);
-    try std.testing.expectEqual(17, m.ram[map.room_number]);
 }
 
 /// Where his feet are, across the room.

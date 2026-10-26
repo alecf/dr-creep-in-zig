@@ -372,7 +372,7 @@ pub const plan: author.Castle(Room) = .{
             .pole = &.{.{ .length = 8, .x = 80, .y = 128 }},
             .ladder = &.{.{ .length = 9, .x = 124, .y = 128 }},
             .bell = &.{.{ .x = 140, .y = 104, .door = 1 }},
-            .trapdoor = &.{.{ .state = 0, .x = 120, .y = 192, .switch_x = 64, .switch_y = 184 }},
+            .trapdoor = &.{.{ .state = 0, .x = 120, .y = 192, .switch_x = 96, .switch_y = 184 }},
             .frankenstein = &.{.{
                 .state = .{ .awake = true },
                 .x = 100,

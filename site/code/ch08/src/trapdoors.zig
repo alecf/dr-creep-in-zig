@@ -94,10 +94,12 @@ pub fn swing(m: *Machine, n: u8) void {
     o.step = next;
 }
 
+/// What an actor can find under its feet.
+pub const Under = enum { nothing, hole, plate };
+
 /// What actor `n` finds under its feet at object `object`: the hole of an
 /// open trapdoor (a shut one can't be stood in front of), a switch, or
 /// nothing.
-pub const Under = enum { nothing, hole, plate };
 pub fn under(m: *Machine, n: u3, object: u8) Under {
     const a = actors.slot(m, n);
     const o = objects.slot(m, object);

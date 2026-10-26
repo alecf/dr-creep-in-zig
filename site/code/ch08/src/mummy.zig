@@ -191,14 +191,14 @@ pub fn walk(m: *Machine, n: u3) void {
     u.y = a.box.y;
 }
 
-/// A mummy's `hit`: his sprite touched another. The explorer and
-/// Frankenstein's monster are no harm to him; lightning and lasers are
-/// the end of him. (A forcefield is in his group: he walks through it,
-/// if the grid lets him.)
+/// A mummy's `hit`: his sprite touched another. Lightning and lasers are
+/// the end of him; the explorer and Frankenstein's monster are nothing to
+/// him. (A forcefield is in his group: he walks through it, if the grid
+/// lets him.)
 pub fn hit(m: *Machine, n: u3, other: u3) bool {
     switch (actors.slot(m, other).kind) {
-        .player, .frankenstein => return false,
-        else => {},
+        .lightning, .laser => {},
+        else => return false,
     }
     const o = objects.owner(m, .ankh, n) orelse return true;
     m.view(castle.Mummy, o.record).state = castle.mummy_dead;
