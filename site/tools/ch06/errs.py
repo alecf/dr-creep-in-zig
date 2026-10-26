@@ -5,8 +5,8 @@ NEW = '/home/claude/dr-creep-in-zig/site/code/ch06/'
 W = S + '/errs'; shutil.rmtree(W, ignore_errors=True); os.makedirs(W)
 shutil.copytree('/home/claude/dr-creep-in-zig/site/code/machine', W + '/machine', ignore=shutil.ignore_patterns('.zig-cache', 'zig-out'))
 cases = {
- # a kind left out of the preparers' table
- 'missing': [('room.zig', '    .image = image,\n', '')],
+ # place left private, with the machines calling it
+ 'private': [('room.zig', 'pub fn place(', 'fn place(')],
 }
 out = {}
 for k, edits in cases.items():

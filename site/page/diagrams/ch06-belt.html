@@ -1,0 +1,40 @@
+<style>
+.ch06-bt { display: grid; gap: 10px; }
+.ch06-bt .ch06-bt-belt { display: flex; gap: 2px; flex-wrap: nowrap; max-width: 100%; overflow-x: auto; padding-bottom: 2px; }
+.ch06-bt .ch06-bt-cell { flex: 0 0 auto; display: grid; gap: 3px; justify-items: center; }
+.ch06-bt .ch06-bt-slat { width: 36px; height: 40px; border-top: 6px solid var(--c15); border-bottom: 6px solid var(--c11); animation: ch06-bt-cycle 0.48s step-end infinite; }
+.ch06-bt .ch06-bt-byte { display: inline-grid; font-size: .66rem; font-variant-numeric: tabular-nums; }
+.ch06-bt .ch06-bt-byte > span { grid-area: 1 / 1; opacity: 0; }
+.ch06-bt .ch06-bt-b0 { animation: ch06-bt-b0 0.48s step-end infinite; }
+.ch06-bt .ch06-bt-b1 { animation: ch06-bt-b1 0.48s step-end infinite; }
+.ch06-bt .ch06-bt-b2 { animation: ch06-bt-b2 0.48s step-end infinite; }
+.ch06-bt .ch06-bt-d1, .ch06-bt .ch06-bt-d1 > span { animation-delay: -0.16s; }
+.ch06-bt .ch06-bt-d2, .ch06-bt .ch06-bt-d2 > span { animation-delay: -0.32s; }
+.ch06-bt .ch06-bt-arrow { color: var(--accent); font-weight: 600; }
+.ch06-bt .ch06-bt-cmp { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .78rem; }
+.ch06-bt .ch06-bt-cmp b { color: var(--accent); }
+.ch06-bt small { color: var(--ink-soft); font-size: .72rem; }
+@keyframes ch06-bt-cycle { 0% { background: var(--c1) } 33.333% { background: var(--c15) } 66.667% { background: var(--c12) } }
+@keyframes ch06-bt-b0 { 0% { opacity: 1 } 33.333% { opacity: 0 } }
+@keyframes ch06-bt-b1 { 0% { opacity: 0 } 33.333% { opacity: 1 } 66.667% { opacity: 0 } }
+@keyframes ch06-bt-b2 { 0% { opacity: 0 } 66.667% { opacity: 1 } }
+</style>
+<div class="ch06-bt" data-animate>
+  <span class="dg-label">A belt's eight cells, running left <span class="ch06-bt-arrow">←</span></span>
+  <div class="ch06-bt-belt">
+    <div class="ch06-bt-cell"><span class="ch06-bt-slat"></span><span class="ch06-bt-byte"><span class="ch06-bt-b0">$B1</span><span class="ch06-bt-b1">$BF</span><span class="ch06-bt-b2">$BC</span></span></div>
+    <div class="ch06-bt-cell ch06-bt-d1"><span class="ch06-bt-slat ch06-bt-d1"></span><span class="ch06-bt-byte ch06-bt-d1"><span class="ch06-bt-b0">$B1</span><span class="ch06-bt-b1">$BF</span><span class="ch06-bt-b2">$BC</span></span></div>
+    <div class="ch06-bt-cell ch06-bt-d2"><span class="ch06-bt-slat ch06-bt-d2"></span><span class="ch06-bt-byte ch06-bt-d2"><span class="ch06-bt-b0">$B1</span><span class="ch06-bt-b1">$BF</span><span class="ch06-bt-b2">$BC</span></span></div>
+    <div class="ch06-bt-cell"><span class="ch06-bt-slat"></span><span class="ch06-bt-byte"><span class="ch06-bt-b0">$B1</span><span class="ch06-bt-b1">$BF</span><span class="ch06-bt-b2">$BC</span></span></div>
+    <div class="ch06-bt-cell ch06-bt-d1"><span class="ch06-bt-slat ch06-bt-d1"></span><span class="ch06-bt-byte ch06-bt-d1"><span class="ch06-bt-b0">$B1</span><span class="ch06-bt-b1">$BF</span><span class="ch06-bt-b2">$BC</span></span></div>
+    <div class="ch06-bt-cell ch06-bt-d2"><span class="ch06-bt-slat ch06-bt-d2"></span><span class="ch06-bt-byte ch06-bt-d2"><span class="ch06-bt-b0">$B1</span><span class="ch06-bt-b1">$BF</span><span class="ch06-bt-b2">$BC</span></span></div>
+    <div class="ch06-bt-cell"><span class="ch06-bt-slat"></span><span class="ch06-bt-byte"><span class="ch06-bt-b0">$B1</span><span class="ch06-bt-b1">$BF</span><span class="ch06-bt-b2">$BC</span></span></div>
+    <div class="ch06-bt-cell ch06-bt-d1"><span class="ch06-bt-slat ch06-bt-d1"></span><span class="ch06-bt-byte ch06-bt-d1"><span class="ch06-bt-b0">$B1</span><span class="ch06-bt-b1">$BF</span><span class="ch06-bt-b2">$BC</span></span></div>
+  </div>
+  <small>Each slat is one cell. Its pixels are code 10 and never change; what changes is its screen-plane byte: dark grey ($B) for code 01, and white ($1), light grey ($F) or grey ($C) for code 10. Every other step each cell takes the shade its right-hand neighbour had, and the stripes slide left.</small>
+  <div class="ch06-bt-cmp">
+    <span>recolour 8 cells: <b>224 cycles</b></span>
+    <span>draw the belt again: <b>1,320 cycles</b></span>
+    <span>erase it and draw it: <b>2,972 cycles</b></span>
+  </div>
+</div>

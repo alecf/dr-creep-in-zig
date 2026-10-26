@@ -1485,3 +1485,172 @@ Castle rooms (ch03)".
   that spawns into a free slot and frees itself), not re-teach them; its new
   material is the ray gun's own flag byte (`RAYGUN_*`) and spawning under
   the 8-sprite cap.
+- **Chapter 6 file, title, images.** `site/chapters/06-flip-the-switch.md`,
+  `title: "Flip the Switch"`, generated from `tools/ch06/ch06.tmpl.md` by
+  `expand.py` (109 listings, prose ≈ 5,430 words by `wc.py`). Screenshots
+  (768×544): `06-lightning.png` (Mission Briefing; run A frame 200, bolts
+  crackling, explorer on the ladder), `06-switch.png` (A 330, lever down,
+  poles dull), `06-zapped.png` (B 260, walking into a bolt),
+  `06-forcefield.png` (C 350, field down, gauge relighting),
+  `06-conveyor.png` (a room-7 run frame 320, carried on the belt),
+  `06-transmitter.png` (F 2520, in the booth, lamp red). Diagrams:
+  `ch06-links` (switch record → machine records → object table → sprite
+  slot), `ch06-wall` (animated; `grid.wall` on five cells),
+  `ch06-belt` (animated; 8 cells recoloured, with the three costs). Quoted
+  error: `'place' is not marked 'pub'` (`errs.py` case `private`).
+- **Source layout (ch06).** New files `lightning.zig`, `forcefields.zig`,
+  `trapdoors.zig`, `conveyors.zig`, `transmitter.zig` (each: constants,
+  `prepare`, the handlers). Changed: `castle.zig` (named state bits:
+  `lightning_switch $80`, `lightning_on $40`, `trapdoor_open 1`,
+  `conveyor_on 1`, `conveyor_left 2`, `conveyor_pressed 4`, `conveyor_held
+  $10`, `conveyor_players $3C`; `Teleport{x, y, target}` + pads), `objects.zig`
+  (`find(m, kind, number)` generalised from `doors.find`, which is deleted;
+  `clock` = `game_tick >> 1`; `none = $FF`; `touching` calls
+  `actors.touch` before `in_front`), `actors.zig` (`none = $FF`,
+  `hitting`, `hit`, `touch`), `room.zig` (`place` now pub; `unplace`,
+  `swap`, `tint`, `boxOf`, `first`), `screen.zig` (`erase`), `grid.zig`
+  (`wall`), `player.zig` (`die`, `hit`, `touch`, `tread`; `feet_y` pub;
+  `underfoot = 4`), `main.zig` (`actors.clear` moved before `room.draw`,
+  because forcefields add their actor in `prepare`; so the explorer is not
+  always slot 0, `player_actor` pays off). `room.prepares`: lightning,
+  forcefield, trapdoor, conveyor, teleport are real; `later` remains for
+  mummy, key, lock, raygun, frankenstein (ch3 promise fully paid in ch8).
+  Shape IDs appended after `explorer_back_1`: `machine_pole, machine_tip,
+  bolt_0..3, lever_plate, lever_up, lever_down, button_frame, button_lit,
+  field_top, field_on_0, field_on_1, field_off, trapdoor_shut,
+  trapdoor_tilt, trapdoor_open, plate, belt, control, control_knob, booth,
+  lamp, pad` (25; bolts comptime-checked consecutive).
+- **Memory map (ch06).** `player` region grows to `$0200–$0206`:
+  `player_plate` (+5, plate object under his feet this turn or `$FF`) and
+  `player_last_plate` (+6). No other region changes. Shape table 3,265
+  bytes (was 2,045); training castle 4,438 bytes (was 4,333).
+- **Slot layouts (ch06; keep offsets).** Actor `Kind = { player,
+  lightning, forcefield, _ }` (1984 numbering 0, 1, 2; later chapters keep
+  1984's: mummy 3, laser 4, frankenstein 5, so ch7 must add `mummy` before
+  `laser` or give the enum explicit values). Object `Kind = { door, bell,
+  machine, lever, button, trapdoor, plate, belt, control, booth, _ }`.
+  Object bytes 8 `number` (generic link number), 9 `open`, 10 `step`, **11
+  `actor`** (slot or `actors.none`), **12 `timer`**, 13–15 `spare[3]`.
+  `Behaviour` gains `hit: ?fn(m, n, other) bool`, `touch: ?fn(m, n,
+  object) bool`, `group: u8` (1984 `$0895` hit masks: player 0, lightning
+  `0b100`, forcefield `0b011`).
+- **Links (ladder row 6), as implemented.** Three kinds of index, no
+  addresses: (1) switch → machines: the castle's 1984 format, byte offsets
+  from the room's first lightning record (`room.first`), `$FF` ends the
+  list; a machine object's `number` = its offset. (2) object ↔ object by
+  `(kind, number)` via `objects.find` (bell→door, switch→machine,
+  plate→trapdoor; trapdoor and plate share the record's offset in the
+  trapdoor group). (3) object → actor by slot in `o.actor` (machine →
+  bolt, button → field).
+- **Sprite–sprite collision (ch5 promise paid).** In `actors.step`, before
+  the countdown, an actor with `hit_sprite` runs `hitting(m, n, hits)`:
+  every other actor whose bit is in `$D01E`, not dying, not sharing group
+  bits, with overlapping boxes; both `hit` handlers are called (n, other
+  and other, n), true sets `flash`. `player.hit`: forcefield → false,
+  anything else → `die` (status dead; true). Runs every step (not only on
+  turns). `actors.touch` (actor's own object handler, 1984
+  `obj_Player_Collision`) is called from `objects.touching` before the
+  object's `in_front`; `player.touch`: feet within `underfoot` of the
+  object's x: trapdoor → `die`, plate → `player_plate`.
+- **Mechanics, as implemented.** *Lightning:* machine object box = emitter;
+  `execute` set if on; first step adds the bolt (x = tip x, y = tip y + 8,
+  `bolt_0`), each 4th step tints the pole (3 colour pairs); off → tint
+  dull, bolt `destroy`, execute off. Bolt turn: pace 1–4, picture 1–3 on
+  (never the same), fake random from `clock ^ slot*$5B`. Switch
+  `in_front`: player, playing, feet within lever width, stick up (0) =
+  on / down (4) = off, flips own bit and each listed machine's bit, sets
+  its `execute`, `swap`s the lever. *Forcefield:* `prepare` draws
+  button/gauge/emitter, adds the button object and the field actor
+  (`field_x`, `field_y + 2`, pace 4) and raises: `grid.wall(column(field_x
+  + 2), (field_y + 27) / 8)` (1984's cell). Button `in_front` on a fire
+  press: lower if up, gauge rows all 0, `step = 8`, `timer = 30`; `execute`
+  each step: every 30 relight one gauge row (one bitmap byte, bottom up),
+  at 0 raise. 240 steps ≈ 9.6 s (1984 same 8 × 30). Field turn alternates
+  `field_on_0/1` while up. *Trapdoor:* `prepare` erases the walkway piece
+  at (x + 4, y), draws the picture at (x + 4, y − 8), panel object 4 × 16
+  (disabled while shut), wall `grid.wall(column(x) + 1, y / 8)` when open
+  (1984's two-cell rule from the ch4 note), plate object + tint (red open,
+  green shut). `tread` (on his turn, after `read`): plate ≠ none and ≠
+  last → `trapdoors.flip` (castle bit, wall at once, tint, panel
+  `execute`; shutting disables at once, opening enables at the end).
+  `swing`: one picture a step. *Conveyor:* `prepare` clears bits 2–5,
+  belt always executes. Control `in_front` on a fire press sets `pressed`.
+  Belt `execute`: fresh press (pressed, not held) → on: `^= on|left`
+  (stop and reverse), off: `|= on`; arrows tinted; held = pressed; if on,
+  every other step shift the 3 shades across 8 cells (tint 224 cycles).
+  `carry` (belt `in_front`): player only, walking frames only, feet on the
+  32-px belt, ±1 per step and ±1 more when `clock & 7 == 0` (1984 exact
+  for the player). *Transmitter:* `prepare` draws booth, lamp (tinted pad
+  `target`'s colour, colour i + 2), pads; booth object (x + 4, y + 8, 8,
+  24). `in_front`: ignored while flashing; fire → x = pad x, y = pad y + 8
+  − `feet_y`, `step = 32`, execute; up (0) and `clock & 15 == 0` → next
+  pad (wrap at the 0 terminator), lamp tint. `flash`: 32 steps, pad white
+  / lamp black when `step & 2`.
+- **Training Castle rooms 4–8 (ch06; numbers unchanged).** 4 Lightning:
+  machines `{on, 104, 112, len 6}`, `{on, 124, 112, len 6}`, switch
+  `{switch|on, 28, 104, machines 0, 8, $FF, $FF}`; new text "TOUCH
+  LIGHTNING AND / YOU'RE TOAST…". 5 Forcefields: `{button 120,160; field
+  80,168}`; text "…ONLY UNTIL / ITS GAUGE FILLS UP…". 6 Trapdoors: `{open,
+  72, 192, switch 112, 184}`; text "A TRAPDOOR IS OPEN…". 7 Conveyors:
+  trapdoor `{open, 52, 192, switch 124, 184}` + belt `{on|left, 60, 184,
+  control 96, 160}` (the belt runs into the hole); text "…THIS ONE / RUNS
+  TO A TRAPDOOR!". 8 Transmitter: the ladder is replaced by a pole `{8, 72,
+  128}` (booth up, pole down), teleport `{112, 160, target 1, pads (60,
+  120) red, (136, 184) cyan}`; text fixed to "PUSH UP … PRESS FIRE AND
+  YOU'RE THERE" (**ch3's sign had up and fire reversed**; 1984 `$4EA8`
+  up changes, fire sends; owned in an Inside the Disk box). Floor gadgets
+  (plate, belt, trapdoor) have foreground pixels at rows 184–191 so the
+  hardware first pass sees his legs.
+- **Deviations (ch06).** (1) Bolt link: we keep the bolt's slot in the
+  machine object; 1984 stores the machine number in the bolt (field_1F)
+  and searches the sprites (box). (2) Forcefield: the button sets the
+  field's picture; 1984's field polls a flag table at `$4750` each turn
+  (box). (3) Recolour instead of redraw: pole (1984 redraws six pieces
+  with patched colour bytes), belt (1984 draws frames `$7E–$81`), lamp and
+  pads (1984 redraws shape `$71/$72`); trapdoor has 3 pictures, 1984 six
+  (`$73–$78`) (box). (4) `conveyor_left` is 1984's `CONVEYOR_MOVING_RIGHT`
+  bit, which moves things left; same bit (box). (5) Presses, not held fire,
+  for button/control/booth (1984 tests the button state; its conveyor has
+  the same edge rule). (6) Bolt randomness is clock-based until ch8. (7)
+  Field sprite 21 rows vs 1984's 25. (8) Switch reach: feet within the
+  lever's width; 1984 tests `x + width − switch x < 4`. (9) Teleport
+  arrival y = pad y + 8 − 21 (1984 pad y + 7 in its sprite coordinates).
+  (10) Flash: 32 steps, 2 on / 2 off; 1984 8 flashes on `ticks & 3`.
+  (11) The search test drops the final room (no plan entry) and expects 2
+  differing cells per raised forcefield / open trapdoor.
+- **Costs at ch06 (measured).** Tint one cell 28 cycles; belt tint 224 vs
+  draw 1,320 vs swap 2,972; pole tint 88 vs draw 1,704; `objects.find` 76;
+  `room.first(.lightning)` 576. Step maxima (actors / objects buckets):
+  room 4 2,218 / 300, room 5 1,208 / 52, room 6 566 / 64, room 7 670 / 336,
+  room 8 514 / 52. Boss Battle (`runs.py` F, 2,900 frames, rooms 4→8 via
+  N×4, ending in the Keys room): 2,786 calls, bucket 3 max 2,750, bucket 4
+  max 2,192, 11 loading pauses, 0 overruns.
+- **Tests at ch06 (34 in `zig build test`).** `main.zig`: lightning
+  (walk into a bolt → dead; climb to the switch, down → 0 bolts, up → 2);
+  forcefield (stopped at feet 87; press; through; back up after 240
+  steps; stopped at 76 from the other side); trapdoor (switch flips once
+  per step-on, both ways); conveyor (carried into the hole → dead; control
+  stops+reverses, restarts right, carries right); transmitter (up moves
+  the lamp within 17 steps, fire lands on pad 0); search test rewritten
+  (`inline for` over `training.Room`, `@field` + `@tagName`). `screen.zig`:
+  `erase` removes only the shape's pixels.
+- **Ladder bookkeeping (ch06).** Taught: linking by index (under-the-hood
+  box: JS references vs ids, `JSON.stringify` copies; the Index Link
+  Power-Up; diagram), toggling a bit with `^=` (one sentence; XOR proper is
+  ch8's), colour cycling via the screen plane (the Recolour Power-Up),
+  patching the navigation grid at runtime (`grid.wall` diagram; "the grid
+  isn't the castle any more"), edge detection "now and not last time"
+  (refers back to ch2's press rule), erase masks (`b | b>>1 & $55 | b<<1 &
+  $AA`). In passing: `inline for`, `@field`, `@tagName`, comptime block
+  checking enum order. Shared state machines: trapdoor's open/step and the
+  conveyor's bits. ch5's "linking by index used lightly" is now paid.
+- **Promises (ch06 → later).** ch7: lasers are actor kind 4 with their own
+  group (1984 `$0895`), keys use `picked`; ray gun + forcefield combo room
+  will need laser vs field groups. ch8: real pseudo-random (replace
+  `crackle`'s clock roll), monsters ride belts (`carry` is player-only,
+  1984 also carries mummies/Frankensteins at 2 px every step) and fall in
+  trapdoors (`touch` for monsters), Frankenstein/mummy `hit`/`group`. ch9:
+  player 2 (conveyor P2 bits `$08/$20` already reserved by
+  `conveyor_players`, player-vs-player groups, `player_plate` per player),
+  the final room back in the search test. ch10: sounds (switch, forcefield
+  tick, trapdoor swing, conveyor switch, teleport change/send).
