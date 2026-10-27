@@ -29,11 +29,11 @@ EXPANSION = [(0xD02F, 0xD3FF), (0xD419, 0xD7FF), (0xDBE8, 0xDBFF), (0xDC03, 0xDC
 CLASSES = {
     'state': ('the game\'s working memory', 'var(--c-green)'),
     'castle': ('the castle and its files', 'var(--c-cyan)'),
-    'castle_empty': ('castle room to spare', 'color-mix(in srgb, var(--c-cyan) 30%, var(--sheet))'),
+    'castle_empty': ('castle room to spare', 'color-mix(in srgb, var(--c-cyan) 50%, var(--sheet))'),
     'tables': ('built-in tables', 'var(--c-orange)'),
-    'tables_empty': ('table room to spare', 'color-mix(in srgb, var(--c-orange) 30%, var(--sheet))'),
+    'tables_empty': ('table room to spare', 'color-mix(in srgb, var(--c-orange) 50%, var(--sheet))'),
     'hardware': ('the hardware\'s', 'var(--accent)'),
-    'reserved': ('stack, program, expansion', 'color-mix(in srgb, var(--ink-soft) 55%, var(--sheet))'),
+    'reserved': ('stack, program, expansion', 'color-mix(in srgb, var(--ink-soft) 35%, var(--sheet))'),
     'free': ('nobody\'s', 'var(--code-bg)'),
 }
 ORDER = list(CLASSES)

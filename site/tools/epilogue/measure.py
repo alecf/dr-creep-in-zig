@@ -202,11 +202,12 @@ def tour(switch=None):
     ROOM_FRAMES frames. `switch` (Q or C) is pressed in the first room
     and stays on for the whole tour."""
     presses = [(60, 16, 3, 1), (75, 16, 3, 1)]
-    keys = [(100, ord('N'))]
-    keys += [(200 + ROOM_FRAMES * i, ord('N')) for i in range(1, 20)]
+    # The game is in the Gatehouse from about frame 90; the first N comes
+    # 300 frames on, so every room gets its 300 frames, the first too.
+    keys = [(400 + ROOM_FRAMES * i, ord('N')) for i in range(20)]
     if switch:
-        keys.append((250, ord(switch)))
-    return 200 + ROOM_FRAMES * 20 + 50, presses, keys
+        keys.append((150, ord(switch)))  # in the Gatehouse, after it's drawn
+    return 400 + ROOM_FRAMES * 20 + 50, presses, keys
 
 
 def main():

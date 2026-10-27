@@ -2752,3 +2752,41 @@ Castle rooms (ch03)".
   .spider): 1984's tag codes end at `$0836`, the new one is `$0839`.
   Line numbers are ch11's; if ch11 changes, rerun `errs.py` and update
   the prose.
+- **Epilogue review fixes (supersede the Epilogue entries above where
+  they differ).** *Map survey (must-fix 1):* N on the map does not mark
+  rooms visited (only `chart.draw` sets the bit, for the rooms the
+  players enter). The quest now says: in your copy, have `chart.draw`'s
+  room loop call `sketch(m, n)` for every room (a one-line change, put
+  back afterwards); the first map shows the whole castle; headless
+  `--disk`, fire, `--dump` saves it. Proven by new
+  `tools/epilogue/mapcheck.py` (scratch copies of ch11, a test counting
+  rooms with floor pixels on the first map: plain 1 of 20, changed 20 of
+  20; a headless picture of the full Training map). *Turn order (must-fix
+  2):* quest item 4 dropped (settled in ch11, 2063cfc: 1984 takes strict
+  turns, player 2 first when start rooms differ; ch09's box was right).
+  Replaced by **patterns**: a pattern record names its picture by our
+  shape numbers, not 1984's; count `.pattern` records on a real disk and
+  translate if any turn up (none known). Quest is still five items: door
+  bytes, two Frankensteins, ankhs/alcoves, patterns, tunes. *Tour
+  (should-fix 1):* `measure.py`'s tour presses N at 400 + 300·i (i
+  0–19), Q/C at 150 (in the Gatehouse), so every room gets ≈ 287–311
+  in-play frames. New numbers: Gatehouse average 481 (room averages
+  481–1,238, 2.4–6.3 %); average of averages 706; Q 1,455 (worst 5,146);
+  C 743 (worst 3,780); worst frame still Under Fire 3,450; Boss figures
+  unchanged on the updated ch11 (3,478 calls, 5,090, 953, 14,436, 34
+  pauses / 356 slots). *Should-fix 3:* "pick a castle with fire, and the
+  title says its name. Press fire again (stick 2 for a game for two)";
+  the menu holds the first 16 castles. *Should-fix 4:* dice 40 cycles a
+  roll (ch08's byte budget; `m.work(24)` + 2 peeks + 2 pokes).
+  *Nits:* program-image wording (kept empty so the map shows the room
+  code would need); "the hardware and the space kept for the program";
+  "power on the Comet at the bottom of this page"; text printer in
+  working memory; "no cycles to work out"; behaviour = turn, flickers,
+  group (all required); "most of them name the room"; `$` not `$0:Z*`;
+  caption "On a desktop, hover". `ep-memory` spare classes now 50 % mixes
+  and reserved `--ink-soft` 35 % (distinct in dark). `errs.py` asserts each
+  quoted line whole (`file:line:col: error: …`) as the first error, the
+  test failure's two lines exactly, and that the chapter quotes them; line
+  numbers re-derived on ch11 after 2063cfc: `castle.zig:260:12` (note
+  `108:5`), `author.zig:321:31`, `room.zig:37:70`, `actors.zig:76:62`,
+  `objects.zig:61:61`, `shapes.zig:233:46`. Prose ≈ 3,130 by `wc.py`.

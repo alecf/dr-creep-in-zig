@@ -11,11 +11,11 @@
 .ep-mm .names { font-size: .7rem; color: var(--ink-soft); max-width: 62ch; }
 .ep-mm .state { background: var(--c-green); }
 .ep-mm .castle { background: var(--c-cyan); }
-.ep-mm .castle-empty { background: color-mix(in srgb, var(--c-cyan) 30%, var(--sheet)); }
+.ep-mm .castle-empty { background: color-mix(in srgb, var(--c-cyan) 50%, var(--sheet)); }
 .ep-mm .tables { background: var(--c-orange); }
-.ep-mm .tables-empty { background: color-mix(in srgb, var(--c-orange) 30%, var(--sheet)); }
+.ep-mm .tables-empty { background: color-mix(in srgb, var(--c-orange) 50%, var(--sheet)); }
 .ep-mm .hardware { background: var(--accent); }
-.ep-mm .reserved { background: color-mix(in srgb, var(--ink-soft) 55%, var(--sheet)); }
+.ep-mm .reserved { background: color-mix(in srgb, var(--ink-soft) 35%, var(--sheet)); }
 .ep-mm .free { background: var(--code-bg); }
 </style>
 <div class="ep-mm" role="img" aria-label="The final game's 65,536 bytes as 256 squares of 256 bytes each, coloured by who owns them">
@@ -26,7 +26,7 @@
 <i class="reserved" title="$0100–$01FF: stack (reserved)"></i>
 <i style="background: linear-gradient(to top, var(--c-green) 0.0% 14.8%, var(--code-bg) 14.8% 100.0%)" title="$0200–$02FF: between rooms, game, room, debug, engine, dice, players, sound, free"></i>
 <i style="background: linear-gradient(to top, var(--c-green) 0.0% 50.0%, var(--c-orange) 50.0% 100.0%)" title="$0300–$03FF: text, sound effects"></i>
-<i style="background: linear-gradient(to top, var(--c-orange) 0.0% 54.3%, color-mix(in srgb, var(--c-orange) 30%, var(--sheet)) 54.3% 100.0%)" title="$0400–$04FF: sound effects"></i>
+<i style="background: linear-gradient(to top, var(--c-orange) 0.0% 54.3%, color-mix(in srgb, var(--c-orange) 50%, var(--sheet)) 54.3% 100.0%)" title="$0400–$04FF: sound effects"></i>
 <i class="free" title="$0500–$05FF: free"></i>
 <i class="free" title="$0600–$06FF: free"></i>
 <i class="free" title="$0700–$07FF: free"></i>
@@ -121,7 +121,7 @@
 <i class="tables" title="$5B00–$5BFF: music"></i>
 <i class="tables" title="$5C00–$5CFF: music"></i>
 <i class="tables" title="$5D00–$5DFF: music"></i>
-<i style="background: linear-gradient(to top, var(--c-orange) 0.0% 2.0%, color-mix(in srgb, var(--c-orange) 30%, var(--sheet)) 2.0% 100.0%)" title="$5E00–$5EFF: music"></i>
+<i style="background: linear-gradient(to top, var(--c-orange) 0.0% 2.0%, color-mix(in srgb, var(--c-orange) 50%, var(--sheet)) 2.0% 100.0%)" title="$5E00–$5EFF: music"></i>
 <i class="tables" title="$5F00–$5FFF: star map"></i>
 <b>$6000</b>
 <i class="tables" title="$6000–$60FF: shape table"></i>
@@ -145,7 +145,7 @@
 <i class="tables" title="$7100–$71FF: shape table"></i>
 <i class="tables" title="$7200–$72FF: shape table"></i>
 <i class="tables" title="$7300–$73FF: shape table"></i>
-<i style="background: linear-gradient(to top, var(--c-orange) 0.0% 80.1%, color-mix(in srgb, var(--c-orange) 30%, var(--sheet)) 80.1% 100.0%)" title="$7400–$74FF: shape table"></i>
+<i style="background: linear-gradient(to top, var(--c-orange) 0.0% 80.1%, color-mix(in srgb, var(--c-orange) 50%, var(--sheet)) 80.1% 100.0%)" title="$7400–$74FF: shape table"></i>
 <i class="tables-empty" title="$7500–$75FF: shape table"></i>
 <i class="tables-empty" title="$7600–$76FF: shape table"></i>
 <i class="tables-empty" title="$7700–$77FF: shape table"></i>
@@ -168,7 +168,7 @@
 <i class="castle" title="$8700–$87FF: castle"></i>
 <i class="castle" title="$8800–$88FF: castle"></i>
 <i class="castle" title="$8900–$89FF: castle"></i>
-<i style="background: linear-gradient(to top, var(--c-cyan) 0.0% 14.1%, color-mix(in srgb, var(--c-cyan) 30%, var(--sheet)) 14.1% 100.0%)" title="$8A00–$8AFF: castle"></i>
+<i style="background: linear-gradient(to top, var(--c-cyan) 0.0% 14.1%, color-mix(in srgb, var(--c-cyan) 50%, var(--sheet)) 14.1% 100.0%)" title="$8A00–$8AFF: castle"></i>
 <i class="castle-empty" title="$8B00–$8BFF: castle"></i>
 <i class="castle-empty" title="$8C00–$8CFF: castle"></i>
 <i class="castle-empty" title="$8D00–$8DFF: castle"></i>
@@ -202,7 +202,7 @@
 <i class="castle" title="$A700–$A7FF: staging"></i>
 <i class="castle" title="$A800–$A8FF: staging"></i>
 <i class="castle" title="$A900–$A9FF: staging"></i>
-<i style="background: linear-gradient(to top, var(--c-cyan) 0.0% 14.1%, color-mix(in srgb, var(--c-cyan) 30%, var(--sheet)) 14.1% 100.0%)" title="$AA00–$AAFF: staging"></i>
+<i style="background: linear-gradient(to top, var(--c-cyan) 0.0% 14.1%, color-mix(in srgb, var(--c-cyan) 50%, var(--sheet)) 14.1% 100.0%)" title="$AA00–$AAFF: staging"></i>
 <i class="castle-empty" title="$AB00–$ABFF: staging"></i>
 <i class="castle-empty" title="$AC00–$ACFF: staging"></i>
 <i class="castle-empty" title="$AD00–$ADFF: staging"></i>
@@ -243,20 +243,20 @@
 <i class="hardware" title="$CE00–$CEFF: screen plane"></i>
 <i style="background: linear-gradient(to top, var(--accent) 0.0% 93.8%, var(--code-bg) 93.8% 100.0%)" title="$CF00–$CFFF: screen plane, free, sprite pointers"></i>
 <b>$D000</b>
-<i style="background: linear-gradient(to top, var(--accent) 0.0% 18.4%, color-mix(in srgb, var(--ink-soft) 55%, var(--sheet)) 18.4% 100.0%)" title="$D000–$D0FF: VIDEO chip, reserved for expansion hardware"></i>
+<i style="background: linear-gradient(to top, var(--accent) 0.0% 18.4%, color-mix(in srgb, var(--ink-soft) 35%, var(--sheet)) 18.4% 100.0%)" title="$D000–$D0FF: VIDEO chip, reserved for expansion hardware"></i>
 <i class="reserved" title="$D100–$D1FF: reserved for expansion hardware"></i>
 <i class="reserved" title="$D200–$D2FF: reserved for expansion hardware"></i>
 <i class="reserved" title="$D300–$D3FF: reserved for expansion hardware"></i>
-<i style="background: linear-gradient(to top, var(--accent) 0.0% 9.8%, color-mix(in srgb, var(--ink-soft) 55%, var(--sheet)) 9.8% 100.0%)" title="$D400–$D4FF: SOUND chip, reserved for expansion hardware"></i>
+<i style="background: linear-gradient(to top, var(--accent) 0.0% 9.8%, color-mix(in srgb, var(--ink-soft) 35%, var(--sheet)) 9.8% 100.0%)" title="$D400–$D4FF: SOUND chip, reserved for expansion hardware"></i>
 <i class="reserved" title="$D500–$D5FF: reserved for expansion hardware"></i>
 <i class="reserved" title="$D600–$D6FF: reserved for expansion hardware"></i>
 <i class="reserved" title="$D700–$D7FF: reserved for expansion hardware"></i>
 <i class="hardware" title="$D800–$D8FF: colour RAM"></i>
 <i class="hardware" title="$D900–$D9FF: colour RAM"></i>
 <i class="hardware" title="$DA00–$DAFF: colour RAM"></i>
-<i style="background: linear-gradient(to top, var(--accent) 0.0% 90.6%, color-mix(in srgb, var(--ink-soft) 55%, var(--sheet)) 90.6% 100.0%)" title="$DB00–$DBFF: colour RAM, reserved for expansion hardware"></i>
-<i style="background: linear-gradient(to top, var(--accent) 0.0% 1.2%, color-mix(in srgb, var(--ink-soft) 55%, var(--sheet)) 1.2% 100.0%)" title="$DC00–$DCFF: input ports, reserved for expansion hardware"></i>
-<i style="background: linear-gradient(to top, var(--accent) 0.0% 18.8%, color-mix(in srgb, var(--ink-soft) 55%, var(--sheet)) 18.8% 100.0%)" title="$DD00–$DDFF: disk drive, reserved for expansion hardware"></i>
+<i style="background: linear-gradient(to top, var(--accent) 0.0% 90.6%, color-mix(in srgb, var(--ink-soft) 35%, var(--sheet)) 90.6% 100.0%)" title="$DB00–$DBFF: colour RAM, reserved for expansion hardware"></i>
+<i style="background: linear-gradient(to top, var(--accent) 0.0% 1.2%, color-mix(in srgb, var(--ink-soft) 35%, var(--sheet)) 1.2% 100.0%)" title="$DC00–$DCFF: input ports, reserved for expansion hardware"></i>
+<i style="background: linear-gradient(to top, var(--accent) 0.0% 18.8%, color-mix(in srgb, var(--ink-soft) 35%, var(--sheet)) 18.8% 100.0%)" title="$DD00–$DDFF: disk drive, reserved for expansion hardware"></i>
 <i class="reserved" title="$DE00–$DEFF: reserved for expansion hardware"></i>
 <i class="reserved" title="$DF00–$DFFF: reserved for expansion hardware"></i>
 <b>$E000</b>

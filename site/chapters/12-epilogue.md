@@ -21,8 +21,8 @@ You know the feeling of putting a new cartridge in an old console and
 watching it boot? This is that, except you wrote the game.
 
 Start from the finished game, Chapter 11's checkpoint. If you have a
-1984 castle disk as a disk image (a `.d64` file), power on the page
-below, and use **Got a castle disk? Slot it in** under the screen. The
+1984 castle disk as a disk image (a `.d64` file), power on the Comet
+at the bottom of this page, and use **Got a castle disk? Slot it in** under the screen. The
 page reads the file on your own computer and copies it into the
 Comet's drive. Nothing is sent anywhere. Headless, it's one flag:
 
@@ -33,11 +33,14 @@ zig build run -- --disk castles.d64 --frames 120
 The Comet powers on again with the disk in the drive, and on the very
 first frame the code from Chapter 11 goes to work. `files.catalog`
 reads the directory listing into staging. The menu fills with the
-doctor's castles, in the order they were saved on the disk. `files.pick`
+doctor's castles, in the order they were saved on the disk. It holds
+the first 16 (Chapter 11's "More than 16 castles" Bonus Stage lifts
+that). `files.pick`
 loads the first one right over the listing, and the title says its
 name.
 
-Press Esc, pick a castle, and press fire. What you see next is
+Press Esc and pick a castle with fire, and the title says its name.
+Press fire again (stick 2 for a game for two). What you see next is
 everything you've typed, running at once. Each room is drawn by
 `room.draw` from the castle's own bytes, in the same format we matched
 in Chapter 3. Every doorbell rings through `doors.ring`. Every mummy
@@ -47,8 +50,7 @@ door is Chapter 10's sound driver.
 
 The pictures are ours. A castle file says *what* goes *where*: a door
 at this spot, a ladder this long, a Frankenstein asleep in that alcove.
-It doesn't say what a door looks like. That's the shape table's job,
-and our shape table holds our art. The exception is an image record: a
+It doesn't say what a door looks like: that's our shape table's job. The exception is an image record: a
 picture the castle carries inside its own file. Those appear exactly as
 their designer drew them.
 
@@ -67,14 +69,15 @@ memory, one square for each 256 bytes, drawn by a script from `map.zig`
 itself:
 
 :::diagram ep-memory
-The finished game's 65,536 bytes. Hover over a square to see who owns it.
+The finished game's 65,536 bytes. On a desktop, hover over a square to see who owns it.
 :::
 
 Let's read it from the biggest owner down.
 
 **Reserved: 24,221 bytes.** Most of it is the program image, 20,992
-bytes at `$0800` set aside for the game's code. Our Comet doesn't count
-code bytes, but the space is held back so the budget stays honest. The
+bytes at `$0800` kept for the game's code. Our Zig code doesn't
+actually sit in those bytes, but we keep them empty anyway, so the map
+shows the room a real game's code would need. The
 stack and the expansion hardware's addresses take the rest.
 
 **The hardware: 12,179 bytes.** The bitmap alone is 8,000. The screen
@@ -84,8 +87,8 @@ machine put them there, not us.
 **The castle and its files: 16,762 bytes.** That's two 8 KB buffers,
 plus the best times and the castle list. Staging holds the castle as it
 came off the disk, and the castle buffer holds the game being played.
-That's a quarter of the whole machine for two copies of one file, and
-it's worth it. A new game is one `m.copy`. A saved game is the castle
+That's a quarter of the machine for two copies of one file, and worth
+it. A new game is one `m.copy`. A saved game is the castle
 buffer written straight to the disk. 1984 gave a castle 8 KB too. The
 Training Castle's 20 rooms fill 4,644 bytes of each buffer, so the
 paler part is room for the doctor's bigger castles.
@@ -98,7 +101,8 @@ place at boot. The row table is worked out at boot.
 
 **The game's working memory: 1,838 bytes.** That's everything the game
 *remembers* while it runs: both explorers, 8 actor slots, 32 object
-slots, the sound driver, the shell, and the navigation grid. The grid
+slots, the text printer, the sound driver, the shell, and the
+navigation grid. The grid
 is 1,000 of those bytes. Take it away and the rest of the game's state
 fits in 838 bytes.
 
@@ -107,7 +111,8 @@ fits in 838 bytes.
 empty.
 
 So memory was tight, but not because of the game's own state. The
-screen and the program took more than half before we wrote a line, and
+hardware and the space kept for the program took more than half before
+we wrote a line, and
 the castle took a quarter. The game lived in the gaps.
 
 ### The memory tricks that paid
@@ -125,7 +130,7 @@ the castle took a quarter. The game lived in the gaps.
   ever allocated, so nothing can run out halfway through a room.
 - **Building tables while the game compiles.** The shapes, the
   frequency table, the tunes, even the whole master disk are built by
-  `comptime` code. They cost bytes, but no cycles at all.
+  `comptime` code. They cost bytes, but no cycles to work out.
 
 ## Where the frame went
 
@@ -144,8 +149,8 @@ bucket, and each room's average frame. Measured on the finished game.
 The busiest frame of the whole tour is in Under Fire: 3,450 cycles,
 18% of the budget. Most of it, 2,502 cycles, is in the objects bucket,
 where the ray gun moves along its track. The average frame of a room
-runs from 497 cycles in the Gatehouse to 1,238 in Mummy in a Storm.
-That's between 2.5% and 6.3% of the frame.
+runs from 481 cycles in the Gatehouse to 1,238 in Mummy in a Storm.
+That's between 2.4% and 6.3% of the frame.
 
 Two explorers work harder. Over the Boss Battle's game for two, the
 average frame in a room is 953 cycles. The busiest is 5,090, about a
@@ -175,21 +180,21 @@ finished game.
 
 - **The navigation grid** (Chapter 4). The Q key makes the explorer
   search the castle for his next step instead of reading the grid. On
-  the same tour with Q on, the average room frame doubles, from 707 cycles to 1,408, and
-  the busiest frame climbs to 5,146. Chapter 4 measured a walking step:
-  204 cycles with the grid and 1,626 without. The grid costs 1,000
+  the same tour with Q on, the average room frame doubles, from 706
+  cycles to 1,455, and the busiest frame climbs to 5,146. Chapter 4
+  measured a walking step: 204 cycles with the grid and 1,626 without. The grid costs 1,000
   bytes, and it pays for them every frame.
 - **Tinting instead of redrawing** (Chapter 6). Changing a conveyor's
   colour costs 224 cycles. Redrawing it costs 1,320, and swapping its
   picture 2,972.
 - **The sound driver** (Chapter 10) costs 14 cycles a frame when it's
   silent, and its busiest frame in the Boss Battle was 228.
-- **The dice** (Chapter 8) cost 24 cycles a roll.
+- **The dice** (Chapter 8) cost 40 cycles a roll.
 
 Not every trick earned much. The C key makes every actor check every
 object, every turn. Normally an actor checks the objects only when the
 hardware says his sprite has touched the background. On the tour, C
-moves the average from 707 to 743 cycles, because the
+moves the average from 706 to 743 cycles, because the
 Training Castle's rooms hold only a few objects each. In a room packed
 with eight actors and all 32 objects, Chapter 5 worked out it would
 cost about 70% of the frame. Checking only on a hit is insurance for
@@ -197,12 +202,15 @@ the busiest castles, not a saving you'll see in ours.
 
 ## The quest: still to check
 
-Chapter 11 left five details that only a real castle can settle. Two
-tools help with all of them.
+Chapter 11 left details that only a real castle can settle. Here are
+five, and two tools that help with all of them.
 
-First, the map shows every room you've been in. To see a whole castle,
-start a game, and on the map press N again and again. Each room N flips
-to counts as visited, and the castle fills in.
+First, the map. It only shows the rooms you've been in, but you can
+see a whole castle at once with a one-line change you put back
+afterwards. In `chart.draw`, the room loop sketches a room only if its
+`visited` bit is set. In your copy, call `sketch(m, n)` for every room
+instead, and the first map of a game shows the whole castle. Headless,
+`--disk`, a fire press and `--dump` save it as a picture.
 
 Second, a test can play detective. In a test, `@embedFile` your disk
 image and `m.insert` it. Then `files.pick` a castle and `game.start` a
@@ -236,12 +244,12 @@ float above its floor, or a tall ankh poke through a walkway? Press G to
 draw the navigation grid over the room: the walkway under an alcove
 must still be walkable.
 
-**4. Whose turn is it?** A castle's header says which room each
-explorer starts in, and a castle may start them in different rooms.
-Then 1984 lets player 2 play on until he meets player 1, where ours
-take strict turns. Look for such a castle: a test can compare the two
-bytes at `castle.start_room`. Play it for two and watch whose room
-comes next. The rule lives in `game.next`, and it's yours to change.
+**4. Patterns.** A pattern record stamps one picture again and again
+(Chapter 11's `pattern`). It names its picture by number, and our
+numbers are our shape table's, not 1984's. No castle we know of uses a
+pattern in a room, but a test that counts `.pattern` records will tell
+you. If one turns up, it needs a translation from 1984's picture
+numbers to ours, the way Frankenstein's picture byte got one.
 
 **5. The disk's own tunes.** The castle disk carries its music as files
 too, and its tunes use the same commands as our sound driver. Three
@@ -249,9 +257,9 @@ things may stand in the way. A tempo byte below `$13` ticks faster than
 50 times a second, but our beat can only tick once a frame, so
 `sound.step` would have to let the beat carry more than once. A note
 may land on B7, one past the top of our frequency table. And 1984's
-title tune rests about 11 seconds between plays. To find the files, list
-the whole disk with `$` (Chapter 11's "disk directory screen" Bonus
-Stage). To find a home for one, look at the memory diagram above: the
+title tune rests about 11 seconds between plays. To find the files, load the directory
+with the name `$`, not `$0:Z*`, so it lists every file (Chapter 11's
+"disk directory screen" Bonus Stage). To find a home for one, look at the memory diagram above: the
 music region has 251 bytes to spare, and `$0500–$07FF` has 768.
 
 ## Bonus Stages
@@ -291,7 +299,7 @@ the game builds, in disk order.
 The kit checks your castle while the game compiles. A castle has at
 most 31 rooms, and all of it must fit in 8 KB. Doors must lead to doors
 that lead back, and a ladder must start on a walkway. Each mistake is a
-compile error that names the room. Three rules from these chapters make
+compile error, and most of them name the room. Three rules from these chapters make
 a good castle:
 
 - Show each new idea in a room where it's safe to learn, before a room
@@ -312,8 +320,8 @@ and the compiler finds every one for you. Add `spider` to the end of
 `castle.Kind` and build:
 
 ```
-src/castle.zig:259:12: error: switch must handle all possibilities
-src/castle.zig:107:5: note: unhandled enumeration value: 'spider'
+src/castle.zig:260:12: error: switch must handle all possibilities
+src/castle.zig:108:5: note: unhandled enumeration value: 'spider'
 ```
 
 That's `framing`, which says how a kind's records are laid out in a
@@ -338,8 +346,8 @@ adding it to `actors.Kind` gives
 src/actors.zig:76:62: error: missing struct field: spider
 ```
 
-until it has a behaviour: a turn, how it dies, and what it does when it
-touches someone. If an explorer can stand in front of its web and do
+until it has a behaviour: its turn, whether it flickers when it dies,
+and which kinds it passes through unseen. If an explorer can stand in front of its web and do
 something, that's an object kind, and `objects.Kind` sends you to its
 handlers the same way. Its pictures go in `shapes.Id`:
 
