@@ -237,9 +237,11 @@ document.addEventListener("click", async (e) => {
   } catch {}
   const audio = window.cometAudio ?? null;
   try {
-    const { startComet } = await import("./shell.js");
+    const { startComet, wireDisk } = await import("./shell.js");
     const comet = await startComet(canvas, { wasm: canvas.dataset.wasm, status, audio });
     running.set(view, comet);
+    const disk = play.querySelector(".play-disk");
+    if (disk && comet.hasDrive && wireDisk) { wireDisk(canvas, comet, status, play); disk.hidden = false; }
     btn.remove();
     canvas.focus();
     status.textContent = "Running. Click the screen if the keys stop answering.";

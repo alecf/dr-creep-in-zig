@@ -4,7 +4,8 @@
 //! testing.
 //!
 //!   zig build run -- --frames 300 --press 50:rf:20 --press 120:f@2 \
-//!                    --key 200:R --dump frames --dump-every 50 --wav out.wav
+//!                    --key 200:R --dump frames --dump-every 50 --wav out.wav \
+//!                    --disk castles.d64 --save-disk after.d64
 
 const std = @import("std");
 const machine = @import("machine");
@@ -23,6 +24,9 @@ const usage =
     \\  --dump DIR              where pictures go (default "frames")
     \\  --dump-every K          save every Kth frame too (default: last only)
     \\  --wav FILE              save the sound to FILE (44,100 a second, mono)
+    \\  --disk FILE             put the disk image FILE in the drive (instead of
+    \\                          the game's own disk, if it has one)
+    \\  --save-disk FILE        at the end, save the disk in the drive to FILE
     \\
 ;
 
@@ -34,6 +38,8 @@ const Script = struct {
     dump_dir: []const u8 = "frames",
     dump_every: u32 = 0,
     wav: ?[]const u8 = null,
+    disk: ?[]const u8 = null,
+    save_disk: ?[]const u8 = null,
     presses: std.ArrayList(Press) = .empty,
     keys: std.ArrayList(KeyPress) = .empty,
 
@@ -107,6 +113,10 @@ fn parseArgs(gpa: std.mem.Allocator, args: std.process.Args) !Script {
             s.dump_every = try std.fmt.parseInt(u32, it.next() orelse return error.MissingValue, 10);
         } else if (std.mem.eql(u8, arg, "--wav")) {
             s.wav = it.next() orelse return error.MissingValue;
+        } else if (std.mem.eql(u8, arg, "--disk")) {
+            s.disk = it.next() orelse return error.MissingValue;
+        } else if (std.mem.eql(u8, arg, "--save-disk")) {
+            s.save_disk = it.next() orelse return error.MissingValue;
         } else if (std.mem.eql(u8, arg, "--help") or std.mem.eql(u8, arg, "-h")) {
             std.debug.print("{s}", .{usage});
             std.process.exit(0);
@@ -175,8 +185,19 @@ pub fn main(init: std.process.Init) !void {
     const m = try gpa.create(Machine);
     defer gpa.destroy(m);
     m.boot(game);
-
     const cwd = std.Io.Dir.cwd();
+    if (script.disk) |path| {
+        const bytes = cwd.readFileAlloc(io, path, gpa, .limited(1 << 20)) catch |err| {
+            std.debug.print("--disk {s}: {t}\n", .{ path, err });
+            std.process.exit(2);
+        };
+        defer gpa.free(bytes);
+        m.insert(bytes) catch {
+            std.debug.print("--disk {s}: not a disk image ({d} bytes)\n", .{ path, bytes.len });
+            std.process.exit(2);
+        };
+    }
+
     try cwd.createDirPath(io, script.dump_dir);
     var dir = try cwd.openDir(io, script.dump_dir, .{});
     defer dir.close(io);
@@ -222,6 +243,12 @@ pub fn main(init: std.process.Init) !void {
     }
     try out.print("overruns: {d}, loading pauses: {d}\n", .{ s.overruns, s.loading });
     try out.print("last frame: {s}/frame_{d:0>5}.ppm\n", .{ script.dump_dir, last_saved });
+    if (script.save_disk) |path| {
+        if (m.diskImage()) |image| {
+            try cwd.writeFile(io, .{ .sub_path = path, .data = image });
+            try out.print("disk: {s}, {d} blocks free\n", .{ path, machine.drive.blocksFree(image) });
+        } else try out.print("disk: the drive is empty, nothing saved\n", .{});
+    }
     if (script.wav) |path| {
         var loudest: u16 = 0;
         for (sound.items) |x| loudest = @max(loudest, @abs(x));

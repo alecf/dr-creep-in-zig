@@ -268,7 +268,9 @@ def main():
             f'<p class="play-note">The game exactly as it stands at the end of this chapter. Click the screen, then use the arrow keys or WASD and Space. IJKL and Return drive joystick 2.</p></div>'
             f'<div class="crt"><canvas data-wasm="play/{v["checkpoint"]}.wasm" width="384" height="272" tabindex="0" aria-label="Comet 64 screen"></canvas>'
             f'<button class="power" type="button">Power on</button></div>'
-            f'<p class="play-status" data-status>Off</p></section>'
+            f'<p class="play-status" data-status>Off</p>'
+            f'<p class="play-disk" hidden><label>Got a castle disk? Slot it in: <input type="file" accept=".d64" data-comet-disk></label> '
+            f'<button type="button" class="disk-save" data-comet-save-disk>Save the disk</button></p></section>'
         )
         kicker = "Prologue" if v["num"] == 0 else f"Chapter {v['num']}"
         sections.append(
