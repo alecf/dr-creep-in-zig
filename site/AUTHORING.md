@@ -156,7 +156,7 @@ this section differ, the card and the Decision log win.
 | `$CC00–$CFE7` | screen plane: 1000 bytes, one per 8×8 cell. High nibble = colour for pixel code `01`, low nibble = colour for code `10` |
 | `$CFF8–$CFFF` | sprite pointers: block number (0–31) for sprites 0–7; block N lives at `$C000 + N*64` |
 | `$D000–$D3FF` | VIDEO chip registers (see below) |
-| `$D400–$D7FF` | SOUND chip registers (`$D400–$D418`, SID-like layout; audio output arrives in a later chapter) |
+| `$D400–$D7FF` | SOUND chip registers (`$D400–$D418`, SID-like layout; audio since ch10: three voices, ADSR, no filter) |
 | `$D800–$DBE7` | colour RAM: 1000 bytes, low nibble = colour for pixel code `11` |
 | `$DC00–$DCFF` | input: `$DC00` = joystick 2, `$DC01` = joystick 1 (5-bit active-low: bit0 up, bit1 down, bit2 left, bit3 right, bit4 fire; bits 5–7 read as 1). `$DC02` = last key pressed (ASCII, 0 = none; the game writes 0 to acknowledge) |
 | `$E000–$FF3F` | bitmap: 8000 bytes, 320×200 multicolour (160×200 "fat" pixels, 2 bits each), laid out cell by cell (8 bytes per 8×8 cell, cells left to right, rows top to bottom), exactly like the classic hardware |
@@ -446,12 +446,11 @@ Castle rooms (ch03)".
   is not checked in (`site/code/.gitignore`). The wasm build is
   ReleaseSafe so panics show in the browser console. `zig build test`
   runs the game's own tests plus a machine-provided 100-frame boot test.
-- **SOUND chip:** registers are plain RAM; no audio yet. The reference
-  card (§11) says, in-world, that this model "ships without its speaker
-  board" and the SOUND supplement comes with it. The music chapter adds
-  audio output to the machine, replaces card §11 with the register table,
-  and updates the `hw.sound_chip` comment in `machine.zig`. (Author TODO
-  lives here, not in reader-visible files.)
+- **SOUND chip:** registers are plain RAM. Until ch10 the card (§11)
+  said the model "ships without its speaker board". **Ch10 fitted it**
+  (see "The SOUND chip's speaker (ch10, machine)" below): card §11 is the
+  full register table; `hw.voice(v)` and `hw.sound_volume` name the
+  registers.
 - **Beam (racing the raster).** Added so tearing and double-buffering are
   real. 312 raster lines × 63 cycles; the work meter drives the beam
   (line = cycles / 63). `frame()` starts with the beam at line 0. Picture
@@ -2286,3 +2285,138 @@ Castle rooms (ch03)".
   1's room or leaves the game. Ours skips absent players (`actor ==
   none`) and alternates strictly. The Training Castle starts both in the
   Gatehouse, so it never shows; ch11's real castles may need a decision.
+- **The SOUND chip's speaker (ch10, machine).** `machine/src/sound.zig`
+  is a forgiving software synth: `base = $D400`, 25 registers, voice
+  offsets `freq_lo … sustain_release`, `volume = $18`; control bits
+  `gate, sync, ring, testbit, triangle, sawtooth, pulse, noise`. Per
+  voice: a phase accumulator (register × 1 MHz / 2^24 Hz, so register =
+  Hz × 16.777216; 440 Hz = 7,382 = `$1CD6`; max ≈ 3,906 Hz); triangle,
+  sawtooth, pulse (12-bit width), noise (23-bit LFSR clocked 16× a lap);
+  several waveform bits are averaged (not ANDed); sync and ring use the
+  voice before (2 → 0 → 1); test bit holds silent. ADSR is straight ramps
+  from `attack_ms`/`fall_ms` (fall times are full scale → 0); gate edges
+  are seen once per `render` call. No filter (`$D415–$D417` are plain
+  RAM), `$D418` low nibble is volume; mix = sum / 3 × volume / 15, then
+  a one-pole 12 kHz smoother. **Latching:** `Machine.runFrame` copies
+  `$D400–$D418` into `sound_regs` *before* calling `frame`, i.e. the
+  previous frame's end state, and `Machine.listen(out, rate)` renders from
+  it; a long frame's extra slots replay the same registers (the shells
+  call `listen` once per slot). Card §1 step 4 and §11 ("When the chip
+  listens": once a frame when `frame` returns; a gate must stay off a
+  frame to be seen). Machine test "the SOUND chip plays what the last
+  frame left, all through this one"; `sound.zig` has 4 tests (silence and
+  volume 0, 440 Hz → 438–442 zero crossings, attack/release timing, noise
+  and no-waveform). **Headless:** `--wav FILE` (44,100 Hz mono 16-bit),
+  summary gains a last line `sound: FILE, S.ss seconds, loudest N%` only
+  with `--wav` (all earlier stage outputs unchanged). **Wasm:**
+  `comet_listen(rate, count)` returns a pointer to ≤1,000 f32 samples.
+  **Browser:** `shell.js` `makeSpeaker` (AudioContext; schedules one
+  AudioBufferSource per slot, `rate/50` samples with a fractional carry,
+  0.06 s lead, ≤0.25 s ahead); `startComet(canvas, {wasm, status,
+  audio})`; the canvas wakes the speaker on pointerdown/keydown; pause,
+  resume and crash sleep/wake it (only a context the shell made itself is
+  suspended). The tutorial page's Power-on click makes one shared
+  `window.cometAudio` and resumes it *before* the `await import` (the
+  user-gesture rule), passing it as `audio`. Standalone `web/index.html`
+  says "click the screen to play (and to hear it)". `site/build.py` copies
+  `chapters/images/*.mp3` too; `template.html` styles `.prose audio`.
+  Every checkpoint ch01–ch10 passes `check-all.sh` with this machine.
+- **Chapter 10 file, title, images.** `site/chapters/10-things-that-go-bump.md`,
+  `title: "Things That Go Bump"`, generated from `tools/ch10/ch10.tmpl.md`
+  by `expand.py` (58 listings; told in prose instead: the same import
+  lines in 12 more files, as a table after listing E1). Stage runs (all
+  with `--wav creep.wav`, kept as `rb-<tag>.wav`): A and B (the title,
+  150 frames, the experiment's held A4), C (the waltz, 1,200 frames), D
+  (fire at 300 and 330: the map's chime), E (Boss: ch09's BOSS shifted by
+  280 frames, 3,780 frames). `tools/ch10/shots.py` makes `10-waltz.png`
+  (log-frequency spectrogram, A1–A6, of the waltz's first 4 bars from
+  rb-C; 8,192-point FFT per frame, top 48 dB) and MP3 clips (`10-note`
+  A 0–3 s, `10-waltz` C 0–24 s, `10-chime` D 5–8 s, `10-boss` E all,
+  ≈ 445 KB) shown with `<audio controls preload="none">`. Diagrams:
+  `ch10-envelope` (ADSR with gate trace), `ch10-command` (command byte
+  bits; the forcefield's 16 bytes decoded, byte 9 highlighted),
+  `ch10-weave` (two parts at unit 2 → one stream, the composer test),
+  `ch10-interrupt` (animated playhead: 7 slots, driver first, a 3-slot
+  loading pause, the chip holding its registers), `ch10-beat` (animated:
+  tempo `$B0` over 8 frames). Quoted error (`errs.py`): `b7` (at-A5,
+  `note_count = 96`: "note 95 needs a frequency register of 66288, and
+  the register has 16 bits"). Prose ≈ 5,550 words by `wc.py`.
+- **Source layout (ch10).** New `tunes.zig`: `note_count = 95` (C0–A#7),
+  `frequencies` (comptime `@exp2`, compileError past 16 bits), `note(name)`
+  (comptime; `#`/`b`; octave 0–7), composer (`Instrument{wave, width =
+  0x800, attack, decay, sustain = 15, release}`, `Part{sound, notes}`,
+  `Tune{tempo, unit, parts}`, `gap = 1`, `events`, `wait` in ≤255 pieces,
+  `compose` = `comptime weave`), `Song {title, escape, over}`, `music`
+  (frequency table then songs, fit check), `frequency(n)`, `placed`,
+  `Effect` (1984's 13, in 1984's order), `effects`, `effect_at` (checks
+  byte 8 is a voice-0 note-on), `pitch = 9`, `effect_tempo = $EA`,
+  `sounds`, six instruments, `songs`. New `sound.zig`: `Op` (1984 numbers:
+  note_on, note_off, wait, long_wait, instrument, filter, transpose,
+  volume, tempo, end ≥ 9), `lengths {2,1,2,2,6,5,2,2,2}`, `command(op,
+  voice) = op<<2 | voice`, `tune = $FE`, `nothing = $FF`, `start`, `step`,
+  `run`, `silence`, `begin`, `music`, `effect`, `effectAt`, `stop`.
+  `main.zig`: `bucket_sound = 5`; `frame` steps the driver first, in
+  bucket 5; the title starts `.title`, choosing a game calls `stop`.
+  Call sites: listed in "as implemented" below.
+- **Memory (ch10).** `sound` `$021B–$0225` (at+0 2 bytes, loop+2 2,
+  wait+4, tempo+5, beat+6, playing+7, transpose+8 3 bytes); `effects`
+  `$0380–$04FF` (RAM so callers patch byte 9; 267 bytes used); `music`
+  `$5A00–$5EFF` (1,029 used: 190 table, title 482, escape 263, over 94);
+  program image now ends `$59FF`; hardware row `sound_chip` =
+  `$D400–$D418`.
+- **Mechanics, as implemented (ch10).** Tick = carry of `beat +%= tempo`
+  each frame (50 × tempo / 256 Hz): waltz `$B0`, unit 8 (768 ticks ≈
+  22.3 s, loops), escape `$E0`, unit 4 (256 ticks, 5.85 s), over `$80`,
+  unit 4 (96 ticks, 3.84 s, inside GAME OVER's 210 frames); effects `$EA`
+  (≈ 45.7 ticks/s). Composer: gate off one tick before each note's end;
+  offs before ons; instrument for each part at tick 0 just before its
+  first note, so every effect is tempo(2) + instrument(6) + note-on at 8,
+  note at **9**. `begin`: silence all, volume 15, transpose 0, run the
+  first commands at once. **Rules (1984's):** music always plays;
+  `effect`/`effectAt` are dropped unless `sound_playing == nothing`
+  (first come, first served; music never interrupted by an effect).
+  Call sites and notes: door each opening row `C3 + 24 − step` (C3+1 …
+  C5); flash each white step `C4 + flashes × 4` (C4+28 … C4); lightning
+  switch C6 on / C4 off; forcefield press C3 every held step (a
+  continuous buzz that drops other effects), count tick `C4 + (8 −
+  step) × 2`; trapdoor swing `C2 + next × 3`; conveyor box press;
+  transmitter `teleport_change` `C4 + target × 2`, send `teleport` on even
+  flash steps `C4 + (dice & $1F)` (uses the dice); key pickup; gun shot
+  (fixed); mummy rising `C2 + walk × 3`; Frankenstein waking; map close
+  (`chart.wait` when all ready); escape → `music(.escape)` after the
+  clock; GAME OVER → `music(.over)`.
+- **Deviations (ch10).** (1) Tempo is a frame accumulator in the
+  frame interrupt; 1984 runs music from a separate timer interrupt
+  (≈ 45.8 Hz) with its own tempo byte meaning. (2) Our note table is
+  C0-based, equal-tempered from 16.3516 Hz; 1984's note numbers and
+  table differ, so its MUSICn files need translating (ch11). (3) Effect
+  timbres, lengths and pitch formulas are ours; the shapes (door up,
+  flash down, random teleport) follow 1984. 1984's laser pitch depends on
+  the gun; ours is fixed. (4) Music on escape and GAME OVER is ours (1984:
+  title only); the waltz and both other tunes are original. (5) No sound
+  for bell (the door follows), map blink, lock (its door creaks) or
+  escape, as in 1984. (6) The filter command is a no-op; the
+  `long_wait` command is decoded but unused.
+- **Costs at ch10 (measured).** Driver step: 14 cycles silent, ~30–40 no
+  tick; bucket 5 max 424 / avg 46 (stage C, waltz), max 228 / avg 34
+  (Boss). `music` ≈ 420 cycles, `effect(At)` ≈ 250, dropped effect 10.
+  Boot loads are free.
+- **Tests at ch10 (78 in `zig build test`).** tunes: A4 = 440 Hz (7,382;
+  C0 = 274; A#7 last; C#4 = Db4); composer exact bytes. sound (Lab
+  game): a note's registers and tick timing; tempo `$80` = 50 ticks /
+  100 frames; interrupt rules; the waltz loops for a minute. main: title
+  on three voices + `m.listen` non-silent + fire stops it + map chime;
+  door creak rising to ≥ 3× its first frequency; every machine through
+  the stick (rooms 4–12); a death in Lightning (walk right into it)
+  with ≥ 4 falling beeps; escape fanfare → over → waltz (room 19).
+- **Ladder bookkeeping (ch10).** Taught: interrupts properly (signal,
+  handler, return; `frame` is the frame interrupt's handler, no main
+  loop; no re-entry, so long frames swallow slots); fixed-rate timing by
+  a fractional accumulator and its carry; frequency tables built at
+  comptime (`@exp2`). Also: bytecode and an interpreter, comptime
+  composing with `++` and `@setEvalBranchQuota`, `@addWithOverflow`.
+- **Promises (ch10 → later).** ch11: 1984's MUSICn tunes (same opcodes
+  and lengths; translate note numbers and the timer tempo byte) for the
+  title's music; menu/high-score screens may want sounds; priorities left
+  as a Bonus Stage. Epilogue: resource retrospective has the sound
+  numbers above.

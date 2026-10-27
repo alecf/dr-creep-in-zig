@@ -1,0 +1,27 @@
+<style>
+.ch10-bt { display: grid; gap: 10px; }
+.ch10-bt .row { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+.ch10-bt .f { display: grid; gap: 3px; justify-items: center; padding: 6px 2px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--rule); animation: ch10-bt-glow 8s step-end infinite; }
+.ch10-bt .f small { color: var(--ink-soft); font-size: .66rem; }
+.ch10-bt .f .dg-byte { min-width: 0; padding: 3px 4px; font-size: .74rem; }
+.ch10-bt .tick { font: 400 .58rem/1 var(--display); letter-spacing: .08em; color: var(--sheet); background: var(--c13); padding: 3px 4px; border-radius: 3px; }
+.ch10-bt .no { font: 400 .58rem/1 var(--display); letter-spacing: .08em; color: var(--ink-soft); padding: 3px 4px; }
+.ch10-bt .f1 { animation-delay: -7s; } .ch10-bt .f2 { animation-delay: -6s; } .ch10-bt .f3 { animation-delay: -5s; }
+.ch10-bt .f4 { animation-delay: -4s; } .ch10-bt .f5 { animation-delay: -3s; } .ch10-bt .f6 { animation-delay: -2s; } .ch10-bt .f7 { animation-delay: -1s; }
+@keyframes ch10-bt-glow { 0% { box-shadow: inset 0 0 0 2px var(--accent) } 12.5% { box-shadow: inset 0 0 0 1px var(--rule) } }
+@media (max-width: 520px) { .ch10-bt .row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+</style>
+<div class="ch10-bt" data-animate>
+  <span class="dg-label">The title's tempo, $B0: add it to the beat every frame, and a carry is a tick</span>
+  <div class="row">
+    <div class="f f0"><small>frame 1</small><span class="dg-byte">$B0</span><span class="no">no tick</span></div>
+    <div class="f f1"><small>frame 2</small><span class="dg-byte">$60</span><span class="tick">tick</span></div>
+    <div class="f f2"><small>frame 3</small><span class="dg-byte">$10</span><span class="tick">tick</span></div>
+    <div class="f f3"><small>frame 4</small><span class="dg-byte">$C0</span><span class="no">no tick</span></div>
+    <div class="f f4"><small>frame 5</small><span class="dg-byte">$70</span><span class="tick">tick</span></div>
+    <div class="f f5"><small>frame 6</small><span class="dg-byte">$20</span><span class="tick">tick</span></div>
+    <div class="f f6"><small>frame 7</small><span class="dg-byte">$D0</span><span class="no">no tick</span></div>
+    <div class="f f7"><small>frame 8</small><span class="dg-byte">$80</span><span class="tick">tick</span></div>
+  </div>
+  <small>$B0 is 176: each frame is 176/256 of a tick. Over 256 frames that's exactly 176 ticks, about 34 a second, never early and never late by more than a frame.</small>
+</div>

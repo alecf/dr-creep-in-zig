@@ -1,0 +1,33 @@
+<style>
+.ch10-cmd { display: grid; gap: 14px; }
+.ch10-cmd .bits { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.ch10-cmd .grp { display: grid; gap: 3px; justify-items: center; }
+.ch10-cmd .grp small, .ch10-cmd .c small { color: var(--ink-soft); font-size: .7rem; }
+.ch10-cmd .dg-bit { min-width: 1.4em; }
+.ch10-cmd .op .dg-on { background: var(--accent); }
+.ch10-cmd .vo .dg-on { background: var(--c13); color: var(--c0); }
+.ch10-cmd .stream { display: flex; flex-wrap: wrap; gap: 8px; }
+.ch10-cmd .c { display: grid; gap: 3px; padding: 6px 7px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--rule); }
+.ch10-cmd .c .dg-byte { min-width: 2.4em; padding: 3px 4px; }
+.ch10-cmd .c .first { box-shadow: inset 0 0 0 2px var(--accent); }
+.ch10-cmd .c .pitch { background: var(--c7); color: var(--c0); }
+</style>
+<div class="ch10-cmd">
+  <span class="dg-label">A command's first byte: the command's number, then the voice</span>
+  <div class="bits">
+    <div class="grp op"><span class="dg-bytes"><span class="dg-bit">0</span><span class="dg-bit">0</span><span class="dg-bit">0</span><span class="dg-bit dg-on">1</span><span class="dg-bit">0</span><span class="dg-bit">0</span></span><small>bits 7–2: command 4, instrument</small></div>
+    <div class="grp vo"><span class="dg-bytes"><span class="dg-bit">0</span><span class="dg-bit dg-on">1</span></span><small>bits 1–0: voice 1</small></div>
+    <div class="grp"><span class="dg-byte">$11</span><small>4 × 4 + 1</small></div>
+  </div>
+  <span class="dg-label">The forcefield's tick, all 16 bytes, one box per command</span>
+  <div class="stream">
+    <div class="c"><span class="dg-bytes"><span class="dg-byte first">$20</span><span class="dg-byte">$EA</span></span><small>tempo $EA</small></div>
+    <div class="c"><span class="dg-bytes"><span class="dg-byte first">$10</span><span class="dg-byte">$00</span><span class="dg-byte">$08</span><span class="dg-byte">$10</span><span class="dg-byte">$00</span><span class="dg-byte">$F2</span></span><small>voice 0: square width, triangle, attack/decay, sustain/release</small></div>
+    <div class="c"><span class="dg-bytes"><span class="dg-byte first">$00</span><span class="dg-byte pitch">$3C</span></span><small>voice 0: note 60, C5, gate on (byte 9)</small></div>
+    <div class="c"><span class="dg-bytes"><span class="dg-byte first">$08</span><span class="dg-byte">$01</span></span><small>wait 1 tick</small></div>
+    <div class="c"><span class="dg-bytes"><span class="dg-byte first">$04</span></span><small>voice 0: gate off</small></div>
+    <div class="c"><span class="dg-bytes"><span class="dg-byte first">$08</span><span class="dg-byte">$01</span></span><small>wait 1 tick</small></div>
+    <div class="c"><span class="dg-bytes"><span class="dg-byte first">$24</span></span><small>the end</small></div>
+  </div>
+  <small>The yellow byte is the one the game changes before it plays the sound: a different note each time.</small>
+</div>

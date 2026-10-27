@@ -1575,12 +1575,8 @@ test "every machine in the castle has a voice, through the stick" {
 test "a death flashes with a beep that falls each time" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);
-    inRoom(m, 2);
-    hold(m, 0, 20); // the map's chime is over
-    m.input = .{ .key = 'X' };
-    _ = m.runFrame(@This());
-    m.input = .{};
-    try std.testing.expect(hear(m, .flash, 0, 8));
+    inRoom(m, 4); // Lightning: along the floor, into it
+    try std.testing.expect(hear(m, .flash, machine.joy.right, 300));
     var last = pitchNow(m);
     var beeps: usize = 1;
     for (0..40) |_| {

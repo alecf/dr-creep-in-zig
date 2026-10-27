@@ -135,49 +135,47 @@ pub fn compose(comptime t: Tune) []const u8 {
 }
 
 fn weave(comptime t: Tune) []const u8 {
-    {
-        @setEvalBranchQuota(1_000_000); // compile-time loops are capped; this raises the cap
-        if (t.parts.len == 0 or t.parts.len > 3) @compileError("a tune has one, two or three parts");
-        var lists: [3][]const Event = undefined;
-        var next: [3]usize = @splat(0);
-        var length: u32 = 0;
-        for (t.parts, 0..) |p, v| {
-            lists[v] = events(t.unit, p.notes);
-            length = @max(length, lists[v][lists[v].len - 1].tick);
-        }
-        if (length == 0) @compileError("a tune needs some notes");
+    @setEvalBranchQuota(1_000_000); // compile-time loops are capped; this raises the cap
+    if (t.parts.len == 0 or t.parts.len > 3) @compileError("a tune has one, two or three parts");
+    var lists: [3][]const Event = undefined;
+    var next: [3]usize = @splat(0);
+    var length: u32 = 0;
+    for (t.parts, 0..) |p, v| {
+        lists[v] = events(t.unit, p.notes);
+        length = @max(length, lists[v][lists[v].len - 1].tick);
+    }
+    if (length == 0) @compileError("a tune needs some notes");
 
-        var out: []const u8 = &.{ sound.command(.tempo, 0), t.tempo };
-        var last: u32 = 0; // the tick of the last command written
-        var tick: u32 = 0;
-        while (tick < length) : (tick += 1) {
-            // Gates off first, then on, so a voice is never cut short.
-            for ([_]bool{ false, true }) |on| {
-                for (t.parts, 0..) |p, v| {
-                    if (tick == 0 and on) {
-                        const i = p.sound;
-                        out = out ++ [_]u8{
-                            sound.command(.instrument, @intCast(v)),
-                            @truncate(i.width),
-                            i.width >> 8,
-                            i.wave,
-                            @as(u8, i.attack) << 4 | i.decay,
-                            @as(u8, i.sustain) << 4 | i.release,
-                        };
-                    }
-                    const list = lists[v];
-                    while (next[v] < list.len and list[next[v]].tick == tick and list[next[v]].on == on) : (next[v] += 1) {
-                        const e = list[next[v]];
-                        if (e.note == 0xFF) continue; // the end of the part
-                        out = out ++ wait(tick - last);
-                        last = tick;
-                        out = out ++ if (on) [_]u8{ sound.command(.note_on, @intCast(v)), e.note } else [_]u8{sound.command(.note_off, @intCast(v))};
-                    }
+    var out: []const u8 = &.{ sound.command(.tempo, 0), t.tempo };
+    var last: u32 = 0; // the tick of the last command written
+    var tick: u32 = 0;
+    while (tick < length) : (tick += 1) {
+        // Gates off first, then on, so a voice is never cut short.
+        for ([_]bool{ false, true }) |on| {
+            for (t.parts, 0..) |p, v| {
+                if (tick == 0 and on) {
+                    const i = p.sound;
+                    out = out ++ [_]u8{
+                        sound.command(.instrument, @intCast(v)),
+                        @truncate(i.width),
+                        i.width >> 8,
+                        i.wave,
+                        @as(u8, i.attack) << 4 | i.decay,
+                        @as(u8, i.sustain) << 4 | i.release,
+                    };
+                }
+                const list = lists[v];
+                while (next[v] < list.len and list[next[v]].tick == tick and list[next[v]].on == on) : (next[v] += 1) {
+                    const e = list[next[v]];
+                    if (e.note == 0xFF) continue; // the end of the part
+                    out = out ++ wait(tick - last);
+                    last = tick;
+                    out = out ++ if (on) [_]u8{ sound.command(.note_on, @intCast(v)), e.note } else [_]u8{sound.command(.note_off, @intCast(v))};
                 }
             }
         }
-        return out ++ wait(length - last) ++ [_]u8{sound.end};
     }
+    return out ++ wait(length - last) ++ [_]u8{sound.end};
 }
 
 // ---- where it all goes ------------------------------------------------

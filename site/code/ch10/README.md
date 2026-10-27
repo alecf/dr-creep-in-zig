@@ -1,4 +1,4 @@
-# Checkpoint: Chapter 10, "Three Voices"
+# Checkpoint: Chapter 10, "Things That Go Bump"
 
 The game at the end of Chapter 10: the Training Castle with sound. The
 Comet 64's SOUND chip now has its speaker, and the game drives it with a
@@ -53,12 +53,12 @@ src/text.zig         letters from the character ROM, with the castle's text styl
 src/title.zig        the title screen
 ```
 
-The Boss Battle run plays the title tune for a few seconds, then a game
-through the Gatehouse and the Long Gallery to Ladders, and saves the
-sound as a WAV file:
+The Boss Battle run plays the title waltz for a few seconds, then
+Chapter 9's game for two (Two's Company, the Way Out, two escapes, GAME
+OVER and the title), and saves the sound as a WAV file:
 
 ```
-BOSS
+zig build run -- --frames 3780 --press 300:f:5@2 --press 320:f:3 --press 320:f:3@2 --key 340:N --key 355:N --key 370:N --key 385:N --key 400:N --key 415:N --key 430:N --key 445:N --key 460:N --key 475:N --key 490:N --key 505:N --key 520:N --key 535:N --key 550:N --key 565:N --key 580:N --key 595:N --press 625:l:52 --press 625:l:52@2 --press 677:u:60 --press 740:r:46 --press 786:f:400 --press 795:l:182@2 --press 977:f:4@2 --press 981:l:60@2 --press 1041:ur:4@2 --press 1190:l:46 --press 1236:d:100 --press 1336:l:250 --press 1590:ur:4 --press 1710:f:3 --press 1710:f:3@2 --press 1742:l:240 --press 1742:l:240@2 --press 1982:f:4 --press 1982:f:4@2 --press 1992:l:60 --press 1992:l:60@2 --press 2054:ur:4 --press 2054:ur:4@2 --dump-every 10 --wav creep.wav
 zig build wasm && python3 -m http.server -d web
 zig build test
 ```

@@ -1,0 +1,42 @@
+<style>
+.ch10-int svg { width: 100%; max-width: 640px; }
+.ch10-int .slot { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 3 3; }
+.ch10-int .work { fill: color-mix(in srgb, var(--ink-soft) 30%, transparent); }
+.ch10-int .snd { fill: var(--accent); }
+.ch10-int .long { fill: color-mix(in srgb, var(--c15) 55%, transparent); }
+.ch10-int .chip { fill: color-mix(in srgb, var(--c13) 45%, transparent); stroke: var(--c13); }
+.ch10-int .irq { stroke: var(--accent); stroke-width: 2; }
+.ch10-int .head { stroke: var(--ink); stroke-width: 1.5; animation: ch10-int-sweep 9s linear infinite; }
+@keyframes ch10-int-sweep { from { transform: translateX(0); } to { transform: translateX(560px); } }
+.ch10-int text { font-size: 11px; }
+</style>
+<div class="ch10-int" data-animate>
+  <span class="dg-label">Seven frame slots: the interrupt every 20 ms, the driver first in each frame</span>
+  <svg viewBox="0 0 640 190" role="img" aria-label="A timeline of seven frame slots. Each slot starts with the frame interrupt; the sound driver's small step runs first, then the rest of the frame. The fourth frame is a loading pause three slots long, and no interrupt can start a frame inside it, so the driver's next step comes late; meanwhile the chip keeps playing the registers it last read.">
+    <text x="0" y="22" class="soft">interrupt</text>
+    <text x="0" y="66" class="soft">frame</text>
+    <text x="0" y="128" class="soft">chip plays</text>
+    <g transform="translate(70,0)">
+      <line class="slot" x1="0" y1="10" x2="0" y2="150"/><line class="slot" x1="80" y1="10" x2="80" y2="150"/>
+      <line class="slot" x1="160" y1="10" x2="160" y2="150"/><line class="slot" x1="240" y1="10" x2="240" y2="150"/>
+      <line class="slot" x1="320" y1="10" x2="320" y2="150"/><line class="slot" x1="400" y1="10" x2="400" y2="150"/>
+      <line class="slot" x1="480" y1="10" x2="480" y2="150"/><line class="slot" x1="560" y1="10" x2="560" y2="150"/>
+      <line class="irq" x1="0" y1="12" x2="0" y2="30"/><line class="irq" x1="80" y1="12" x2="80" y2="30"/>
+      <line class="irq" x1="160" y1="12" x2="160" y2="30"/><line class="irq" x1="240" y1="12" x2="240" y2="30"/>
+      <line class="irq" x1="480" y1="12" x2="480" y2="30"/>
+      <text x="360" y="26" text-anchor="middle" class="soft">(busy: no new frame)</text>
+      <rect class="snd" x="0" y="50" width="5" height="26"/><rect class="work" x="5" y="50" width="45" height="26"/>
+      <rect class="snd" x="80" y="50" width="5" height="26"/><rect class="work" x="85" y="50" width="38" height="26"/>
+      <rect class="snd" x="160" y="50" width="5" height="26"/><rect class="work" x="165" y="50" width="52" height="26"/>
+      <rect class="snd" x="240" y="50" width="5" height="26"/><rect class="long" x="245" y="50" width="225" height="26"/>
+      <text x="357" y="67" text-anchor="middle">a loading pause</text>
+      <rect class="snd" x="480" y="50" width="5" height="26"/><rect class="work" x="485" y="50" width="40" height="26"/>
+      <rect class="chip" x="50" y="112" width="73" height="22"/><rect class="chip" x="123" y="112" width="94" height="22"/>
+      <rect class="chip" x="217" y="112" width="253" height="22"/><rect class="chip" x="470" y="112" width="55" height="22"/>
+      <text x="343" y="127" text-anchor="middle">the same registers, held</text>
+      <text x="0" y="172" class="soft">0 ms</text><text x="160" y="172" class="soft">40</text><text x="320" y="172" class="soft">80</text><text x="480" y="172" class="soft">120</text>
+      <line class="head" x1="0" y1="40" x2="0" y2="150"/>
+    </g>
+  </svg>
+  <small>The thin bar at the start of each frame is the sound driver. Each green bar starts when a frame returns: the chip reads its registers then, and plays them until the next frame returns.</small>
+</div>

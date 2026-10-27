@@ -216,8 +216,9 @@ def main():
     if OUT.exists():
         shutil.rmtree(OUT)
     (OUT / "images").mkdir(parents=True)
-    for img in (SITE / "chapters" / "images").glob("*.png"):
-        shutil.copy(img, OUT / "images" / img.name)
+    for pattern in ("*.png", "*.mp3"):
+        for img in (SITE / "chapters" / "images").glob(pattern):
+            shutil.copy(img, OUT / "images" / img.name)
     shutil.copy(CODE / "machine" / "web" / "shell.js", OUT / "shell.js")
 
     files = sorted((SITE / "chapters").glob("[0-9][0-9]-*.md"))
