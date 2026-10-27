@@ -15,7 +15,10 @@ def samples(tag):
 # column is one frame (882 samples); each row a quarter of a semitone,
 # from A1 (55 Hz) to A6 (1,760 Hz), on a log scale like a keyboard.
 s = samples('C')
-first, frames = 1, 4 * 3 * 2 * 8 * 256 // 0xB0 + 4  # four bars of six units of 8 ticks, at $B0
+# The waltz starts a few frames in (the title draws first): the first
+# frame with sound.
+first = next(f for f in range(200) if np.abs(s[f * 882:(f + 1) * 882]).max() > 0.01)
+frames = 4 * 3 * 2 * 8 * 256 // 0xB0 + 4  # four bars of six units of 8 ticks, at $B0
 W, H = 768, 240
 lo, hi = 55.0, 1760.0
 rows = np.array([lo * (hi / lo) ** (1 - (y + 0.5) / H) for y in range(H)])
@@ -44,7 +47,7 @@ for bar in range(5):
     d.line([(x, H), (x, H + 6)], fill=(200, 200, 220))
     if bar < 4: d.text((x + 4, H + 6), 'bar %d' % (bar + 1), fill=(200, 200, 220))
 out.save(O + '10-waltz.png')
-print('waltz', frames, 'frames')
+print('waltz from frame', first, ',', frames, 'frames')
 
 # The clips: the experiment's A4, the waltz once round, the map's chime
 # after the waltz, and the Boss Battle.

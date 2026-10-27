@@ -782,8 +782,9 @@ test "the SOUND chip plays what the last frame left, all through this one" {
         try testing.expect(loudest > 0.1);
     }
     _ = m.runFrame(Game);
-    m.listen(&out, 44100); // and then the silence it left
-    m.listen(&out, 44100);
+    m.listen(&out, 44100); // and then the silence it left, once the note
+    m.listen(&out, 44100); // has faded (a few milliseconds) and the output
+    m.listen(&out, 44100); // stage has settled
     var loudest: f32 = 0;
     for (out) |s| loudest = @max(loudest, @abs(s));
     try testing.expect(loudest < 0.001);

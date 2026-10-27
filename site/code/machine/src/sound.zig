@@ -64,12 +64,17 @@ const Voice = struct {
     lfsr: u32 = 0x7FFFF8, // the noise generator's 23 bits
     noise_steps: u32 = 0, // noise clocks so far, 16 a lap
     wrapped: bool = false, // the phase passed 1 this sample (for sync)
+    out: f32 = 0, // the last sample, so a voice that stops fades instead of clicking
 };
 
 pub const Chip = struct {
     voices: [3]Voice = @splat(.{}),
-    /// A gentle smoothing of the output, like the chip's own output stage.
+    /// The output stage: a gentle smoothing (a one-pole low-pass at 12 kHz),
+    /// then a capacitor that lets no steady offset through (a high-pass at
+    /// about 30 Hz), like the speaker socket of any home computer.
     smooth: f32 = 0,
+    dc_in: f32 = 0,
+    dc_out: f32 = 0,
 
     /// Fill `out` with samples at `rate` per second, playing `regs` as
     /// they are now. Call it once for each frame slot the game used, with
@@ -85,21 +90,34 @@ pub const Chip = struct {
         const dt: f32 = 1.0 / @as(f32, @floatFromInt(rate));
         const cycles_per_sample: f64 = @as(f64, clock_hz) / @as(f64, @floatFromInt(rate));
         const loud: f32 = @as(f32, @floatFromInt(regs[volume] & 0x0F)) / 15.0;
-        const k: f32 = @min(1.0, 2.0 * std.math.pi * 12_000.0 * dt);
+        const k: f32 = 1.0 - @exp(-2.0 * std.math.pi * 12_000.0 * dt);
+        const r: f32 = @exp(-2.0 * std.math.pi * 30.0 * dt);
+        const fade: f32 = @exp(-dt / 0.004); // a stopped voice dies away in a few ms
         for (out) |*sample| {
             var mix: f32 = 0;
             for (&chip.voices, 0..) |*v, i| {
-                const r = regs[i * 7 ..][0..7];
+                const regs_v = regs[i * 7 ..][0..7];
                 const before = &chip.voices[(i + 2) % 3]; // the voice that syncs and rings this one
-                mix += voiceSample(v, r, before, cycles_per_sample, dt);
+                mix += voiceSample(v, regs_v, before, cycles_per_sample, dt, fade);
             }
             chip.smooth += (mix * loud / 3.0 - chip.smooth) * k;
-            sample.* = chip.smooth;
+            chip.dc_out = chip.smooth - chip.dc_in + r * chip.dc_out;
+            chip.dc_in = chip.smooth;
+            sample.* = soften(chip.dc_out);
         }
     }
 };
 
-fn voiceSample(v: *Voice, r: *const [7]u8, before: *const Voice, cycles_per_sample: f64, dt: f32) f32 {
+/// Three loud voices with their offsets taken out can peak just past full;
+/// round off the last tenth instead of clipping.
+fn soften(x: f32) f32 {
+    const a = @abs(x);
+    if (a <= 0.9) return x;
+    const y = 0.9 + 0.1 * std.math.tanh((a - 0.9) / 0.1);
+    return if (x < 0) -y else y;
+}
+
+fn voiceSample(v: *Voice, r: *const [7]u8, before: *const Voice, cycles_per_sample: f64, dt: f32, fade: f32) f32 {
     const ctrl = r[control];
     const freq: u32 = @as(u32, r[freq_lo]) | @as(u32, r[freq_hi]) << 8;
 
@@ -125,7 +143,8 @@ fn voiceSample(v: *Voice, r: *const [7]u8, before: *const Voice, cycles_per_samp
     if (ctrl & testbit != 0) {
         v.phase = 0;
         v.lfsr = 0x7FFFF8;
-        return 0;
+        v.out *= fade;
+        return v.out;
     }
     v.phase += @as(f64, @floatFromInt(freq)) * cycles_per_sample / lap;
     if (v.phase >= 1) {
@@ -168,8 +187,12 @@ fn voiceSample(v: *Voice, r: *const [7]u8, before: *const Voice, cycles_per_samp
         sum += @as(f32, @floatFromInt(byte)) / 127.5 - 1;
         waves += 1;
     }
-    if (waves == 0) return 0;
-    return sum / waves * v.level;
+    if (waves == 0) {
+        v.out *= fade;
+        return v.out;
+    }
+    v.out = sum / waves * v.level;
+    return v.out;
 }
 
 // ---- tests ---------------------------------------------------------------
@@ -256,7 +279,23 @@ test "noise is noisy, and no waveform is silence" {
     try testing.expect(peak(&out) > 0.2);
     try testing.expect(crossings(&out) > 500);
     regs[control] = gate; // gate on, but no waveform
-    playFor(&chip, &regs, 1, out[0..882]); // the smoothing settles
+    playFor(&chip, &regs, 2, out[0 .. 882 * 2]); // the voice fades and the output stage settles
     playFor(&chip, &regs, 1, out[0..882]);
     try testing.expect(peak(out[0..882]) < 0.001);
+}
+
+test "a narrow pulse carries no steady offset to the speaker" {
+    var chip: Chip = .{};
+    var regs: [register_count]u8 = @splat(0);
+    regs[volume] = 15;
+    regs[freq_hi] = 0x1C; // about 430 Hz
+    regs[pulse_hi] = 0x02; // 512 of 4096: high an eighth of each wave
+    regs[control] = pulse | gate;
+    regs[sustain_release] = 0xF0;
+    var out: [882 * 50]f32 = undefined;
+    playFor(&chip, &regs, 50, &out);
+    var sum: f32 = 0;
+    for (out[882 * 25 ..]) |s| sum += s; // the last half second
+    try testing.expect(@abs(sum / (882 * 25)) < 0.005);
+    try testing.expect(peak(out[882 * 25 ..]) > 0.2);
 }

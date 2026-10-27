@@ -476,7 +476,7 @@ goes all the way round, the wave has played once. So:
 
     frequency in Hz = register × 1,000,000 / 16,777,216
 
-or, the other way, **register = Hz × 16.777216**. Middle A, 440 Hz, is
+or, the other way, **register = Hz × 16.777216**. The A above middle C, 440 Hz, is
 7,382 (`$1CD6`). The highest frequency, `$FFFF`, is just over 3,906 Hz.
 
 ### The envelope
@@ -499,9 +499,18 @@ gate off, and it falls to silence in the **release** time. Each time is a
 | 7 | 80 ms | 240 ms | 15 | 8 s | 24 s |
 
 The decay and release times are for the whole fall, from full to
-silence; a fall from a lower level is quicker. The sustain level is
-sixteenths of full: 15 is full, 0 is silence. The tables are
+silence; a fall from a lower level is quicker. The sustain level runs
+from 0 (silence) to 15 (full). The tables are
 `machine.sound.attack_ms` and `machine.sound.fall_ms`.
+
+### The output
+
+The three voices are mixed, scaled by the volume, and sent to the speaker
+through a gentle smoothing and a capacitor that lets no steady offset
+through: a narrow pulse wave sounds centred, not pushed to one side.
+The loudest peaks are rounded off rather than clipped. A
+voice whose waveform you switch off fades out over a few milliseconds
+instead of clicking.
 
 ### When the chip listens
 

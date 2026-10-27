@@ -1,8 +1,9 @@
 <style>
 .ch10-cmd { display: grid; gap: 14px; }
-.ch10-cmd .bits { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.ch10-cmd .bits { display: flex; gap: 12px 22px; align-items: flex-end; flex-wrap: wrap; }
 .ch10-cmd .grp { display: grid; gap: 3px; justify-items: center; }
 .ch10-cmd .grp small, .ch10-cmd .c small { color: var(--ink-soft); font-size: .7rem; }
+.ch10-cmd .grp small { text-align: center; }
 .ch10-cmd .dg-bit { min-width: 1.4em; }
 .ch10-cmd .op .dg-on { background: var(--accent); }
 .ch10-cmd .vo .dg-on { background: var(--c13); color: var(--c0); }
@@ -29,5 +30,5 @@
     <div class="c"><span class="dg-bytes"><span class="dg-byte first">$08</span><span class="dg-byte">$01</span></span><small>wait 1 tick</small></div>
     <div class="c"><span class="dg-bytes"><span class="dg-byte first">$24</span></span><small>the end</small></div>
   </div>
-  <small>The yellow byte is the one the game changes before it plays the sound: a different note each time.</small>
+  <small>The highlighted byte is the one the game changes before it plays the sound: a different note each time.</small>
 </div>

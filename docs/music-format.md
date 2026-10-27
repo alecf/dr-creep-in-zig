@@ -101,11 +101,11 @@ $20DB: 01                              ; opcode 9 ("end") is 1 byte, no params
 | 2 | 2 | **Wait (primary counter)** | param → `$20DC`. Frame-tick counter; the interpreter self-throttles: each pump decrements `$20DC` and only fetches a new command once it (and the secondary counter) hit zero. This is the per-step "note length" delay. |
 | 3 | 2 | **Wait (secondary counter)** | param → `$20DD`. An outer counter consumed once per exhaustion of `$20DC` — a coarser, slower delay. **Never used by any of the 9 shipped tracks** (0 occurrences). |
 | 4 | 6 | **Set instrument (waveform/ADSR)** | 5 params for the addressed voice: pulse-width lo, pulse-width hi, control/waveform byte (gate bit preserved from current state), attack/decay, sustain/release. Writes SID regs `+2..+6`. This is the "patch" command — sets the timbre once (or occasionally re-patches) before notes play. |
-| 5 | 5 | **Set filter** | 4 params: filter cutoff lo (`$D415`), cutoff hi (`$D416`), resonance+routing (`$D417`, ORs in a bit for *the addressed voice* so it also carries the previous frame's routing bits), filter mode/master-volume low nibble (`$D418`, low 4 bits combined with existing high nibble). **Never used by any of the 9 shipped tracks** (0 occurrences) — the filter is left off for all music. |
+| 5 | 5 | **Set filter** | 4 params: filter cutoff lo (`$D415`), cutoff hi (`$D416`), resonance+routing (`$D417`, ORs in a bit for *the addressed voice* so it also carries the previous frame's routing bits), filter mode (`$D418`: keeps the existing *low* nibble, the volume, and ORs the parameter in; disasm `$2022–$202D`, corrected after the ch10 review). **Never used by any of the 9 shipped tracks** (0 occurrences) — the filter is left off for all music. |
 | 6 | 2 | **Set transpose** | param → `$2104 + voice`. Per-voice base-note offset added to every subsequent Note-On's note number for that voice. |
 | 7 | 2 | **Set volume** | param → low nibble of `$D418`/master volume, high nibble (filter routing bits) preserved. Global, not per-voice. |
 | 8 | 2 | **Set tempo** | param → `$2107`, and `CIA1 Timer A high byte = (param << 2) \| 3` (§5). Global playback speed for the whole stream, changeable mid-song. |
-| ≥9 | 1 | **End of stream** | Always encoded as byte `$24` (opcode 9, field 0) in every shipped file, and always the *literal last byte* of the file. If not the title/intro loop, the player stops (`mMusicBuffer = 0`); the intro loop instead rewinds to the start of the buffer and keeps playing. |
+| ≥9 | 1 | **End of stream** | Always encoded as byte `$24` (opcode 9, field 0) in every shipped file, and always the *literal last byte* of the file. If not the title/intro loop, the player stops (`mMusicBuffer = 0`). The intro loop (disasm `$208B–$209D`) rewinds the stream pointer to `$7802` (the tune's copy at `$7800`, not the `$4000` load buffer), sets the wait counter `$20DD = 2` (a **512-tick silence**, about 11 s at tempo `$14`, before the tune plays again; creep.cpp line ~1197 agrees), and clears `$D417`'s low nibble. (Corrected after the ch10 review: this doc first said it simply rewinds and keeps playing.) |
 
 Opcode-usage histogram across all 9 files (2318+4140+2914+4406+3235+3760+1483+2937+3391 =
 28,584 total commands):
@@ -159,7 +159,10 @@ $2168-$21C7  96 bytes  frequency-hi, indexed by (note + transpose[voice])
 ```
 
 These are static SID frequency tables (exponential note→frequency mapping, one entry per
-semitone across ~8 octaves), visible directly in `disasm/object.s` as data immediately
+semitone across exactly 8 octaves: index 0 = C0 … 57 = A4 (7,217 = 439.95 Hz at the NTSC
+clock of 1,022,727 Hz) … 95 = B7; checked in the ch10 review). The index numbering is
+the same as the tutorial's `tunes.note` numbering; only the register values differ (tuned
+for NTSC, so on PAL 1984's music plays about 65–70 cents flat), visible directly in `disasm/object.s` as data immediately
 after `sub_20A9`:
 
 ```
@@ -205,6 +208,14 @@ period = 0x53FF + 1 = 21504 cycles
 IRQ rate ≈ 985248 Hz (PAL) / 21504 ≈ 45.8 Hz
 ```
 
+In general the period is `1024 × (tempo + 1)` cycles, so the tick rate is
+`985248 / (1024 × (tempo + 1)) ≈ 962 / (tempo + 1)` Hz on PAL. `$0C` (music0's
+opening tempo) is about 74 Hz; **every tempo byte below `$13` ticks faster than
+50 Hz**. The tutorial's Comet driver ticks on the carry of a per-frame
+accumulator (at most 49.8 ticks/s at `$FF`), so playing 1984's tunes there (ch11)
+needs either scaled waits (e.g. halve the rate, double every wait) or an
+accumulator that can carry more than once a frame.
+
 Every raster IRQ, `loc_0B68` checks `CIA1_ICR & 1` (Timer A underflow flag) and only then
 calls `sub_1F29` — so the *music* stream advances at the CIA-driven rate above, not at the
 50 Hz PAL frame rate, and mid-song opcode-8 commands can speed up or slow down playback
@@ -249,7 +260,9 @@ sidWrite(0x04,0); sidWrite(0x0B,0); sidWrite(0x12,0); sidWrite(0x17,0);   // sil
 mMusicBuffer = &mMemory[ readLEWord(&mMemory[0x7572 + pA*2]) ];           // steal the stream ptr
 sidWrite(0x18, 0x0F);                  // full master volume
 mMemory[0x20DC] = mMemory[0x20DD] = 0; // clear wait counters
-mMemory[0x2104] = mMemory[0x2105] = 0x18; // reset voice 0/1 transpose
+mMemory[0x2104] = mMemory[0x2105] = 0x18; // creep.cpp resets voice 0/1 transpose;
+                                          // the disassembly ($220C-$2214) also sets $2106:
+                                          // all THREE voices' transpose = $18
 ```
 
 and reprograms CIA Timer A to a fixed effect tempo (speed byte `0x14`, same formula as

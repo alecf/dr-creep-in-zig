@@ -228,7 +228,11 @@ document.addEventListener("click", async (e) => {
   // The click is what lets the page make sound, so the speaker is made here,
   // before anything waits. One speaker serves every chapter's machine.
   try {
-    window.cometAudio ??= new (window.AudioContext || window.webkitAudioContext)();
+    if (!window.cometAudio) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      // 48,000 samples a second if the browser takes the option; else the device's rate.
+      try { window.cometAudio = new AC({ sampleRate: 48000 }); } catch { window.cometAudio = new AC(); }
+    }
     window.cometAudio.resume().catch(() => {});
   } catch {}
   const audio = window.cometAudio ?? null;

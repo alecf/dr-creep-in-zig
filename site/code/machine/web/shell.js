@@ -59,27 +59,39 @@ async function instantiate(url, env) {
 // moment the last one ends. If the queue runs dry (a busy tab, a pause),
 // it starts again a little way ahead; if it gets too far ahead, a slot's
 // sound is dropped so the speaker never lags the screen.
+// The speaker paces itself by the frame loop but plays by the audio clock;
+// over minutes the two drift a little, and LEAD/MAX_AHEAD absorb it with a
+// tiny gap now and then.
 const LEAD = 0.06, MAX_AHEAD = 0.25; // seconds
+// comet_listen fills at most this many samples a slot (the wasm buffer).
+const SLOT_MAX = 4096;
+
+// An AudioContext at 48,000 samples a second if the browser will make one
+// (older browsers refuse the option), or at the device's own rate.
+export function makeAudioContext() {
+  const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
+  if (!AC) return null;
+  try { return new AC({ sampleRate: 48000 }); } catch {}
+  try { return new AC(); } catch { return null; }
+}
 
 function makeSpeaker(given) {
-  const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
-  if (!given && !AC) return null;
-  let ctx;
-  try { ctx = given ?? new AC(); } catch { return null; }
+  const ctx = given ?? makeAudioContext();
+  if (!ctx) return null;
   const rate = ctx.sampleRate;
   const perFrame = rate / 50;
   let next = 0, owed = 0;
   return {
     ctx,
-    wake() { if (ctx.state === "suspended") ctx.resume().catch(() => {}); },
+    wake() { if (ctx.state !== "running" && ctx.state !== "closed") ctx.resume().catch(() => {}); },
     // A page's own AudioContext may be shared with other machines, so only
     // one we made ourselves is put to sleep; a paused machine queues nothing.
     sleep() { if (!given && ctx.state === "running") ctx.suspend().catch(() => {}); },
     // One frame slot went by: fetch its samples from the machine and queue them.
     slot(c) {
       owed += perFrame;
-      const n = Math.floor(owed);
-      owed -= n;
+      const n = Math.min(Math.floor(owed), SLOT_MAX);
+      owed -= Math.floor(owed);
       const samples = new Float32Array(c.memory.buffer, c.comet_listen(rate, n), n);
       if (ctx.state !== "running") return;
       const now = ctx.currentTime;
@@ -150,7 +162,8 @@ export async function startComet(canvas, { wasm = "game.wasm", status = null, au
   canvas.addEventListener("blur", () => { held.clear(); rebuild(); });
   canvas.addEventListener("pointerdown", () => canvas.focus());
 
-  const speaker = makeSpeaker(audio);
+  // A machine built before the speaker board has no comet_listen: run it silent.
+  const speaker = c.comet_listen ? makeSpeaker(audio) : null;
   if (speaker) {
     speaker.wake();
     canvas.addEventListener("pointerdown", () => speaker.wake());

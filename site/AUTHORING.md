@@ -2297,7 +2297,8 @@ Castle rooms (ch03)".
   from `attack_ms`/`fall_ms` (fall times are full scale → 0); gate edges
   are seen once per `render` call. No filter (`$D415–$D417` are plain
   RAM), `$D418` low nibble is volume; mix = sum / 3 × volume / 15, then
-  a one-pole 12 kHz smoother. **Latching:** `Machine.runFrame` copies
+  a one-pole 12 kHz low-pass and a ≈30 Hz DC blocker (ch10 review; the
+  first version's smoother was inert). **Latching:** `Machine.runFrame` copies
   `$D400–$D418` into `sound_regs` *before* calling `frame`, i.e. the
   previous frame's end state, and `Machine.listen(out, rate)` renders from
   it; a long frame's extra slots replay the same registers (the shells
@@ -2309,7 +2310,8 @@ Castle rooms (ch03)".
   and no-waveform). **Headless:** `--wav FILE` (44,100 Hz mono 16-bit),
   summary gains a last line `sound: FILE, S.ss seconds, loudest N%` only
   with `--wav` (all earlier stage outputs unchanged). **Wasm:**
-  `comet_listen(rate, count)` returns a pointer to ≤1,000 f32 samples.
+  `comet_listen(rate, count)` returns a pointer to ≤4,096 f32 samples
+  (was 1,000 before the ch10 review).
   **Browser:** `shell.js` `makeSpeaker` (AudioContext; schedules one
   AudioBufferSource per slot, `rate/50` samples with a fractional carry,
   0.06 s lead, ≤0.25 s ahead); `startComet(canvas, {wasm, status,
@@ -2388,14 +2390,19 @@ Castle rooms (ch03)".
 - **Deviations (ch10).** (1) Tempo is a frame accumulator in the
   frame interrupt; 1984 runs music from a separate timer interrupt
   (≈ 45.8 Hz) with its own tempo byte meaning. (2) Our note table is
-  C0-based, equal-tempered from 16.3516 Hz; 1984's note numbers and
-  table differ, so its MUSICn files need translating (ch11). (3) Effect
+  C0-based, equal-tempered from 16.3516 Hz. **1984 uses the same note
+  numbers** (C0 = 0 … our table stops at A#7 = 94; 1984's has B7 = 95);
+  its registers are tuned for a 1.0227 MHz NTSC clock, so on PAL its
+  music sounds about two-thirds of a semitone flat (corrected after the
+  ch10 review). (3) Effect
   timbres, lengths and pitch formulas are ours; the shapes (door up,
   flash down, random teleport) follow 1984. 1984's laser pitch depends on
   the gun; ours is fixed. (4) Music on escape and GAME OVER is ours (1984:
   title only); the waltz and both other tunes are original. (5) No sound
-  for bell (the door follows), map blink, lock (its door creaks) or
-  escape, as in 1984. (6) The filter command is a no-op; the
+  for bell (the door follows), map blink, lock (its door creaks),
+  escape, ankh or Frankenstein's steps, as in 1984 (closes ch08's
+  "ankh … Frank's steps" promise; the tomb opening is the mummy's rise,
+  deaths are the flash). (6) The filter command is a no-op; the
   `long_wait` command is decoded but unused.
 - **Costs at ch10 (measured).** Driver step: 14 cycles silent, ~30–40 no
   tick; bucket 5 max 424 / avg 46 (stage C, waltz), max 228 / avg 34
@@ -2416,7 +2423,44 @@ Castle rooms (ch03)".
   comptime (`@exp2`). Also: bytecode and an interpreter, comptime
   composing with `++` and `@setEvalBranchQuota`, `@addWithOverflow`.
 - **Promises (ch10 → later).** ch11: 1984's MUSICn tunes (same opcodes
-  and lengths; translate note numbers and the timer tempo byte) for the
-  title's music; menu/high-score screens may want sounds; priorities left
+  and lengths; 1984's note bytes play as they are, plus the voice's
+  transpose, which effects reset to `$18` on all three voices; a note
+  landing on 95 (B7) needs handling). Tempo: 1984's tick rate is
+  985,248 / (1,024 × (tempo + 1)) ≈ 962 / (tempo + 1) Hz; every tempo byte
+  below `$13` is faster than 50 Hz, beyond our accumulator's 49.8 Hz, so
+  ch11 must scale waits or let the accumulator carry more than once a
+  frame. 1984's title tune also pauses 512 ticks (≈ 11 s) between loops
+  (`$208B`: rewind to `$7802`, `$20DD = 2`). For the title's music; menu/high-score screens may want sounds; priorities left
   as a Bonus Stage. Epilogue: resource retrospective has the sound
   numbers above.
+- **ch10 review fixes (supersede the ch10 entries above where they
+  differ).** *Machine:* wasm `sound_buf` is 4,096 samples; `shell.js`
+  clamps a slot to `SLOT_MAX = 4096`, asks for a 48 kHz AudioContext
+  (`makeAudioContext`, falling back to the device rate), wakes on any
+  state but running/closed (iOS "interrupted"), runs silent if a stale
+  wasm lacks `comet_listen`, and comments the frame/audio clock drift;
+  `template.html`'s Power-on makes `window.cometAudio` at 48 kHz with the
+  same fallback. The reviewer's harness at 44.1/48/96 kHz: 882/960/1,920
+  sample buffers, max 0.717, no non-finite samples. The output stage is
+  a real one-pole 12 kHz low-pass (`k = 1 − e^(−2π·fc·dt)`) plus a 30 Hz DC
+  blocker, then a soft knee above 0.9 so peaks never clip (the Boss's
+  fanfare reached 1.0); a voice whose waveform (or test bit) goes to none fades over
+  ≈4 ms instead of stepping to 0 (the start click). New machine test "a
+  narrow pulse carries no steady offset to the speaker" (26 machine
+  tests); the two silence tests wait one frame more for the fade. Card
+  §11: sustain "0 (silence) to 15 (full)", "the A above middle C", a new
+  "The output" paragraph. *Docs:* `docs/music-format.md` corrected (op 5
+  keeps `$D418`'s low nibble and ORs in; the intro loop's 512-tick pause
+  and `$7802`; effects reset all three transposes; the tempo formula and
+  the >50 Hz limit; table index = our note numbers, NTSC tuning).
+  *Chapter:* fourteen call sites in the "Whose notes?" box; ten commands
+  numbered 0–9; Fraction Power-Up "every frame"; `compose` "ordinary code
+  that runs later"; effects "in free memory rather than among the
+  built-in tables"; "`sound_at`, its stream pointer"; gap mistake "notes
+  run together"; "at its loudest a third of full volume"; quoted error
+  keeps `error: `. Diagrams: command labels spaced, "highlighted byte";
+  envelope caption 0–15; interrupt SVG keeps 560 px and scrolls inside
+  its figure at 400 px. Spectrogram starts at the waltz's first sounding
+  frame (9). Prologue's "3 voices" row: "for music and sound effects
+  alike". Stage outputs, WAVs, MP3s and the spectrogram regenerated.
+  *Declined (Writer response in the review):* PolyBLEP anti-aliasing.
