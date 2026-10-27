@@ -1202,7 +1202,6 @@ fn hold(m: *Machine, stick: u8, frames: usize) void {
     hold2(m, stick, if (m.ram[castle.two] != 0) stick else 0, frames);
 }
 
-/// Hold the two sticks' switches for `frames` frames, then let go.
 /// Wait for the best times to ask, then type `initials` and Return.
 fn sign(m: *Machine, comptime initials: []const u8) void {
     while (m.ram[map.game_mode] != @intFromEnum(Mode.times)) hold(m, 0, 1);
@@ -1218,6 +1217,7 @@ fn typeIn(m: *Machine, comptime keys: []const u8) void {
     m.input = .{};
 }
 
+/// Hold the two sticks' switches for `frames` frames, then let go.
 fn hold2(m: *Machine, one: u8, two: u8, frames: usize) void {
     m.input = .{ .joy1 = one, .joy2 = two };
     for (0..frames) |_| _ = m.runFrame(@This());
