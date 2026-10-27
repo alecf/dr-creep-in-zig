@@ -19,10 +19,10 @@ pub fn asked(m: *Machine) bool {
     return true;
 }
 
-/// The screen for typing a name: to save under (`saving`), or to resume.
-/// Call it with the display blanked.
-pub fn draw(m: *Machine, saving: bool) void {
-    m.poke(map.shell_saving, @intFromBool(saving));
+/// The screen for typing a name: to save under, or to resume, as
+/// `shell_saving` says. Call it with the display blanked.
+pub fn draw(m: *Machine) void {
+    const saving = m.peek(map.shell_saving) != 0;
     screen.clear(m);
     m.poke(hw.sprite_enable, 0);
     if (saving) text.shout(m, 44, 0, .white, "SAVE GAME") else text.shout(m, 36, 0, .white, "RESUME GAME");

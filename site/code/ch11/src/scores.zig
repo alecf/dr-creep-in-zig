@@ -90,7 +90,7 @@ pub fn draw(m: *Machine) void {
     if (signing == 0xFF) {
         text.say(m, 40, 0, .yellow, "BEST TIMES");
         const name = files.entry(m.peek(map.shell_castle));
-        _ = text.draw(m, 80 - 4 * length(m, name), 8, .white, text.plain, name);
+        _ = text.draw(m, 80 - 4 * files.length(m, name), 8, .white, text.plain, name);
     } else {
         const coat = player.coat(@intCast(signing));
         if (signing == 0) text.say(m, 0, 0, coat, "PLAYER 1, BEST TIME!") else text.say(m, 0, 0, coat, "PLAYER 2, BEST TIME!");
@@ -106,13 +106,6 @@ pub fn draw(m: *Machine) void {
         const two = m.peek(castle.two);
         typing.begin(m, left, rowOf(two, m.peek(map.shell_place)), 3);
     }
-}
-
-/// Letters in the stored name at `at`.
-pub fn length(m: *Machine, at: u16) u8 {
-    var n: u8 = 1;
-    while (m.peek(at + n - 1) & 0x80 == 0) n += 1;
-    return n;
 }
 
 fn rowOf(two: u8, k: u8) u8 {

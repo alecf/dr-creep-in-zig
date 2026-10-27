@@ -8,7 +8,6 @@ const map = @import("map.zig");
 const screen = @import("screen.zig");
 const text = @import("text.zig");
 const files = @import("files.zig");
-const scores = @import("scores.zig");
 
 pub const star_count = 128;
 
@@ -51,7 +50,7 @@ pub fn draw(m: *Machine) void {
     text.say(m, 44, 56, .light_green, "DR. CREEP");
     if (files.ready(m)) {
         const name = files.entry(m.peek(map.shell_castle));
-        _ = text.draw(m, 80 - 4 * scores.length(m, name), 72, .yellow, text.plain, name);
+        _ = text.draw(m, 80 - 4 * files.length(m, name), 72, .yellow, text.plain, name);
     } else text.say(m, 24, 72, .red, "NO CASTLE DISK");
     text.say(m, 16, 88, .grey, "ESC FOR THE MENU");
     text.say(m, 40, 104, .white, "PRESS FIRE");

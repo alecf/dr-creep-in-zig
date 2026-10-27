@@ -101,7 +101,6 @@ pub fn frame(m: *Machine) void {
         },
         .title => {
             if (menu.asked(m)) {
-                m.poke(hw.control, 0);
                 setMode(m, .draw_menu);
             } else if (game.chosen(m)) |two| {
                 m.poke(hw.control, 0); // the copy of the castle is a loading pause
@@ -124,8 +123,8 @@ pub fn frame(m: *Machine) void {
         .map => {
             m.poke(hw.control, machine.display_on);
             if (position.asked(m)) {
-                setMode(m, .draw_name);
                 m.poke(map.shell_saving, 1);
+                setMode(m, .draw_name);
             } else if (chart.wait(m) or room.flip(m)) setMode(m, .draw_room);
         },
         .draw_room => {
@@ -205,8 +204,8 @@ pub fn frame(m: *Machine) void {
                 .exit, .castle => setMode(m, .draw_title),
                 .best_times => setMode(m, .draw_times),
                 .resume_game => {
-                    setMode(m, .draw_name);
                     m.poke(map.shell_saving, 0);
+                    setMode(m, .draw_name);
                 },
             }
         },
@@ -225,7 +224,7 @@ pub fn frame(m: *Machine) void {
         .draw_name => {
             m.poke(hw.control, 0);
             m.bucket(bucket_drawing);
-            position.draw(m, m.peek(map.shell_saving) != 0);
+            position.draw(m);
             setMode(m, .name);
         },
         .name => {

@@ -62,6 +62,13 @@ pub fn entry(n: u8) u16 {
     return map.catalog.first + @as(u16, n) * name_size;
 }
 
+/// Letters in the stored name at `at`, up to the one with bit 7 set.
+pub fn length(m: *Machine, at: u16) u8 {
+    var n: u8 = 1;
+    while (m.peek(at + n - 1) & 0x80 == 0) n += 1;
+    return n;
+}
+
 /// What's in staging: nothing yet (power-on), a castle, or nothing to be
 /// had (no disk, or no castle on it).
 pub const Disk = enum(u8) { unread, ready, none };
