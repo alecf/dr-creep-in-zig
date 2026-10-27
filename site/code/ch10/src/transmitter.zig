@@ -80,15 +80,14 @@ pub fn use(m: *Machine, n: u8, who: u3) void {
 }
 
 /// A booth's `execute`, after a send: the pad flashes white and the lamp
-/// black, then both show the pad's colour again. All the while, every
-/// other step, it warbles at whatever pitch the dice say.
+/// black, then both show the pad's colour again.
 pub fn flash(m: *Machine, n: u8) void {
     const o = objects.slot(m, n);
     const t = m.view(castle.Teleport, o.record);
     const pad = padAt(o.record, t.target);
     m.work(16); // the tests
     o.step -= 1;
-    if (o.step & 1 == 0) sound.effectAt(m, .teleport, tunes.note("C4") + (dice.roll(m) & 0x1F));
+    if (o.step & 1 == 0) sound.effectAt(m, .teleport, tunes.note("C4") + (dice.roll(m) & 0x1F)); // a warble
     const on = o.step & 2 != 0;
     room.tint(m, m.peek(pad), m.peek(pad + 1), 2, 1, if (on) shade(@intFromEnum(Color.white)) else padColors(t.target));
     room.tint(m, t.x + 4, t.y, 2, 1, if (on) shade(@intFromEnum(Color.black)) else padColors(t.target));

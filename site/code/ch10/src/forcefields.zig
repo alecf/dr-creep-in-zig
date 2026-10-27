@@ -67,8 +67,8 @@ pub fn press(m: *Machine, n: u8, who: u3) void {
 }
 
 /// A button's `execute`, every step while its field is down: every 30
-/// steps, light the next row of the gauge, from the bottom, with a tick
-/// that's higher each time. With all 8 lit, the field goes back up.
+/// steps, light the next row of the gauge, from the bottom. With all 8
+/// lit, the field goes back up.
 pub fn count(m: *Machine, n: u8) void {
     const o = objects.slot(m, n);
     o.timer -= 1;
@@ -77,7 +77,7 @@ pub fn count(m: *Machine, n: u8) void {
     o.timer = tick_steps;
     o.step -= 1;
     gauge(m, o, o.step, shapes.address(m, .button_lit), true);
-    sound.effectAt(m, .forcefield, tunes.note("C4") + (ticks - o.step) * 2);
+    sound.effectAt(m, .forcefield, tunes.note("C4") + (ticks - o.step) * 2); // higher each tick
     if (o.step != 0) return;
     o.flags.execute = false;
     raise(m, o, true);

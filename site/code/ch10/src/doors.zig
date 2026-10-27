@@ -32,8 +32,7 @@ pub fn ring(m: *Machine, n: u8, who: u3) void {
 
 /// A door's `execute`, from the step after its bell rang. The first time,
 /// it opens in the castle, on both sides; then its panel is wiped a row a
-/// step, from the bottom up, creaking a little higher each row, and last
-/// of all it's drawn open.
+/// step, from the bottom up, and last of all it's drawn open.
 pub fn open(m: *Machine, n: u8) void {
     const o = objects.slot(m, n);
     m.work(20); // the tests
@@ -46,7 +45,7 @@ pub fn open(m: *Machine, n: u8) void {
         m.work(40); // the two doors' bits
     }
     room.wipe(m, o.box.x, o.box.y + o.step);
-    sound.effectAt(m, .door, tunes.note("C3") + room.door_panel_height - o.step);
+    sound.effectAt(m, .door, tunes.note("C3") + room.door_panel_height - o.step); // higher each row
     if (o.step != 0) {
         o.step -= 1;
         return;

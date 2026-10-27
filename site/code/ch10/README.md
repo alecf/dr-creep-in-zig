@@ -1,26 +1,15 @@
-# Checkpoint: Chapter 9, "The Great Escape"
+# Checkpoint: Chapter 10, "Three Voices"
 
-The game at the end of Chapter 9: a whole game, for one or two. Fire on
-stick 1 starts a game for one, fire on stick 2 a game for two (player 2
-in yellow; in the browser, I J K L and Return). Each game plays on a
-fresh copy of the castle, staged at `$9800`. Between rooms, the castle
-map shows every visited room with a blinking arrow per player, and each
-player's time, kept in BCD in the castle header. Lose your last life and
-it's GAME OVER; go through the way out and the final room builds itself
-a piece at a time while you cheer. Training Castle rooms 18 and 19 and
-the final room work, so the whole castle can be played from the title:
-
-- **Two's Company** (18): a forcefield across the floor, its button up
-  the ladder. Fire held at the button keeps the field down (1984's rule),
-  so one explorer holds while the other runs; alone, press and run.
-- **The Way Out** (19): ring the bell and step through the green door.
-
-Two explorers jostle (the one below blocks the other's way down), guns
-turn to the nearer, the mummy follows player 1 first, and Frankenstein
-wakes for either. Each player has his own pocket, plates and conveyor
-bit. The game's state lives in the castle header's spare bytes, 1984's
-layout; the map, the escape and GAME OVER share seven bytes as an
-`extern union`.
+The game at the end of Chapter 10: the Training Castle with sound. The
+Comet 64's SOUND chip now has its speaker, and the game drives it with a
+little interpreter that runs at the top of every frame. The title screen
+plays "The Creep Waltz" on three voices, round and round; the escape
+gets a fanfare and GAME OVER a slow fall. In the castle, every machine
+has a voice: doors creak higher as they open, a death beeps lower with
+every flash, and switches, forcefields, trapdoors, belts, the matter
+transmitter, keys, guns, the mummy and Frankenstein's monster each have
+their sound. Effects take over the music's interpreter, and an effect
+never interrupts anything already playing.
 
 Keys: N and P flip rooms (on the map too); G draws the grid; Q searches
 instead of reading the grid; C makes every actor check every object
@@ -28,6 +17,8 @@ every turn; X gives up a life.
 
 ```
 src/main.zig         boot(), frame(), the game's modes and the engine step, whole-game tests
+src/sound.zig        the sound driver: one interpreter for music and sound effects, and what may interrupt what
+src/tunes.zig        the notes' frequencies, the composer, every tune and sound effect
 src/map.zig          the game's memory map, checked at compile time
 src/game.zig         a whole game: starting, whose room next, lives, the screens between rooms
 src/chart.zig        the castle map between rooms
@@ -62,13 +53,12 @@ src/text.zig         letters from the character ROM, with the castle's text styl
 src/title.zig        the title screen
 ```
 
-
-The Boss Battle run starts a game for two, presses N eighteen times on
-the map for Two's Company, plays it for two (one holds, one runs), then
-walks both through the Way Out: two escapes, GAME OVER, and the title:
+The Boss Battle run plays the title tune for a few seconds, then a game
+through the Gatehouse and the Long Gallery to Ladders, and saves the
+sound as a WAV file:
 
 ```
-zig build run -- --frames 3500 --press 20:f:5@2 --press 40:f:3 --press 40:f:3@2 --key 60:N --key 75:N --key 90:N --key 105:N --key 120:N --key 135:N --key 150:N --key 165:N --key 180:N --key 195:N --key 210:N --key 225:N --key 240:N --key 255:N --key 270:N --key 285:N --key 300:N --key 315:N --press 345:l:52 --press 345:l:52@2 --press 397:u:60 --press 460:r:46 --press 506:f:400 --press 515:l:182@2 --press 697:f:4@2 --press 701:l:60@2 --press 761:ur:4@2 --press 910:l:46 --press 956:d:100 --press 1056:l:250 --press 1310:ur:4 --press 1430:f:3 --press 1430:f:3@2 --press 1462:l:240 --press 1462:l:240@2 --press 1702:f:4 --press 1702:f:4@2 --press 1712:l:60 --press 1712:l:60@2 --press 1774:ur:4 --press 1774:ur:4@2 --dump-every 10
+BOSS
 zig build wasm && python3 -m http.server -d web
 zig build test
 ```

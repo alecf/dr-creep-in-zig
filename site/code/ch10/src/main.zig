@@ -1454,3 +1454,157 @@ test "both through the way out: an escape each, then GAME OVER" {
     while (m.ram[map.game_mode] != @intFromEnum(Mode.over)) hold(m, 0, 1);
     try std.testing.expectEqual(0, m.ram[castle.in_game + 1]);
 }
+
+/// Hold `stick` for up to `frames` frames, until sound effect `e` starts.
+/// True if it did.
+fn hear(m: *Machine, e: tunes.Effect, stick: u8, frames: usize) bool {
+    for (0..frames) |_| {
+        hold(m, stick, 1);
+        if (m.ram[map.sound_playing] == @intFromEnum(e)) return true;
+    }
+    return false;
+}
+
+/// The note voice 0 is playing: its frequency register.
+fn pitchNow(m: *Machine) u16 {
+    return std.mem.readInt(u16, m.ram[hw.voice(0)..][0..2], .little);
+}
+
+/// Which tune the driver is in the middle of, if any.
+fn song(m: *Machine) ?tunes.Song {
+    if (m.ram[map.sound_playing] != sound.tune) return null;
+    const at = std.mem.readInt(u16, m.ram[map.sound_at..][0..2], .little);
+    var found: ?tunes.Song = null;
+    for (tunes.placed, 0..) |p, i| {
+        if (at >= p.at) found = @enumFromInt(i);
+    }
+    return found;
+}
+
+test "the title plays its tune on three voices, a game stops it, and the map closes with a chime" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    m.boot(@This());
+    _ = m.runFrame(@This()); // draws the title
+    try std.testing.expectEqual(tunes.Song.title, song(m).?);
+    var gated: u8 = 0;
+    for (0..200) |_| {
+        hold(m, 0, 1);
+        for (0..3) |v| {
+            if (m.ram[hw.voice(@intCast(v)) + machine.sound.control] & machine.sound.gate != 0) gated |= @as(u8, 1) << @intCast(v);
+        }
+    }
+    try std.testing.expectEqual(0b111, gated); // all three voices have played
+    var samples: [882]f32 = undefined;
+    m.listen(&samples, 44100); // and the speaker has something to say
+    var loudest: f32 = 0;
+    for (samples) |s| loudest = @max(loudest, @abs(s));
+    try std.testing.expect(loudest > 0.05);
+    hold(m, machine.joy.fire, 1);
+    try std.testing.expectEqual(sound.nothing, m.ram[map.sound_playing]);
+    for (0..3) |v| try std.testing.expectEqual(0, m.ram[hw.voice(@intCast(v)) + machine.sound.control]);
+    hold(m, 0, 7); // the map
+    try std.testing.expect(hear(m, .map_close, machine.joy.fire, 2));
+}
+
+test "a door creaks higher as it opens" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom(m, 0); // the Gatehouse
+    hold(m, machine.joy.left, 34); // to the bell
+    try std.testing.expect(hear(m, .door, machine.joy.fire, 8));
+    var first = pitchNow(m);
+    const lowest = first;
+    for (0..60) |_| {
+        hold(m, 0, 1);
+        if (m.ram[map.sound_playing] != @intFromEnum(tunes.Effect.door)) continue;
+        try std.testing.expect(pitchNow(m) >= first);
+        first = pitchNow(m);
+    }
+    try std.testing.expect(first > lowest * 3); // two octaves up: four times the frequency, or near it
+}
+
+test "every machine in the castle has a voice, through the stick" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom(m, 4); // Lightning: up to the switch, and pull it down
+    while (feet(m) < 57) hold(m, machine.joy.right, 2);
+    hold(m, machine.joy.up, 200);
+    while (feet(m) > 34) hold(m, machine.joy.left, 2);
+    try std.testing.expect(hear(m, .lightning, machine.joy.down, 4));
+
+    inRoom(m, 5); // Forcefields: the button, then the countdown's first tick
+    while (explorer(m).box.x > 122) hold(m, machine.joy.left, 2);
+    try std.testing.expect(hear(m, .forcefield, machine.joy.fire, 4));
+    hold(m, 0, 10);
+    const press = pitchNow(m);
+    try std.testing.expect(hear(m, .forcefield, 0, 70));
+    try std.testing.expect(pitchNow(m) > press);
+
+    inRoom(m, 6); // Trapdoors: the switch on the way to the bell
+    try std.testing.expect(hear(m, .trapdoor, machine.joy.left, 300));
+
+    inRoom(m, 7); // Conveyors: the control box
+    while (feet(m) > 101) hold(m, machine.joy.left, 2);
+    try std.testing.expect(hear(m, .conveyor, machine.joy.fire, 4));
+
+    inRoom(m, 8); // the Transmitter: move the lamp, then send him
+    while (explorer(m).box.x > 116) hold(m, machine.joy.left, 2);
+    try std.testing.expect(hear(m, .teleport_change, machine.joy.up, 40));
+    hold(m, 0, 10);
+    try std.testing.expect(hear(m, .teleport, machine.joy.fire, 8));
+
+    inRoom(m, 9); // Keys and Locks: up and along to the key
+    while (feet(m) > 115) hold(m, machine.joy.left, 2);
+    hold(m, machine.joy.up, 200);
+    hold(m, machine.joy.right, 200);
+    try std.testing.expect(hear(m, .key, machine.joy.fire, 4));
+
+    inRoom(m, 10); // Ray Guns: past the muzzle
+    try std.testing.expect(hear(m, .laser, machine.joy.right, 200));
+
+    inRoom(m, 11); // the Mummy: past the ankh, and he climbs out
+    while (feet(m) < 56) hold(m, machine.joy.right, 2);
+    try std.testing.expect(hear(m, .mummy, 0, 60));
+
+    inRoom(m, 12); // Frankenstein: down the pole to his floor
+    while (feet(m) < 89) hold(m, machine.joy.right, 2);
+    try std.testing.expect(hear(m, .frankenstein, machine.joy.down, 80));
+}
+
+test "a death flashes with a beep that falls each time" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom(m, 2);
+    hold(m, 0, 20); // the map's chime is over
+    m.input = .{ .key = 'X' };
+    _ = m.runFrame(@This());
+    m.input = .{};
+    try std.testing.expect(hear(m, .flash, 0, 8));
+    var last = pitchNow(m);
+    var beeps: usize = 1;
+    for (0..40) |_| {
+        hold(m, 0, 1);
+        if (m.ram[map.sound_playing] != @intFromEnum(tunes.Effect.flash) or pitchNow(m) == last) continue;
+        try std.testing.expect(pitchNow(m) < last);
+        last = pitchNow(m);
+        beeps += 1;
+    }
+    try std.testing.expect(beeps >= 4);
+}
+
+test "a fanfare for the escape, a slow fall for GAME OVER, and the waltz again" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom(m, 19); // the Way Out
+    while (feet(m) > 50) hold(m, machine.joy.left, 2);
+    hold(m, machine.joy.fire, 4);
+    hold(m, machine.joy.left, 60);
+    hold(m, machine.joy.up | machine.joy.right, 4);
+    while (m.ram[map.game_mode] != @intFromEnum(Mode.escape)) hold(m, 0, 1);
+    try std.testing.expectEqual(tunes.Song.escape, song(m).?);
+    while (m.ram[map.game_mode] != @intFromEnum(Mode.over)) hold(m, 0, 1);
+    try std.testing.expectEqual(tunes.Song.over, song(m).?);
+    while (m.ram[map.game_mode] != @intFromEnum(Mode.title)) hold(m, 0, 1);
+    try std.testing.expectEqual(tunes.Song.title, song(m).?);
+}

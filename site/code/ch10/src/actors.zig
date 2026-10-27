@@ -227,8 +227,7 @@ pub fn touch(m: *Machine, n: u3, object: u8) bool {
 }
 
 /// Dying: flash white on every other step and black in between, eight
-/// times, each with a beep lower than the last, then take a last turn. A
-/// kind that doesn't flicker goes at once.
+/// times, then take a last turn. A kind that doesn't flicker goes at once.
 fn flicker(m: *Machine, n: u3) void {
     const a = slot(m, n);
     m.work(20); // the tests
@@ -250,7 +249,7 @@ fn flicker(m: *Machine, n: u3) void {
     if (m.peek(map.game_tick) & 0b10 == 0) {
         a.color = @intFromEnum(Color.white);
         a.flashes -= 1;
-        sound.effectAt(m, .flash, tunes.note("C4") + a.flashes * 4);
+        sound.effectAt(m, .flash, tunes.note("C4") + a.flashes * 4); // lower each flash
     } else {
         a.color = @intFromEnum(Color.black);
     }

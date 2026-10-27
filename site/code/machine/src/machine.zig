@@ -748,3 +748,43 @@ test "buckets split a frame's cycles" {
     _ = m.runFrame(Lab); // each frame starts back in bucket 0
     try testing.expectEqual(10, m.last.buckets[0]);
 }
+
+test "the SOUND chip plays what the last frame left, all through this one" {
+    const Game = struct {
+        pub fn boot(_: *Machine) void {}
+        pub fn frame(m: *Machine) void {
+            // Frame 0: a note, gate on. Frame 1: a long job, then silence.
+            if (m.ram[0x0200] == 0) {
+                m.poke(hw.sound_volume, 15);
+                m.poke16(hw.voice(0) + sound.freq_lo, 7382);
+                m.poke(hw.voice(0) + sound.sustain_release, 0xF0);
+                m.poke(hw.voice(0) + sound.control, sound.sawtooth | sound.gate);
+            } else {
+                m.work(frame_budget * 2);
+                m.poke(hw.voice(0) + sound.control, 0);
+            }
+            m.ram[0x0200] += 1;
+        }
+    };
+    const m = try newMachine();
+    defer testing.allocator.destroy(m);
+    m.boot(Game);
+    var out: [882]f32 = undefined;
+    try testing.expectEqual(1, m.runFrame(Game));
+    m.listen(&out, 44100); // frame 0 played the power-on silence
+    for (out) |s| try testing.expectEqual(0, s);
+    const slots = m.runFrame(Game);
+    try testing.expectEqual(3, slots);
+    for (0..slots) |_| {
+        m.listen(&out, 44100); // the note, for every slot of the long frame
+        var loudest: f32 = 0;
+        for (out) |s| loudest = @max(loudest, @abs(s));
+        try testing.expect(loudest > 0.1);
+    }
+    _ = m.runFrame(Game);
+    m.listen(&out, 44100); // and then the silence it left
+    m.listen(&out, 44100);
+    var loudest: f32 = 0;
+    for (out) |s| loudest = @max(loudest, @abs(s));
+    try testing.expect(loudest < 0.001);
+}
