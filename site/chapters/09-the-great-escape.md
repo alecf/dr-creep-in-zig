@@ -10,7 +10,7 @@ Twenty rooms work, one at a time. This chapter turns them into a
 rooms, the **castle map** shows every room you've seen, with a blinking
 arrow at the door you'll come in by. A **clock** counts your time. Lose
 your last life and it's **GAME OVER**. Walk through the way out, and the
-final room builds itself piece by piece while you cheer.
+final room builds itself piece by piece, and then you cheer.
 
 ![The escape: PLAYER 1 ESCAPES and his time at the top, the trophy and its sparkles in the middle, and the explorer cheering on the floor under "THE TRAINING CASTLE IS BEATEN."](images/09-escape.png)
 
@@ -87,9 +87,9 @@ Most of the game's bytes come in **pairs**: player 1's, then player
 ```zig
 // ---- the header -----------------------------------------------------------
 
-// The castle file fills in the first nine bytes. The rest are zeros on
-// the disk, and while a game is on, they're the game's own. Most come in
-// pairs: player 1's byte, then player 2's.
+// The castle file fills in the first nine bytes and `final_room`. The
+// rest are zeros on the disk, and while a game is on, they're the game's
+// own. Most come in pairs: player 1's byte, then player 2's.
 pub const header = map.castle.first;
 pub const header_size = 0x100;
 pub const size = header + 0x00; // 2 bytes: the castle's length, header included
@@ -121,7 +121,9 @@ error: local constant shadows declaration of 'room'
 The walker's test in `castle.zig` has a local constant called `room`,
 and now the file has a declaration called `room` too. Zig won't let a
 local name hide one from the file around it, because then `room` would
-mean two things in one place. Rename the test's local `room` to `bytes`:
+mean two things in one place. Rename the test's local `room` to
+`bytes`, with your editor's find and replace on these three (a missed
+one is the same error again):
 
 | Replace | With |
 |---|---|
@@ -130,12 +132,9 @@ mean two things in one place. Rename the test's local `room` to `bytes`:
 | `at + room.len` | `at + bytes.len` |
 
 :::under-the-hood One region, two jobs
-In JavaScript, if you want an object to be "a castle description" and
-later "a save game", you make two objects. Memory is cheap, and the
-garbage collector tidies up.
-
-The Comet has 64 KB, and 1984 used all of it. So the same bytes take
-turns. The header is "what the disk says" until the game starts, then
+In JavaScript you'd make two objects, one for "the castle" and one for
+"the game so far". The Comet has 64 KB, and 1984 used all of it, so the
+same bytes take turns. The header is "what the disk says" until the game starts, then
 "what the game knows". This works because the two jobs never need the
 bytes at the same time. It also means a saved castle (Chapter 11) is just
 the castle with its header: the whole game's state comes along for free.
@@ -509,7 +508,8 @@ pub fn touch(m: *Machine, n: u3, object: u8) bool {
 
 Chapter 6's rule was "anything else is deadly". Two explorers touching
 would have killed each other! So a `player` joins the forcefield as
-harmless, for now. `kill`, the X key, kills everyone walking the room.
+harmless. (In Two's Company they'll at least get in each other's way.)
+`kill`, the X key, kills everyone walking the room.
 
 **`src/player.zig`** (replace `roomOver`, `nextRoom` and `pressedFire`)
 
@@ -611,7 +611,8 @@ pub fn start(m: *Machine, two: bool) void {
 one; fire on stick 2 is a game for two.
 
 `start` copies the staging castle over the playing one with
-`m.copy`. That's 4,644 bytes at 8 cycles each, 37,244 cycles in all:
+`m.copy`. That's 4,644 bytes at 8 cycles each: 37,152 cycles for the
+bytes, 37,244 with the stores around them,
 nearly two frames. So it happens with the display blanked, as a loading
 pause. Then each player's room and door come from the castle's start
 bytes, and `in_game` says who's playing.
@@ -692,7 +693,7 @@ const game = @import("game.zig");
         },
 ```
 
-**`src/main.zig`** (in the `.draw_room` prong)
+**`src/main.zig`** (in the `.draw_room` prong, replace `player.add(m);`)
 
 ```zig
             player.arrive(m);
@@ -722,7 +723,7 @@ Every object that asked "is the explorer playing?" now asks about the
 explorer who touched it, `who`. `playing` checks his kind itself, so the
 `a.kind != .player` test goes:
 
-**`src/doors.zig`** (in `ring`)
+**`src/doors.zig`** (the comment on `ring`)
 
 ```zig
 /// A bell's `in_front`: an explorer, at the bell, presses fire. If its
@@ -824,15 +825,22 @@ The title screen should say how to start a game for two:
 
 The first line keeps the stars off the new words.
 
-The tests read the old player bytes in a few places. In `main.zig`,
-replace every one:
+The tests read the old player bytes in a few places. Find and replace
+these in `main.zig`'s tests (any you miss won't compile):
 
 | Replace | With |
 |---|---|
 | `m.ram[map.player_status]` | `m.ram[castle.status]` |
-| `, m.ram[map.room_number])` | `, m.ram[castle.room])` |
 | `m.ram[map.player_door]` | `m.ram[castle.door]` |
 | `m.ram[map.player_lives]` | `m.ram[castle.lives]` |
+
+One more change isn't a rename. A test that checks which room he went
+to read `m.ram[map.room_number]`, the room on screen. Now it reads
+`m.ram[castle.room]`, because the header knows his next room the moment
+he steps into a doorway. Each such check ends
+`, m.ram[map.room_number]);`: make it `, m.ram[castle.room]);`. There
+are seventeen, and a missed one still compiles, so search for
+`map.room_number])` afterwards: none should be left.
 
 **`src/main.zig`** (replace `explorer`)
 
@@ -945,21 +953,20 @@ fn jostle(m: *Machine, n: u3, other: *align(1) actors.Actor) void {
 Two explorers walk through each other on the level. But if one of them
 is on a ladder above the other, he can't climb down through his head.
 When their sprites touch, each explorer's `hit` is told about the other.
-If the other one is lower down, my next step can't go down. If he's
+If the other one is lower down, his next step can't go down. If he's
 higher, it can't go up. That's the `mask` in his record, and `steer`
 uses it once and puts it back to `0xFF`.
 
-`~grid.down` is every bit except `down`: the ways I'm still allowed.
-A side-by-side touch, or one on a ladder or pole, changes nothing.
+`~grid.down` is every bit except `down`: the ways he's still allowed.
+A side-by-side touch changes nothing, and neither does touching an
+explorer who is on a ladder or pole himself.
 
 ### Holding a field down
 
-Chapter 6's forcefield button wanted a fresh press, so one explorer
-could only drop the field for its countdown. In 1984 the button works
-every step that fire is **held**, and the countdown keeps starting
-again. Hold fire, and the field stays down for as long as you like.
-Alone, that's no help: you can't hold the button and run. With two,
-one holds, and the other runs.
+Chapter 6's button wanted a fresh press. In 1984 it works every step
+that fire is **held**, so the countdown keeps starting again and the
+field stays down. Alone, that's no help: you can't hold and run. With
+two, one holds and the other runs.
 
 **`src/forcefields.zig`** (replace the top of `press`)
 
@@ -1333,7 +1340,8 @@ test "an hour, a minute and a second, and it prints as it reads" {
 ```
 
 `up` adds one and fixes the carry. At the `limit` (60 for seconds and
-minutes, 100 for hours) it goes back to 00 and says "carry one".
+minutes; for hours `$A0`, what `$99` + 1 + 6 becomes, since there's no
+third digit to carry into) it goes back to 00 and says "carry one".
 `advance` chains them. The frames byte is plain binary, because it's
 never printed. `print` writes eight letters and draws them.
 
@@ -1341,14 +1349,12 @@ never printed. `print` writes eight letters and draws them.
 72 cycles a frame with two of them in the room. `print` costs 5,472
 cycles, mostly drawing the letters.
 
-:::inside-the-disk A clock in a chip
-1984 doesn't count frames. Its machine had a time-of-day clock in one
-of its chips, and that clock kept tenths, seconds, minutes and hours,
-in BCD. The game started it when a player came into a room, stopped it
-when he left, and kept its four bytes in the header, at the same `$55`
-we use. Our machine has no such clock, so `tick` counts frames instead,
-and its seconds, minutes and hours come out the same. The map shows the times; 1984 never
-puts them on screen during a room, and nor do we.
+:::inside-the-disk Tenths, not frames
+1984 timed each room in tenths of a second, not frames, and kept the
+same four BCD bytes at the same `$55`: tenths, seconds, minutes and
+hours. Ours keeps frames in the first byte, so its seconds, minutes and
+hours come out the same. The map shows the times; 1984 never puts them
+on screen during a room, and nor do we.
 :::
 
 ### Seven bytes for the map
@@ -1390,7 +1396,7 @@ pub const visited: u8 = 0b1000_0000;
 ### Map pictures
 
 A room on the map is drawn in cells 4 fat pixels wide and 8 rows tall,
-the sizes in its directory entry. Each cell is a piece of floor, with a
+its directory entry says how many across and how many down. Each cell is a piece of floor, with a
 wall piece drawn over it at each edge. Then there's an arrow for each
 direction:
 
@@ -1809,7 +1815,7 @@ test "fire on the title screen starts a game: the map, then the room" {
     _ = m.runFrame(@This()); // the key, on the map
 ```
 
-**`src/main.zig`** (in the through-the-door test, add after the two `doorway` checks)
+**`src/main.zig`** (replace the through-the-door test)
 
 ```zig
 test "through the door and out of the one it leads to, and back again" {
@@ -1918,15 +1924,17 @@ fn onward(m: *Machine) void {
 ```
 
 `inRoom` presses fire on the map 8 frames after the title's press. That
-keeps every later frame where it was in Chapter 8, so the tests that
-count frames still count right. `onward` waits for the map and presses
+keeps the engine's rhythm: 8 frames is 4 engine steps, so anything that
+happens every second or fourth step still lines up with the tests
+Chapter 8 wrote. `onward` waits for the map and presses
 fire.
 
-![The castle map: ONE UP and TWO UP with their times, 00:00:09 each, and three rooms in a row, the Gatehouse, the Long Gallery and Ladders, with one white arrow at Ladders' door](images/09-map.png)
+![The castle map: ONE UP and TWO UP with their times, 00:00:09 each, and three rooms in a row, the Gatehouse, the Long Gallery and Ladders, with one steady white arrow, its tip showing at the foot of the wall between the Long Gallery and Ladders](images/09-map.png)
 
 That's two explorers through the Gatehouse and the Long Gallery,
 together. Both arrows are at Ladders' door, so they're one steady white
-arrow.
+arrow. Look for its tip at the foot of the wall between the Long Gallery
+and Ladders: 1984's nudge puts it over the neighbour's wall.
 
 ## Out!
 
@@ -2290,14 +2298,14 @@ const over_frames = 210;
 ```
 
 A Zig `extern union` is like an `extern struct`, except that every field
-starts at the first byte. The fields sit on top of each other. Writing
-`chart` and then reading `over` would read the chart's bytes as GAME
-OVER's. That's never a problem here, because each screen writes all its
-bytes when it's drawn.
+starts at the first byte, so the fields sit on top of each other: one
+`ArrayBuffer`, in JavaScript terms, read through different typed views.
+That's safe here because each screen writes all its bytes when it's
+drawn.
 
-This is the chapter's ladder rung. The header is memory that takes
-turns over time. A union is the same idea, written down, so the compiler
-knows about it.
+This is the chapter's big idea under the hood. The header is memory
+that takes turns over time. A union is the same idea, written down, so
+the compiler knows about it.
 
 `after` gets a new answer: on to the map, to an escape, or to GAME OVER.
 
@@ -2335,8 +2343,9 @@ pub fn after(m: *Machine) Then {
 }
 ```
 
-Escaping is checked after dying. A player whose status says dead hasn't
-escaped, even if he got the `escaped` byte on the way.
+Escaping is checked after dying. A dead player can't also have escaped,
+because only a player walking the room can die, so the order is only
+tidiness.
 
 **`src/game.zig`** (add at the end)
 
@@ -2352,15 +2361,15 @@ pub fn escaper(m: *Machine) ?player.Number {
     return null;
 }
 
-/// GAME OVER, and in a game for two, whose. Call it with the display
-/// blanked.
+/// GAME OVER, and in a game for two, whose, in his coat's colour. Call
+/// it with the display blanked.
 pub fn drawOver(m: *Machine) void {
     screen.clear(m);
     m.poke(hw.sprite_enable, 0);
     text.shout(m, 44, 56, .pink, "GAME OVER");
     if (m.peek(castle.two) != 0) {
-        if (m.peek(castle.in_game) == 0) text.say(m, 32, 104, .yellow, "FOR PLAYER 1");
-        if (m.peek(castle.in_game + 1) == 0) text.say(m, 32, 128, .orange, "FOR PLAYER 2");
+        if (m.peek(castle.in_game) == 0) text.say(m, 32, 104, player.coat(0), "FOR PLAYER 1");
+        if (m.peek(castle.in_game + 1) == 0) text.say(m, 32, 128, player.coat(1), "FOR PLAYER 2");
     }
     between(m).over = .{ .wait = over_frames };
 }
@@ -2558,20 +2567,22 @@ test "X: a flicker, a life lost, back to the start; no lives left, GAME OVER" {
 }
 ```
 
-![GAME OVER in fat pink letters, and under it FOR PLAYER 1 in yellow and FOR PLAYER 2 in orange](images/09-over.png)
+![GAME OVER in fat pink letters, and under it FOR PLAYER 1 in white and FOR PLAYER 2 in yellow, each in his coat's colour](images/09-over.png)
 
-:::inside-the-disk What's ours in the escape
+:::inside-the-disk What's ours
 1984 draws the final room's pieces at its own pace, and writes the words
 on a screen it has already cleared. Ours writes the words first, then
 adds a piece every 10 frames, about five a second. 1984's cheer has four
-frames, ours two. His walk is 1984's, step for step, but he walks on our
+frames and changes picture every step; ours has two and changes every
+four. His walk is 1984's, step for step, but he walks on our
 final room's floor. 1984's arrows on the map are white; ours are in the
 players' coats until they share a door. Our player 2's coat is yellow;
 1984's player 1 is yellow and player 2 orange (we kept white for player
-1, as he's been all along). On the map, our fire needs a fresh press,
-and both sticks are read every frame. And the door map bytes come from
-our room builder: they agree with the Training Castle's first room, but
-not yet with a real castle's whole map. Chapter 11 can check them.
+1, as he's been all along), and GAME OVER writes each player's line in
+his coat's colour, where 1984 used its own two. On the map, our fire needs a fresh press,
+and both sticks are read every frame. And our room builder works out
+each door's map bytes itself; a real castle's own bytes may put a gap or
+an arrow a little differently, and Chapter 11 can check.
 :::
 
 ## The whole castle, through the stick
@@ -2826,10 +2837,9 @@ fn twosCompany(m: *Machine) !void {
 ```
 :::
 
-That's every room, in at door 0 and out by door 1, using the escapes the
-chapters before wrote. Where two at once would be wrong, as at the
-transmitter's booth, which sends one explorer at a time, it moves only
-stick 1.
+That's every room, in at door 0 and out by door 1. Where two at once
+would be wrong, as at the booth, which sends one explorer at a time, it
+moves only stick 1.
 
 :::type-in Tests for two
 **`src/main.zig`** (add at the end)
@@ -2843,6 +2853,9 @@ test "the whole Training Castle for two, each doing what the other does" {
     hold2(m, 0, machine.joy.fire, 1); // fire on stick 2: a game for two
     try std.testing.expectEqual(1, m.ram[castle.two]);
     try wholeCastle(m);
+    try std.testing.expectEqual(1, m.ram[castle.escaped + 1]); // player 2 got out too
+    try std.testing.expectEqual(0, m.ram[castle.in_game + 1]);
+    try std.testing.expectEqual(3, m.ram[castle.lives + 1]);
 }
 
 /// `inRoom`, in a game for two: fire on stick 2 at the title, and both
@@ -3013,21 +3026,17 @@ test "both through the way out: an escape each, then GAME OVER" {
 ```
 :::
 
-These test what this chapter promised. Both arrows show, and the map
-waits for both. In Two's Company, one holds and one runs. On a ladder,
-the one below is in the way. The gun turns to the nearer explorer, the
-mummy chases player 1, and Frankenstein wakes for player 2. When player
-2 runs out of lives, it's GAME OVER for him and player 1 plays on. And
-both through the way out is an escape each, then GAME OVER.
+These test what this chapter promised, one promise each: the map,
+Two's Company, the ladder, the monsters, player 2's last life, and two
+escapes.
 
 **The Training Castle is beaten!** All 20 rooms and the final room, for
 one or two.
 
 :::inside-the-disk Whose turn is it?
 1984 decides the next room just as `next` does. Together, they play
-together. Apart, the player who wasn't last to leave a room goes. That
-means a player can wait on the map while the other plays several rooms,
-if the other keeps going through doors. Our status numbers are our own,
+together. Apart, they take strict turns: the one who just played waits
+while the other plays one room. Our status numbers are our own,
 and so are some of the colours above. The header's addresses are 1984's.
 :::
 
@@ -3049,15 +3058,16 @@ costs a shift and a mask, with no divide.
 `$0200`–`$0206` (where the player bytes were), the players, 10 bytes at
 `$0211`–`$021A`, and the staging castle, 8 KB at `$9800`–`$B7FF`. The
 castle is 4,644 bytes and lives in memory twice now, staged and
-playing. The header gives the game 87 bytes of state for nothing. Eleven
+playing. The header gives the game 86 bytes of state for nothing. Eleven
 new pictures go into the shape table.
 
 **Time.** A new game's copy: 37,244 cycles. Drawing the first map:
-111,890. Drawing the escape screen: 118,902. GAME OVER: 98,708. All four
+111,890. Drawing the escape screen: 118,902. GAME OVER: 98,708, or 106,856
+with both FOR PLAYER lines. All four
 are loading pauses, with the display blank. The map's frames cost 136
 cycles. A room's clock costs 72 cycles a frame for two explorers, and
 one step of `up` costs 14. The busiest escape frame, a piece of the final
-room, costs 14,238 cycles, well inside a frame.
+room, costs about 14,400 cycles, well inside a frame.
 :::
 
 :::game-over Common mistakes
@@ -3074,7 +3084,7 @@ room, costs 14,238 cycles, well inside a frame.
   player who isn't here as `ready`.
 - **The clock reads `00:00:0:`.** In `up`, the +6 goes on when the low
   nibble *is* `$A`, after the +1.
-- **Two explorers climbing a ladder walk through each other.** `steer`
+- **The one up the ladder climbs down through the other's head.** `steer`
   must `&` the grid's ways with `r.mask`, then reset the mask to `0xFF`.
 :::
 
@@ -3087,8 +3097,8 @@ zig build test
 zig build run -- --frames 3500 --press 20:f:5@2 --press 40:f:3 --press 40:f:3@2 --key 60:N --key 75:N --key 90:N --key 105:N --key 120:N --key 135:N --key 150:N --key 165:N --key 180:N --key 195:N --key 210:N --key 225:N --key 240:N --key 255:N --key 270:N --key 285:N --key 300:N --key 315:N --press 345:l:52 --press 345:l:52@2 --press 397:u:60 --press 460:r:46 --press 506:f:400 --press 515:l:182@2 --press 697:f:4@2 --press 701:l:60@2 --press 761:ur:4@2 --press 910:l:46 --press 956:d:100 --press 1056:l:250 --press 1310:ur:4 --press 1430:f:3 --press 1430:f:3@2 --press 1462:l:240 --press 1462:l:240@2 --press 1702:f:4 --press 1702:f:4@2 --press 1712:l:60 --press 1712:l:60@2 --press 1774:ur:4 --press 1774:ur:4@2 --dump-every 10
 ```
 
-Fire on stick 2 starts a game for two. On the map, N eighteen times
-goes to Two's Company. Player 1 climbs to the button and holds fire;
+Fire on stick 2 starts a game for two. Fire on the map, then N eighteen
+times flips to Two's Company. Player 1 climbs to the button and holds fire;
 player 2 runs through, rings the bell and goes. Then player 1 lets go,
 climbs down and runs for the door before the field comes back. Map,
 fire, and both run for the Way Out's green door. It prints:

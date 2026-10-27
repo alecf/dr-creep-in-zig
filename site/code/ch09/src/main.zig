@@ -1285,6 +1285,9 @@ test "the whole Training Castle for two, each doing what the other does" {
     hold2(m, 0, machine.joy.fire, 1); // fire on stick 2: a game for two
     try std.testing.expectEqual(1, m.ram[castle.two]);
     try wholeCastle(m);
+    try std.testing.expectEqual(1, m.ram[castle.escaped + 1]); // player 2 got out too
+    try std.testing.expectEqual(0, m.ram[castle.in_game + 1]);
+    try std.testing.expectEqual(3, m.ram[castle.lives + 1]);
 }
 
 /// `inRoom`, in a game for two: fire on stick 2 at the title, and both

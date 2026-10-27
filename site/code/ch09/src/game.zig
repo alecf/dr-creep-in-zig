@@ -122,15 +122,15 @@ pub fn escaper(m: *Machine) ?player.Number {
     return null;
 }
 
-/// GAME OVER, and in a game for two, whose. Call it with the display
-/// blanked.
+/// GAME OVER, and in a game for two, whose, in his coat's colour. Call
+/// it with the display blanked.
 pub fn drawOver(m: *Machine) void {
     screen.clear(m);
     m.poke(hw.sprite_enable, 0);
     text.shout(m, 44, 56, .pink, "GAME OVER");
     if (m.peek(castle.two) != 0) {
-        if (m.peek(castle.in_game) == 0) text.say(m, 32, 104, .yellow, "FOR PLAYER 1");
-        if (m.peek(castle.in_game + 1) == 0) text.say(m, 32, 128, .orange, "FOR PLAYER 2");
+        if (m.peek(castle.in_game) == 0) text.say(m, 32, 104, player.coat(0), "FOR PLAYER 1");
+        if (m.peek(castle.in_game + 1) == 0) text.say(m, 32, 128, player.coat(1), "FOR PLAYER 2");
     }
     between(m).over = .{ .wait = over_frames, .unused = @splat(0) };
 }

@@ -2250,3 +2250,39 @@ Castle rooms (ch03)".
   map; saving a castle saves the game (header carries it all); disk load
   to `$9800` (staging); high scores from `time`; title/menu choosing
   one or two players (ours: which stick fires).
+- **ch09 review fixes (supersede the ch09 entries above where they
+  differ).** *Code:* GAME OVER's "FOR PLAYER n" lines are in
+  `player.coat(p)` (white, yellow), not 1984's yellow/orange (logged in
+  the "What's ours" box); `castle.zig`'s header comment names
+  `final_room` as file-set; the two-player whole-castle test also asserts
+  player 2 escaped, out of the game, 3 lives. *Prose:* Game Over bullet is
+  "the one up the ladder climbs down through the other's head" (two
+  explorers both on a ladder do pass, as 1984 `$353F`); jostle text in
+  "he", and "touching an explorer who is on a ladder or pole himself
+  changes nothing"; "Whose turn" box says apart they take strict turns;
+  the clock box no longer compares hardware ("1984 timed each room in
+  tenths … same four BCD bytes at `$55`"); both replace tables have the
+  find-and-replace lead-in and the compile-error safety net, and the
+  `, m.ram[map.room_number])` → `castle.room` change (17 test checks) is
+  told separately as a change of meaning, with the reason and a search to
+  confirm (listings: A51 = three `player_*` rows, A51r = the room checks);
+  "big idea under the hood" replaces "ladder rung"; "harmless" without
+  "for now"; copy 37,152 for the bytes, 37,244 in all; header state 86
+  bytes; GAME OVER 98,708 / 106,856 with both lines; busiest escape frame
+  ≈ 14,400; Boss: N keys land in rooms after fire on the map; `inRoom`'s
+  8 frames keep the engine's step phase; hours' limit `$A0`; map cells'
+  counts (not sizes) in the entry; Mission Briefing "and then you cheer";
+  the escape-order sentence no longer invents a dead escaper; map caption
+  says where the steady arrow's tip is (on the neighbour's wall, 1984's
+  nudge); "What's ours" box (was "… in the escape") adds 1984's cheer
+  changing every step and rewords the door map bytes; labels A30, A33,
+  C18 say what they replace; union diagram cells no longer split
+  "steady"; JS bridge "one `ArrayBuffer` read through different typed
+  views". Screenshot `09-over.png` re-shot (new colours).
+  *Deviation for ch11 (1984 turn-order quirk):* 1984's `roomMain`
+  (`$1594`) counts an absent player's header status if it is 0 (playing),
+  true only before he has ever been added; so in a two-player game whose
+  **start rooms differ**, player 2 keeps playing until he reaches player
+  1's room or leaves the game. Ours skips absent players (`actor ==
+  none`) and alternates strictly. The Training Castle starts both in the
+  Gatehouse, so it never shows; ch11's real castles may need a decision.

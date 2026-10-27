@@ -206,7 +206,7 @@ TITLE_FINAL = frame_mode(MAIN, 'title')
 TITLE_A = rep(TITLE_FINAL, ('setMode(m, .draw_map);', 'setMode(m, .draw_room);'))
 step('A29', '**`src/main.zig`** (in `frame`, replace the `.title` prong)', 'replace_text', TITLE_A,
      arg=frame_mode(MAIN8, 'title'))
-step('A30', '**`src/main.zig`** (in the `.draw_room` prong)', 'replace_text',
+step('A30', '**`src/main.zig`** (in the `.draw_room` prong, replace `player.add(m);`)', 'replace_text',
      '            player.arrive(m);\n', arg='            player.add(m);\n')
 step('A31', '**`src/main.zig`** (in the `.room` prong, replace the `roomOver` line)', 'replace_text',
      '                if (player.roomOver(m)) setMode(m, if (game.after(m)) .draw_room else .draw_title);\n',
@@ -216,7 +216,7 @@ step('A32', '**`src/room.zig`** (in `flip`, replace the `player_door` line)', 'r
      arg='    m.poke(map.player_door, 0); // he comes in by its first door\n')
 
 # everyone who asked about "the explorer"
-step('A33', '**`src/doors.zig`** (in `ring`)', 'replace_text',
+step('A33', '**`src/doors.zig`** (the comment on `ring`)', 'replace_text',
      lines_of('src/doors.zig', '/// A bell\'s `in_front`', '/// door is shut'),
      arg=lines_of('src/doors.zig', '/// A bell\'s `in_front`', '/// door is shut', root=OLD))
 PLAYING = '    if (!player.playing(m, who) or a.fire == 0) return;\n'
@@ -265,10 +265,13 @@ step('A50', '**`src/title.zig`** (in `draw`, add below `PRESS FIRE`)', 'after_li
 
 # the tests
 RENAMES = [('m.ram[map.player_status]', 'm.ram[castle.status]'),
-           (', m.ram[map.room_number])', ', m.ram[castle.room])'),
            ('m.ram[map.player_door]', 'm.ram[castle.door]'),
-           ('m.ram[map.player_lives]', 'm.ram[castle.lives]')]
-step('A51', None, 'replace_all', None, arg=RENAMES, file='src/main.zig')
+           ('m.ram[map.player_lives]', 'm.ram[castle.lives]'),
+           (', m.ram[map.room_number])', ', m.ram[castle.room])')]
+# A51: a find-and-replace table in the prose (a missed one won't compile)
+step('A51', None, 'replace_all', None, arg=RENAMES[:3], file='src/main.zig')
+# A51r: told in prose with its reason: every room check reads the header now
+step('A51r', None, 'replace_all', None, arg=RENAMES[3:], file='src/main.zig')
 step('A52', '**`src/main.zig`** (replace `explorer`)', 'replace_fn', fn('src/main.zig', 'explorer'), arg='explorer')
 INROOM_A = rep(fn_in(MAIN8, 'inRoom'), ('    m.ram[map.room_number] = n; // instead of the castle\'s start room\n',
                                         '    m.ram[castle.room] = n; // instead of the castle\'s start room\n    m.ram[map.room_number] = n;\n'))
@@ -386,7 +389,7 @@ step('C17', '**`src/main.zig`** (and the one after the N)', 'replace_text', '   
      arg='    _ = m.runFrame(@This()); // the key\n')
 DOOR_TEST = test('through the door and out')
 DOOR_TEST8 = rep(DOOR_TEST, ('    onward(m); // the map, and fire\n', ''), ('    onward(m);\n', ''))
-step('C18', '**`src/main.zig`** (in the through-the-door test, add after the two `doorway` checks)', 'replace_text',
+step('C18', '**`src/main.zig`** (replace the through-the-door test)', 'replace_text',
      DOOR_TEST, arg=DOOR_TEST8)
 X_TEST = test('X: a flicker')
 X_TEST_C = rep(X_TEST, ('no lives left, GAME OVER', 'no lives left, the title'),
