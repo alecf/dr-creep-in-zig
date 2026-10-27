@@ -227,7 +227,9 @@ def main():
     for f in files:
         meta, _ = front_matter(f.read_text())
         num = int(meta.get("chapter", 0))
-        view = "prologue" if num == 0 else f"ch{num:02d}"
+        # The Epilogue sorts after the last chapter by its file name and
+        # number, but is labelled as itself (front matter `part: epilogue`).
+        view = "prologue" if num == 0 else "epilogue" if meta.get("part") == "epilogue" else f"ch{num:02d}"
         chapter_files[f.name] = view
         metas.append((f, meta, view, num))
 
@@ -246,7 +248,7 @@ def main():
     template = (SITE / "page" / "template.html").read_text()
     nav, sections = [], []
     for i, v in enumerate(views):
-        label = "Prologue" if v["num"] == 0 else f"Chapter {v['num']}"
+        label = "Prologue" if v["num"] == 0 else "Epilogue" if v["view"] == "epilogue" else f"Chapter {v['num']}"
         nav.append(
             f'<a class="toc-item" href="#{v["view"]}" data-view="{v["view"]}">'
             f'<span class="toc-num">{label}</span><span class="toc-title">{html.escape(v["title"])}</span></a>'
@@ -260,21 +262,21 @@ def main():
         if next_v:
             pager += f'<a href="#{next_v["view"]}" class="next">{html.escape(next_v["title"])} →</a>'
         pager += "</nav>"
-        play_title = "The starter kit" if v["checkpoint"] == "starter" else f"Checkpoint {v['checkpoint']}"
+        play_title = "The starter kit" if v["checkpoint"] == "starter" else "The finished game" if v["view"] == "epilogue" else f"Checkpoint {v['checkpoint']}"
         # From Chapter 11 the game has a menu and saves (Esc).
         esc_note = " Esc on the title opens the menu; Esc on the castle map saves the game." if v["num"] >= 11 else ""
         play = (
             f'<section class="play" aria-label="Playable checkpoint">'
             f'<div class="play-head"><span class="play-eyebrow">Plug in and play</span>'
             f'<h2 class="play-title">{play_title}</h2>'
-            f'<p class="play-note">The game exactly as it stands at the end of this chapter. Click the screen, then use the arrow keys or WASD and Space. IJKL and Return drive joystick 2.{esc_note}</p></div>'
+            f'<p class="play-note">{"The whole game, as Chapter 11 left it." if v["view"] == "epilogue" else "The game exactly as it stands at the end of this chapter."} Click the screen, then use the arrow keys or WASD and Space. IJKL and Return drive joystick 2.{esc_note}</p></div>'
             f'<div class="crt"><canvas data-wasm="play/{v["checkpoint"]}.wasm" width="384" height="272" tabindex="0" aria-label="Comet 64 screen"></canvas>'
             f'<button class="power" type="button">Power on</button></div>'
             f'<p class="play-status" data-status>Off</p>'
             f'<p class="play-disk" hidden><label>Got a castle disk? Slot it in: <input type="file" accept=".d64" data-comet-disk></label> '
             f'<button type="button" class="disk-save" data-comet-save-disk>Save the disk</button></p></section>'
         )
-        kicker = "Prologue" if v["num"] == 0 else f"Chapter {v['num']}"
+        kicker = label
         sections.append(
             f'<article class="view" id="view-{v["view"]}" data-view="{v["view"]}" hidden>'
             f'<header class="chapter-head"><p class="kicker">{kicker}</p><h1>{html.escape(v["title"])}</h1>'

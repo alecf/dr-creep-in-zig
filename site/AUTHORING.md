@@ -2657,3 +2657,82 @@ Castle rooms (ch03)".
   up", 638,586 note, TIME NOT SAVED, the key clear, Bonus Stage "A bad
   first castle"; diagram legend "(pale until read)"; prose 5,499 words. *Kept:* menu spacing
   (16 castles) and PRESS FIRE under NO CASTLE DISK (Writer response).
+- **Epilogue file, title, navigation.** `site/chapters/12-epilogue.md`,
+  front matter `chapter: 12`, `part: epilogue`, `title: "All the
+  Castles"`, `checkpoint: ch11` (no new checkpoint, no listings, so no
+  `rebuild.py`). `build.py`: `part: epilogue` gives view `epilogue`,
+  nav/kicker label "Epilogue" (sorted after ch11 by file name), play
+  section titled "The finished game" with the note "The whole game, as
+  Chapter 11 left it." (ch11's wasm, disk slot shown). Prose ≈ 3,040
+  words by ch11's `wc.py` (box text included). No screenshots (the real
+  disk isn't in this tree; no castle names or data quoted). The
+  outline's in-browser room editor is deferred to a separate follow-up.
+- **Epilogue tooling (`site/tools/epilogue/`).** `measure.py` copies ch11
+  to scratch, adds `src/probe.zig` (imports the game's own `map.zig`,
+  `main.zig` (its copy's `Mode` made pub), `shapes`, `tunes`,
+  `training`, `title`) and runs it with `zig run -OReleaseSafe`: JSON of
+  `map.regions` + table fills, three room tours (power on, fire ×2, N at
+  100 then every 300 frames; plain, Q at 250, C at 250) recording each
+  room's worst `.ok` frame by bucket and average, and ch11's Boss Battle
+  script frame by frame (calls match headless: 3,478). `diagrams.py`
+  writes `page/diagrams/ep-memory.html` (16 × 16 page grid, one square per
+  256 bytes, classes: working memory `--c-green`, castle `--c-cyan` (+30 %
+  mix for spare), built-in tables `--c-orange` (+spare), hardware
+  `--accent`, stack/program/expansion `--ink-soft` 55 % mix, free
+  `--code-bg`; mixed pages split bottom-up by gradient; `title` tooltips)
+  and `ep-frame.html` (per-room stacked bucket bars on a 0–6,000 scale,
+  red average tick), and prints the prose's numbers. `errs.py` adds a
+  made-up `spider` kind to a scratch copy one table at a time and checks
+  each quoted compile error and the one failing test (see below). Both
+  diagrams static; legible at 400 px (no page scroll), light and dark.
+- **Measured for the Epilogue (finished game, ch11).** *Memory* (65,536):
+  reserved 24,221 (program image 20,992, stack 256, expansion 2,973);
+  hardware 12,179; castle + staging + best times + castle list 9,666
+  filled + 7,096 spare (Training 4,644 of each 8,192); built-in tables
+  7,277 + 1,187 spare (shape table 5,325/6,144, music 1,029/1,280, effects
+  267/384, star map 256 full, row table 400); working memory 1,838 (grid
+  1,000); free 2,072 in 11 runs (largest `$0500–$07FF` 768; zero page 256
+  unused). 33 regions. *Frame* (tour, explorer standing in each arrival
+  doorway 300 frames): room averages 497 (Gatehouse) – 1,238 (Mummy in a
+  Storm); worst Under Fire 3,450 (objects 2,502); average of averages
+  707; with Q 1,408 (worst 5,146); with C 743 (worst 3,780). Boss
+  Battle: 3,478 calls, 34 loading pauses using 356 of 3,800 slots, 0
+  overruns; average room frame 953; busiest room frame 5,090 (frame
+  2,054, the Way Out: actors 2,500, objects 2,146 as the door is drawn
+  open); busiest display-on frame 14,436 (escape screen piece); largest
+  loading frames 638,586 (power-on) and 244,096 (a room draw). Quoted
+  from earlier logs: grid walking step 204 vs 1,626 (ch04); belt tint
+  224 / draw 1,320 / swap 2,972 (ch06); C in a full room ≈ 70 % (ch05
+  review); sound 14 silent, Boss max 228 (ch10); dice 24 (ch08).
+- **Epilogue quest (the "Still to check" list for readers).** Door map
+  bytes (by eye on a filled-in map: N repeatedly on the map marks rooms
+  visited; compare with `author.door`; `chart.zig` arrow tables);
+  two Frankensteins on one floor (`choose` in `frankenstein.zig`); ankh
+  (ours 16 rows, 1984 23) and alcove placement (G grid check); turn
+  order for a castle whose header starts the players in different rooms
+  (`castle.start_room` +0/+1; `game.next`); the disk's own tunes (tempo
+  bytes below `$13`, B7, the 11 s title pause; homes: music region 251
+  spare, `$0500–$07FF`). Survey tool described in prose only:
+  `@embedFile` + `m.insert` + `files.pick` + `game.start` + `castle.Walker`
+  at `room.stream(m, n)`. All five remain unverified in this tree.
+- **Epilogue exercises (Bonus Stages, no answer keys).** Recreate a real
+  castle (compare record by record with `castle.Walker`: the kit writes
+  kinds in tag order and computes door map bytes; the kit may refuse a
+  machine left of x 16 with "runs off the screen"); design your own
+  (new `training.zig`-style file + one `drive.save` line in `master.zig`;
+  kit limits 31 rooms, 8 KB; design rules from the ch06/ch07 reviews);
+  a new kind. *New-kind walkthrough, proven by `errs.py` in this order
+  on ch11:* `castle.Kind` + `spider` → `src/castle.zig:259:12: error:
+  switch must handle all possibilities` (note line 107 'spider'); record
+  + framing → `src/author.zig:321:31: error: no field named 'spider' in
+  struct 'author.Room(training.Room)'`; kit field →
+  `src/room.zig:37:70: error: missing struct field: spider`; prepare fn
+  → builds; `actors.Kind` → `src/actors.zig:76:62: error: missing struct
+  field: spider`; behaviour → builds; `objects.Kind` + `web` →
+  `objects.zig:61:61 missing struct field: web`; handlers → builds;
+  `shapes.Id` → `src/shapes.zig:233:46: error: root source file struct
+  'art' has no member named 'spider'`; then `zig build test` fails only
+  "castle.test.tag codes turn into kinds and back" (expected null, found
+  .spider): 1984's tag codes end at `$0836`, the new one is `$0839`.
+  Line numbers are ch11's; if ch11 changes, rerun `errs.py` and update
+  the prose.
