@@ -47,7 +47,7 @@ you'll be designing around:
 | **50 frames a second** | 19,656 cycles per frame to read the joysticks, move everyone and redraw. |
 | **8 hardware sprites** | Eight free-moving pictures over the background, total. |
 | **4 colours per 8×8 cell** | The 320×200 screen is cut into 8×8-pixel squares called cells. Each cell gets three colours of its own, plus one background colour shared by the whole screen. |
-| **3 voices** | The SOUND chip plays three notes at once, music and effects together. |
+| **3 voices** | The SOUND chip plays three notes at once, for music and sound effects alike. |
 
 Every design decision in this game comes back to that table. Why is the
 castle stored as tightly packed bytes instead of a tidy list of objects?

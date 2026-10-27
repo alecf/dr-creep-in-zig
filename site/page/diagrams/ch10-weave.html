@@ -1,0 +1,29 @@
+<style>
+.ch10-wv { display: grid; gap: 12px; }
+.ch10-wv .grid { display: grid; grid-template-columns: 5.5em repeat(6, minmax(2.2em, 1fr)); gap: 3px; align-items: center; }
+.ch10-wv .grid > span { font-size: .72rem; }
+.ch10-wv .t { text-align: center; color: var(--ink-soft); }
+.ch10-wv .n { text-align: center; padding: 4px 0; border-radius: 3px; background: color-mix(in srgb, var(--accent) 22%, transparent); box-shadow: inset 0 0 0 1px var(--accent); }
+.ch10-wv .n.v1 { background: color-mix(in srgb, var(--c13) 30%, transparent); box-shadow: inset 0 0 0 1px var(--c13); }
+.ch10-wv .g { text-align: center; color: var(--ink-soft); }
+.ch10-wv ul { margin: 0; padding-left: 1.2em; display: grid; gap: 2px; font-size: .74rem; }
+.ch10-wv ul b { font-weight: 400; color: var(--accent); }
+.ch10-wv ul i { font-style: normal; color: var(--ink-soft); }
+</style>
+<div class="ch10-wv">
+  <span class="dg-label">Two parts at unit 2: "C4:2 E4:1" and "-:1 G4:2", tick by tick</span>
+  <div class="grid">
+    <span class="t">tick</span><span class="t">0</span><span class="t">1</span><span class="t">2</span><span class="t">3</span><span class="t">4</span><span class="t">5</span>
+    <span>voice 0</span><span class="n" style="grid-column: span 3">C4</span><span class="g">gap</span><span class="n">E4</span><span class="g">gap</span>
+    <span>voice 1</span><span class="g">rest</span><span class="g">rest</span><span class="n v1" style="grid-column: span 3">G4</span><span class="g">gap</span>
+  </div>
+  <span class="dg-label">One stream, in time order</span>
+  <ul>
+    <li><i>tick 0:</i> tempo; voice 0's instrument; <b>voice 0 on C4</b>; voice 1's instrument</li>
+    <li><i>wait 2</i> → tick 2: <b>voice 1 on G4</b></li>
+    <li><i>wait 1</i> → tick 3: voice 0 off (a tick before its next note)</li>
+    <li><i>wait 1</i> → tick 4: <b>voice 0 on E4</b></li>
+    <li><i>wait 1</i> → tick 5: voice 0 off, voice 1 off</li>
+    <li><i>wait 1</i> → tick 6: the end</li>
+  </ul>
+</div>

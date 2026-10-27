@@ -1,0 +1,24 @@
+<style>
+.ch09-un { display: grid; gap: 10px; }
+.ch09-un .ch09-un-grid { display: grid; grid-template-columns: 4.6em repeat(7, minmax(0, 1fr)); gap: 3px; max-width: 620px; align-items: stretch; }
+.ch09-un .ch09-un-grid .a { color: var(--ink-soft); font: .62rem/1.2 var(--mono); text-align: center; }
+.ch09-un .ch09-un-grid .who { font: 600 .72rem/1.2 var(--mono); align-self: center; }
+.ch09-un .ch09-un-grid .dg-bit { min-width: 0; padding: 5px 0; font-size: .56rem; overflow-wrap: normal; line-height: 1.15; letter-spacing: -.02em; }
+.ch09-un .ch09-un-grid .wide { grid-column: span 6; }
+.ch09-un .ch09-un-row { display: contents; }
+.ch09-un .ch09-un-row .dg-bit { animation: ch09-un-on 9s step-end infinite; }
+.ch09-un .ch09-un-r1 .dg-bit { animation-delay: -6s; }
+.ch09-un .ch09-un-r2 .dg-bit { animation-delay: -3s; }
+@keyframes ch09-un-on { 0% { background: var(--accent); color: var(--sheet) } 33.3% { background: var(--code-bg); color: var(--ink-soft) } }
+.ch09-un small { color: var(--ink-soft); font-size: .72rem; }
+</style>
+<div class="ch09-un" data-animate>
+  <span class="dg-label">Seven bytes, three jobs: <code>game.Between</code> at <code>$0200</code></span>
+  <div class="ch09-un-grid">
+    <span></span><span class="a">$0200</span><span class="a">$0201</span><span class="a">$0202</span><span class="a">$0203</span><span class="a">$0204</span><span class="a">$0205</span><span class="a">$0206</span>
+    <div class="ch09-un-row ch09-un-r0"><span class="who">chart</span><span class="dg-bit">blink 1</span><span class="dg-bit">blink 2</span><span class="dg-bit">lit 1</span><span class="dg-bit">lit 2</span><span class="dg-bit">ready 1</span><span class="dg-bit">ready 2</span><span class="dg-bit">steady</span></div>
+    <div class="ch09-un-row ch09-un-r1"><span class="who">escape</span><span class="dg-bit">who</span><span class="dg-bit">shown</span><span class="dg-bit">spot</span><span class="dg-bit">wait</span><span class="dg-bit">walk</span><span class="dg-bit">leg</span><span class="dg-bit">left</span></div>
+    <div class="ch09-un-row ch09-un-r2"><span class="who">over</span><span class="dg-bit">wait</span><span class="dg-bit wide">unused</span></div>
+  </div>
+  <small>Each screen between rooms writes all seven bytes when it's drawn, so whatever the last one left there doesn't matter. Only the one on the screen, lit, means anything.</small>
+</div>

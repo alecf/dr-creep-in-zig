@@ -1,0 +1,40 @@
+<style>
+.ch08-rd { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 18px 28px; align-items: start; }
+.ch08-rd > div { display: grid; gap: 8px; min-width: 0; }
+.ch08-rd .ch08-rd-room { position: relative; height: 56px; max-width: 300px; border-radius: 4px; background: var(--c0); overflow: hidden; }
+.ch08-rd .ch08-rd-floor { position: absolute; left: 0; right: 0; bottom: 6px; height: 4px; background: var(--c4); }
+.ch08-rd .ch08-rd-belt { position: absolute; left: 30%; width: 50%; bottom: 6px; height: 6px; background: repeating-linear-gradient(to right, var(--c15) 0 8px, var(--c12) 8px 16px); }
+.ch08-rd .ch08-rd-frank { position: absolute; bottom: 12px; width: 8%; height: 30px; background: var(--c5); border-radius: 2px; }
+.ch08-rd .ch08-rd-a { left: 4%; animation: ch08-rd-go 5s linear infinite; }
+.ch08-rd .ch08-rd-b { left: 24%; animation: ch08-rd-hold 1.2s step-end infinite; }
+.ch08-rd .ch08-rd-tag { position: absolute; top: 4px; font: .66rem/1 var(--mono); color: var(--accent); }
+.ch08-rd .ch08-rd-tab { display: grid; grid-template-columns: auto auto; gap: 3px 10px; font-size: .76rem; max-width: 300px; }
+.ch08-rd .ch08-rd-tab > span { padding: 2px 6px; border-radius: 4px; background: var(--code-bg); box-shadow: inset 0 0 0 1px var(--rule); font-variant-numeric: tabular-nums; }
+.ch08-rd .ch08-rd-tab b { color: var(--accent); }
+.ch08-rd p { margin: 0; font-size: .74rem; color: var(--ink-soft); }
+@keyframes ch08-rd-go { 0% { transform: translateX(0) } 30% { transform: translateX(250%) } 75% { transform: translateX(1060%) } 100% { transform: translateX(1060%) } }
+@keyframes ch08-rd-hold { 0% { transform: translateX(0) } 33.333% { transform: translateX(25%) } 66.667% { transform: translateX(-25%) } }
+</style>
+<div class="ch08-rd" data-animate>
+  <div>
+    <span class="dg-label">Belt running his way</span>
+    <div class="ch08-rd-room" role="img" aria-label="Frank walks onto a belt running right, and speeds up to three times his walking pace"><span class="ch08-rd-floor"></span><span class="ch08-rd-belt"></span><span class="ch08-rd-frank ch08-rd-a"></span><span class="ch08-rd-tag" style="right:6px">→ →</span></div>
+    <div class="ch08-rd-tab">
+      <span>his step</span><span>+1</span>
+      <span>the belt</span><span>+2</span>
+      <span>each turn</span><span><b>+3</b></span>
+    </div>
+    <p>A belt carries a monster 2 fat pixels a turn, whatever he's doing. With it, Frank is faster than you.</p>
+  </div>
+  <div>
+    <span class="dg-label">Belt turned round</span>
+    <div class="ch08-rd-room" role="img" aria-label="Frank at the left end of a belt running left: each step onto it, the belt puts him back off it, so he walks on the spot"><span class="ch08-rd-floor"></span><span class="ch08-rd-belt"></span><span class="ch08-rd-frank ch08-rd-b"></span><span class="ch08-rd-tag" style="right:6px">← ←</span></div>
+    <div class="ch08-rd-tab">
+      <span>he steps on</span><span>55 → 56</span>
+      <span>the belt</span><span>56 → 54</span>
+      <span>he steps again</span><span>54 → 55</span>
+      <span>and on, for ever</span><span><b>on the spot</b></span>
+    </div>
+    <p>Only feet on the belt are carried, so at its end he's on, off, on. He wants to come right, and he never gets anywhere.</p>
+  </div>
+</div>
