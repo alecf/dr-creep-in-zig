@@ -159,6 +159,7 @@ this section differ, the card and the Decision log win.
 | `$D400–$D7FF` | SOUND chip registers (`$D400–$D418`, SID-like layout; audio since ch10: three voices, ADSR, no filter) |
 | `$D800–$DBE7` | colour RAM: 1000 bytes, low nibble = colour for pixel code `11` |
 | `$DC00–$DCFF` | input: `$DC00` = joystick 2, `$DC01` = joystick 1 (5-bit active-low: bit0 up, bit1 down, bit2 left, bit3 right, bit4 fire; bits 5–7 read as 1). `$DC02` = last key pressed (ASCII, 0 = none; the game writes 0 to acknowledge) |
+| `$DD00–$DD2F` | disk drive (ch11): command, status, address, length, name length, name; card §13 |
 | `$E000–$FF3F` | bitmap: 8000 bytes, 320×200 multicolour (160×200 "fat" pixels, 2 bits each), laid out cell by cell (8 bytes per 8×8 cell, cells left to right, rows top to bottom), exactly like the classic hardware |
 
 The memory-mapped I/O regions are plain RAM that the hardware reads
@@ -510,7 +511,8 @@ Castle rooms (ch03)".
 - **Terminology:** "colour RAM" (`hw.color_ram`) everywhere; "screen
   plane" for `$CC00`. The card's register tables now carry a Zig-name
   column.
-- **Disk drive (planned, not built):** a disk drive device is added to
+- **Disk drive (planned; built in ch11, see "The disk drive (ch11,
+  machine)" below):** a disk drive device is added to
   the machine in chapter 11: a file list (directory in disk order), load
   and save of a named file into RAM at a given address (with a cycle /
   slot cost so loading shows as a loading pause), a wasm-side buffer the
@@ -2464,3 +2466,166 @@ Castle rooms (ch03)".
   frame (9). Prologue's "3 voices" row: "for music and sound effects
   alike". Stage outputs, WAVs, MP3s and the spectrogram regenerated.
   *Declined (Writer response in the review):* PolyBLEP anti-aliasing.
+- **The disk drive (ch11, machine; supersedes "Disk drive (planned, not
+  built)").** `machine/src/drive.zig`: plain functions on `Image =
+  [174_848]u8`, all comptime-capable: `sectorsOn` (21/19/18/17),
+  `offset(t, s)`, `format(img, name, id)` (BAM at 18/0: 4 bytes a track,
+  name `$90`, ID `$A2`, "2A" `$A5`; empty directory at 18/1), `blocksFree`
+  (664 on a fresh disk), `parse(raw)` (`$`/`$0:pattern` listing, `@0:`
+  replace, `0:` drive prefix, ≤16 letters), `matches` (`*` rest, `?` one),
+  `find`, `load(img, raw, out, *touched)` (returns the length less the
+  2-byte load address; `out` gets a prefix if short), `save(img, raw,
+  address, data, *touched)` (allocation nearest track 18, interleave 10;
+  a new directory sector 3 on). Listing: BASIC-style lines (links 1,1,
+  line number, text, 0): line 0 = `$12` + quoted disk name + ID, a line
+  per matching file in directory order (blocks, quoted name, `PRG`),
+  then `N BLOCKS FREE.`, then 0,0. `Command {load = 1, save = 2}`,
+  `Status {ok, no_disk, not_found, exists, full, too_long, bad_name,
+  bad_disk}`. **Registers** `$DD00` command (a `poke` runs it at once,
+  reads back 0), `$DD01` status, `$DD02/3` address, `$DD04/5` length
+  (after a load: bytes that came), `$DD06` name length, `$DD10–$DD2F`
+  name (32). **Time:** `sector_cycles = frame_budget` (19,656) per sector
+  touched, at least one per command, charged by `driveCommand`; the SOUND
+  chip holds its registers meanwhile. `Machine.drive {image, present}`,
+  `insert(bytes)` (35/40 tracks, ± error bytes: 174,848 / 175,531 /
+  196,608 / 197,376), `eject`, `diskImage`; `boot` ejects, then inserts
+  `Game.disk` if declared (`checkGame` checks its type). Headless
+  `--disk FILE` (after boot; a bad image exits 2) and `--save-disk FILE`
+  (prints `disk: PATH, N blocks free`). Wasm: `disk_buf[197_376]`,
+  `comet_disk_buffer(_size)`, `comet_insert(len)` (0 ok), `comet_disk(_size)`.
+  `shell.js`: `insertDisk(bytes)` (boot, insert), `disk()`, `reset()`
+  keeps the disk, `wireDisk` for `input[data-comet-disk]` and
+  `button[data-comet-save-disk]` (downloads `comet-disk.d64`);
+  `build.py`'s play section has a hidden `.play-disk` row shown when the
+  wasm has a drive. Card: memory-map row `$DD00–$DD2F`, reserved
+  `$DC03–$DCFF` and `$DD30–$DFFF`, §12 flags, new §13. Tests: 6 in
+  `drive.zig`, 1 in `machine.zig` (33 machine tests). Every checkpoint
+  starter–ch11 passes `check-all.sh` with it.
+- **Chapter 11 file, title, images.** `site/chapters/11-the-castle-keeper.md`,
+  `title: "The Castle Keeper"`, generated from `tools/ch11/ch11.tmpl.md`
+  by `expand.py` (73 listings; none told in prose instead; no quoted
+  compile errors, so no `errs.py`). Prose ≈ 5,520 words by `wc.py`. Stage
+  runs: A (10 frames, `--save-disk creep.d64`: 643 blocks free), B (power
+  on, 60), C (Esc, five downs, the Entrance Hall, 320), D (N ×19 to the
+  Way Out, ACE, then the menu's BEST TIMES, 2,050), E (Gatehouse, save
+  MY GAME, three X to GAME OVER, resume, 1,700), F (Boss: ch10's BOSS
+  without the WAV, shifted 24 frames for the disk, ACE and DUO, BEST
+  TIMES, 3,800). Screenshots (768×544, `tools/ch11/shots.py`):
+  `11-title` (B 59), `11-menu` (C 130), `11-signing` (D 1610), `11-times`
+  (D 2049), `11-save` (E 430). Diagrams: `ch11-disk` (generated by
+  `tools/ch11/diagrams.py` from stage A's disk image: every sector, the
+  BAM and directory, ZTRAINING's 19-sector chain on track 17 and the
+  Hall's 2, animated read head stepping the chain; scrolls sideways at
+  400 px), `ch11-listing` (static: the `$0:Z*` listing bytes in staging,
+  the two catalog names with bit-7 ends, the castle loading over the
+  listing).
+- **Source layout (ch11).** New `master.zig` (`image`: comptime
+  `format("CASTLES OF CREEP", "84")`, `save` ZTRAINING and ZENTRANCE
+  HALL at `$9800`; `@compileError` if they don't fit), `files.zig`
+  (`load`, `save`, `command`, `name`, `nameFrom` (prefix + bit-7-ended
+  stored name), `max_castles = 16`, `entry`, `length`, `Disk {unread,
+  ready, none}`, `powerOn`, `catalog`, `next`, `pick`, `ready`,
+  `saveScores`), `scores.zig` (`Best` extern {initials[3], seconds,
+  minutes, hours}, `places = 10`, `File` {size[2], tables[2][10]}, 122
+  bytes with a comptime region check, `file`, `address`, `fresh`, `order`,
+  `earned`, `colors`, `draw`, `rowOf`, `line`, `run`), `typing.zig`
+  (`max_letters = 16`, `placeholder '-'`, keys Return 13, Backspace 8, Esc
+  27, `begin`, `Typing {typing, done, cancelled}`, `run` (A–Z, 0–9, space,
+  '.'), `finish`, `letter`), `menu.zig` (`Item`, `Choice`, `asked`,
+  `rowOf`, `draw`, `lives`, `clear`, `pointer`, `pushed`, `run`),
+  `position.zig` (`asked` (Esc only), `draw`, `run`, `Problem`,
+  `problemOf`, `save`, `load`). Changed: `main.zig` (`pub const disk =
+  master.image`; boot no longer loads staging, pokes `shell_signing =
+  0xFF`; `Mode` adds `draw_menu, menu, draw_times, times, draw_name,
+  name`; `draw_title` calls `files.powerOn` while `shell_disk ==
+  unread`; Esc on title → menu, on map → save), `game.zig` (`chosen`
+  needs `files.ready`; `after` loses no life when unlimited), `title.zig`
+  (castle name centred at y 72, or NO CASTLE DISK; ESC FOR THE MENU at
+  y 88; stars avoid rows 9 and 11), `clock.zig` (`write` split out of
+  `print`), `castle.zig` (`restored = 0x01`), `screen.zig` (`erasePart`),
+  `room.zig` (`unplace`/`tint` clip at the left edge), `frankenstein.zig`
+  (1984 frame numbers), `training.zig` (Frank `.frame = 0x84`).
+- **Memory (ch11).** `scores` `$B800–$B879` (the score file less its
+  load address), `shell` `$B880–$B89F` (+0 disk, +1 castles, +2 castle,
+  +3 pointer, +4 stick, +5 unlimited, +6 signing (0xFF none), +7 place,
+  +8 saving, +9 x, +10 y, +11 max, +12 typed, +16 line[16] with bit 7 on
+  the last letter), `catalog` `$B900–$B9FF` (16 × 16-byte names, bit 7 on
+  the last letter), hardware row `disk_drive` `$DD00–$DD2F`. The `$0:Z*`
+  listing (126 bytes on the master disk) is loaded into staging and
+  overwritten by the first castle (ladder row 11's overlay).
+- **Mechanics, as implemented (ch11).** *Power-on:* first `draw_title`
+  frame, display blanked, catalog then `pick(0)`. *Catalog:* names in
+  quotes starting Z from the listing after line 0, less the Z, max 15
+  letters kept, up to 16 castles, directory order. *Pick:* Z+name into
+  staging (≤ 8 KB), magic `& ~restored` must be `$80`, Y+name into
+  `scores` (122 bytes, size word must be 122) else `fresh` (size 122,
+  120 × `$FF`). *Menu:* Esc on title (any other key swallowed); four
+  items at rows 0/16/32/48, heading at 64, castles from 72 (8 apart);
+  stick 1 edges, wraps; fire on a castle blanks and picks; unlimited
+  toggles (reversed text). *Best times:* `earned` after each escape
+  (not with unlimited lives, not `restored`); table `castle.two`; first
+  place whose time is ≥ his (a tie goes above); slower places shift with
+  `m.copy`; initials typed (3), Esc leaves them blank; then `@0:Y`+name
+  saved (122 bytes); signing returns to the escape/GAME OVER flow;
+  viewing (menu) returns to the menu on stick-1 fire or Esc. *Typing:*
+  Return needs ≥ 1 letter; `finish` reads both sticks' fire edges (Return
+  is stick 2's fire, Space stick 1's). *Save:* Esc on the map; names
+  starting Z or Y refused; `@0:`+name, `castle.size` bytes from `$7800`;
+  back to the map either way (Esc too). *Resume:* menu → name → load into
+  `$7800`, magic and `in_game` checked, `restored` set, `sound.stop`,
+  `game.next`, map; errors shown at y 96, retry; Esc → menu.
+  *Left edge:* `unplace` → `erasePart(skip = (16 − x + 3) / 4)`; `tint`
+  drops off-screen columns. *Frank:* record frame byte = 1984's `$84–$86`
+  right, `$87–$89` left, `$8A` slide, `$8B–$8E` climb, `$8F` asleep
+  (`fromRecord`/`toRecord`; unknown → asleep).
+- **Deviations (ch11).** (1) Saves are allowed on any disk, including
+  the game's own; 1984 refused to save a game to the master disk. We
+  refuse Z/Y names instead. (2) The drive costs a frame per sector
+  (~12,700 bytes/s), far faster than 1984's. (3) No room tour on the
+  title. (4) Menu: bitmap text, one column, 16 castles (1984 24), picked
+  castle white (1984 reversed), Esc instead of RUN/STOP. (5) One or two
+  players still chosen by which stick fires (1984 `$7812` = `castle.two`,
+  meeting the ch09 promise). (6) The SOUND chip holds the last frame's
+  registers during disk I/O (1984's behaviour here is unchecked). (7)
+  Best-times screen layout and colours are ours; the file and rules are
+  1984's.
+- **Promises kept or checked (ch11).** Disk load to staging (ch3/ch9);
+  saving a castle saves the game (ch9); high scores from `time` (ch9);
+  title/menu choosing players (ch9: by stick, logged above); X < 16
+  (ch06 review note: `unplace`, `tint`, `screen.erase` now clip; `place`
+  already did; lamps and glow go through these); Frank's frame byte
+  translated to 1984's numbers; real castles' `no_gun` records already
+  handled in `guns.prepare`.
+- **Promises left for the Epilogue (unverified here: no real disk in
+  this tree).** Door map bytes vs a real castle's map (ch09);
+  Frankenstein–Frankenstein avoidance masks (ch08); ankh and alcove size
+  differences (ch08); the 1984 turn-order quirk for different start rooms
+  (ch09; we keep strict turns); MUSICn loading and 1984 tempo bytes below
+  `$13` (> 50 Hz; ch10), B7 notes, the title's 512-tick pause. All are
+  listed for readers in the chapter's "Still to check" box.
+- **Costs at ch11 (measured).** Sector 19,656. Power-on frame 638,586
+  cycles (33 slots): bucket 0 454,404 (23 sectors: listing 2, ZTRAINING
+  20, missing Y 1) + title 184,168. Menu draw 139,728 (8 slots), idle
+  102, pointer move 1,086; pick Training 414,074 (21 sectors), pick Hall
+  4 sectors; best-times draw 174,466 signing / 157,712 viewing; score
+  save 78,946 (4 sectors, new or replacing); name screen 133,958; a letter
+  ≈ 920; save game 435,218 (22 sectors, 23 slots); resume 20 sectors.
+  No overruns in any stage run. Wasm 950,746 → 1,181,300 bytes (the
+  disk image).
+- **Tests at ch11 (87 in `zig build test`, plus 33 machine).** main:
+  power-on catalog (order, bit 7, staging = training, fresh scores, a
+  loading frame); no disk (title stays); menu → Entrance Hall played;
+  unlimited lives (5 deaths, lives 3); best time signed, on the disk,
+  kept across a power cycle, viewed from the menu; save on the map (with
+  Backspace), three deaths, a missing name, resume (room, lives, time,
+  `restored`, no best time, onward into room 1); a disk of your own (22
+  castles → 16, directory order, a non-castle file ignored). room: left
+  edge clipping. frankenstein: frame byte round trip. Old tests sign
+  their escapes (`sign`: ACE/DUO, ONE/TWO, WIN). Helpers `typeIn`,
+  `sign`, `push`.
+- **Ladder bookkeeping (ch11).** Taught: devices (registers, a command,
+  a status), blocks and slow storage (tracks, sectors, BAM, directory,
+  chained files, interleave, a frame per sector, blank before I/O);
+  overlaying memory (the listing in staging under the castle). Also:
+  comptime disk building, insertion into a sorted table with an
+  overlapping copy.

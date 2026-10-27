@@ -61,12 +61,12 @@ src/text.zig         letters from the character ROM, with the castle's text styl
 src/title.zig        the title screen, with the castle's name
 ```
 
-The Boss Battle run plays the title waltz for a few seconds, then
-Chapter 9's game for two (Two's Company, the Way Out, two escapes, GAME
-OVER and the title), and saves the sound as a WAV file:
+The Boss Battle run plays Chapter 9's game for two (Two's Company, the
+Way Out, two escapes), each explorer signing his best time, then GAME
+OVER, the title, and the menu's BEST TIMES:
 
 ```
-zig build run -- --frames 3780 --press 300:f:5@2 --press 320:f:3 --press 320:f:3@2 --key 340:N --key 355:N --key 370:N --key 385:N --key 400:N --key 415:N --key 430:N --key 445:N --key 460:N --key 475:N --key 490:N --key 505:N --key 520:N --key 535:N --key 550:N --key 565:N --key 580:N --key 595:N --press 625:l:52 --press 625:l:52@2 --press 677:u:60 --press 740:r:46 --press 786:f:400 --press 795:l:182@2 --press 977:f:4@2 --press 981:l:60@2 --press 1041:ur:4@2 --press 1190:l:46 --press 1236:d:100 --press 1336:l:250 --press 1590:ur:4 --press 1710:f:3 --press 1710:f:3@2 --press 1742:l:240 --press 1742:l:240@2 --press 1982:f:4 --press 1982:f:4@2 --press 1992:l:60 --press 1992:l:60@2 --press 2054:ur:4 --press 2054:ur:4@2 --dump-every 10 --wav creep.wav
+zig build run -- --frames 3800 --press 324:f:5@2 --press 344:f:3 --press 344:f:3@2 --key 364:N --key 379:N --key 394:N --key 409:N --key 424:N --key 439:N --key 454:N --key 469:N --key 484:N --key 499:N --key 514:N --key 529:N --key 544:N --key 559:N --key 574:N --key 589:N --key 604:N --key 619:N --press 649:l:52 --press 649:l:52@2 --press 701:u:60 --press 764:r:46 --press 810:f:400 --press 819:l:182@2 --press 1001:f:4@2 --press 1005:l:60@2 --press 1065:ur:4@2 --press 1214:l:46 --press 1260:d:100 --press 1360:l:250 --press 1614:ur:4 --press 1734:f:3 --press 1734:f:3@2 --press 1766:l:240 --press 1766:l:240@2 --press 2006:f:4 --press 2006:f:4@2 --press 2016:l:60 --press 2016:l:60@2 --press 2078:ur:4 --press 2078:ur:4@2 --dump-every 10 --key 2740:A --key 2744:C --key 2748:E --key 2752:#13 --key 3330:D --key 3334:U --key 3338:O --key 3342:#13 --key 3640:#27 --press 3660:d:1 --press 3680:f:1
 zig build wasm && python3 -m http.server -d web
 zig build test
 ```

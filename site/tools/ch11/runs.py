@@ -39,7 +39,7 @@ WAYOUT = (['--frames', '2050', '--press', '60:f:3', '--press', '75:f:3']
 # fire on RESUME GAME, the name again: the map, and on into the Long
 # Gallery, where the game was.
 SAVE = (['--frames', '1700', '--press', '60:f:3', '--press', '75:f:3', '--press', '100:l:34', '--press', '134:f:4',
-         '--press', '138:r:60', '--press', '198:ur:4'] + keys(380, '\x1b') + keys(400, 'MY GAME\r')
+         '--press', '138:r:60', '--press', '198:ur:4'] + keys(380, '\x1b') + keys(400, 'MY GAME') + keys(440, '\r')
         + ['--press', '480:f:3', '--key', '580:X', '--press', '730:f:3', '--key', '830:X', '--press', '980:f:3', '--key', '1080:X']
         + keys(1480, '\x1b') + ['--press', '1500:f:1'] + keys(1520, 'MY GAME\r') + ['--press', '1600:f:3']
         + ['--dump-every', '10'])
