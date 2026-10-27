@@ -46,7 +46,7 @@ same number, the **seed**, and you get the same list every time. Record
 the joystick, play it back, and the bolts flicker exactly as before.
 
 Chapter 2 scattered the title's stars with a sum like this, a multiply
-and an add. A 6510 can't multiply in one instruction, so the 1984 dice
+and an add. The Comet's CPU can't multiply in one instruction, so the 1984 dice
 use its two cheapest tricks: moving bits along, and XOR.
 :::
 
@@ -130,7 +130,7 @@ pub fn start(m: *Machine) void {
 ```
 
 `start` runs once, at boot. It never runs again, not even for a new
-game, so the dice just carry on from wherever they got to.
+game, so the dice carry on from wherever they got to.
 
 **`src/dice.zig`** (add at the end)
 
@@ -198,7 +198,9 @@ After their first roll, the dice go round a loop of 32,767 pairs, half
 of all there are. The starting pair, `$57 $C6`, leads onto the loop and
 never comes up again. The test also counts the bottom two bits of every
 roll: each of 00 to 11 comes up close to a quarter of the time. That's
-what the bolts use, `roll & 3`, as fair as a four-sided die.
+what the bolts use, `roll & 3`. Two rolls in a row aren't independent,
+though: the second's bottom bit follows from the first. For a
+flickering bolt, nobody can tell.
 
 Boot starts the dice:
 
@@ -259,7 +261,7 @@ same dice, so two machines no longer dance in step.
 
 ## The mummy
 
-A mummy's record says four things: his state, where his ankh stands,
+A mummy's record says three things: his state, where his ankh stands,
 and where his tomb is. His state is 1 while he sleeps in the tomb, 2
 once he's out, and 3 when he's gone for good. Two more bytes were called
 `runtime` until now. They're where he is once he's out of the tomb:
@@ -531,9 +533,9 @@ pub const stars = Region{ .name = "star map", .first = 0x5F00, .last = 0x5FFF };
 pub const shape_table = Region{ .name = "shape table", .first = 0x6000, .last = hw.program_end - 1 };
 ```
 
-The space comes out of the program image, which is only a reservation:
-our Zig code doesn't live in the Comet's memory. Boot copies the stars
-and the table to their new homes without a line changed.
+The 2 KB comes out of the program image, the room we keep for the
+game's code. It still has nearly 22 KB. Boot copies the stars and the
+table to their new homes without a line changed.
 
 ### Who's on the plate?
 
@@ -947,7 +949,7 @@ pub fn walk(m: *Machine, n: u3) void {
 ```
 
 After the `destroy` check and the switch, a climbing mummy takes the
-next entry of the table. Out of the tomb, his rule is simple. Find the explorer's X. If the
+next entry of the table. Out of the tomb, his rule is short. Find the explorer's X. If the
 mummy is fewer than 2 fat pixels away, stop: he's right underneath.
 Otherwise take one fat pixel towards it, if the grid has a way. He never
 looks at the explorer's Y, and he never climbs. He keeps to his floor.
@@ -956,11 +958,9 @@ That's all his cunning, and it's enough. Stand on the walkway above him
 and he shuffles along under you. Come down a ladder, and he's waiting.
 
 :::inside-the-disk Climbing out, our way
-The 1984 mummy also slides sideways as he climbs, a fat pixel or two at
-a time, from the middle of his tomb to its edge. Our tomb is our own
-drawing, a different size from 1984's, so our mummy climbs straight
-down out of the hole and stands in front of it. The table's steps down
-are 1984's: three still turns, then four steps of 2 rows.
+The 1984 mummy also slides sideways as he climbs, 2 fat pixels a turn.
+Our tomb is our own drawing, so ours climbs straight out and stands in
+front of it. The steps down are 1984's.
 :::
 
 ### Hit and touch
@@ -1147,7 +1147,7 @@ watch him:
 
 The ankh stands on your walkway, so you can't help waking him. His tomb
 is on the floor below. Lead him to the left end, then run right for the
-pole. He's as fast as you on the flat, but he has to turn round first.
+pole. He's half as fast as you, so he can't keep up.
 
 :::type-in The Mummy room's tests
 **`src/main.zig`** (add above `explorer`)
@@ -1353,8 +1353,8 @@ still works.
 
 ## Frankenstein's monster
 
-Frankenstein's monster is the castle's other horror. He's slower than
-the mummy, but he climbs, he slides down poles, and he chooses his way
+Frankenstein's monster is the castle's other horror. He's no faster
+than the mummy, but he climbs, he slides down poles, and he chooses his way
 at every junction, by where you are.
 
 His record has the alcove's position and a state byte. The state is
@@ -1417,33 +1417,34 @@ sliding down a pole:
 ```zig
 // ---- Frankenstein's monster -------------------------------------------------
 
-/// His alcove: a stone niche, its back wall on the left when it faces
-/// right. He stands inside it, 4 fat pixels in from its left edge.
+/// His alcove: a stone niche with a dark back wall, so that it doesn't
+/// look like a doorway. He stands inside it, 4 fat pixels in from its
+/// left edge.
 pub const alcove_right = room(.{ .dark_grey, .grey, .light_grey }, &.{
     "...3333333333...",
     "..322222222223..",
-    ".3221......1223.",
-    "3221........1223",
-    "321..........123",
-    "3221.........123",
-    "321..........123",
-    "321..........123",
-    "3221.........123",
-    "321..........123",
-    "321..........123",
-    "3221.........123",
-    "321..........123",
-    "321..........123",
-    "3221.........123",
-    "321..........123",
-    "321..........123",
-    "3221.........123",
-    "321..........123",
-    "321..........123",
-    "3221.........123",
-    "321..........123",
-    "3333.........333",
-    "2222.........222",
+    ".32211111111223.",
+    "3221111111111223",
+    "3211111111111123",
+    "3221111111111123",
+    "3211111111111123",
+    "3211111111111123",
+    "3221111111111123",
+    "3211111111111123",
+    "3211111111111123",
+    "3221111111111123",
+    "3211111111111123",
+    "3211111111111123",
+    "3221111111111123",
+    "3211111111111123",
+    "3211111111111123",
+    "3221111111111123",
+    "3211111111111123",
+    "3211111111111123",
+    "3221111111111123",
+    "3211111111111123",
+    "3333111111111333",
+    "2222111111111222",
 });
 
 pub const alcove_left = mirror(alcove_right);
@@ -1636,7 +1637,7 @@ first two mirrored, so his arms and legs swap as he climbs.
 ### The alcove
 
 The alcove is an object, so it can hold his plate bytes and his actor
-number, just like the ankh. It's also a solid thing a laser can hit:
+number, like the ankh. It's also a solid thing a laser can hit:
 
 **`src/objects.zig`** (replace the comment at the top)
 
@@ -1748,8 +1749,8 @@ pub fn prepare(m: *Machine, r: castle.Record) void {
 }
 ```
 
-Preparing his record does something no other preparer has done: it
-changes the navigation grid. The three cells of walkway under his
+Preparing his record changes the navigation grid, as a forcefield's
+wall does, but only one way: the three cells of walkway under his
 alcove lose the way back in. Facing right, his cell and the next two
 lose their *left* bit, so you can walk out of the alcove but not into
 it. The monster walks out of it the same way. It's 1984's own trick for
@@ -1917,9 +1918,8 @@ can drop down behind him.
 distances *shorter* than the last one it tried. If two ways are exactly
 as far, the first wins, in the order up, right, down, left. If the
 first is shut, the second is skipped too, because it's not shorter, and
-he stands still. It almost never happens, because one of the two
-distances is in fat pixels and the other in rows, but it's 1984's rule,
-so it's ours.
+he stands still. It's rare, because the two numbers have to match
+exactly, fat pixel for row. But it's 1984's rule, so it's ours.
 :::
 
 `bit` turns a direction into its grid bit: 1 shifted left by the
@@ -1991,8 +1991,8 @@ picture follows his Y. With no rungs, it's a pole, and he slides down.
 Chapter 4 decided when the explorer shows his climbing picture: when
 the cell under his feet **or the one below** has a way up. The 1984
 explorer looks only at his own cell, so for his first steps down from a
-ladder's top he shows the pole picture. We said then that the monsters
-would have to choose. Frankenstein uses our rule, so he climbs down a
+ladder's top he shows the pole picture. That leaves the monsters a
+choice. Frankenstein uses our rule, so he climbs down a
 ladder as cleanly as you do. The 1984 Frankenstein copies 1984's
 explorer, quirk and all.
 :::
@@ -2116,9 +2116,7 @@ pub fn strike(m: *Machine, n: u3, object: u8) bool {
 }
 ```
 
-An awake monster out on the walkways is a sprite, and a laser that
-meets him meets his `hit`. One stop on the alcove, one death on the
-walkway: lasers don't need anything else.
+Out on the walkways, an awake monster's `hit` does the rest.
 
 ### The Frankenstein room
 
@@ -2143,8 +2141,8 @@ walkway: lasers don't need anything else.
                 "YOU STAND ON HIS",
                 "FLOOR, IN FRONT OF",
                 "HIM. THEN HE PACES",
-                "IT. GO DOWN BEHIND",
-                "HIM, AND RUN!",
+                "IT. HE'S SLOW: RUN",
+                "FOR THE BELL!",
             }),
         },
 ```
@@ -2157,7 +2155,7 @@ search through the castle agrees with the grid, except at forcefields
 and trapdoors. Now there's a third exception: the three cells by each
 alcove, which only the grid knows about:
 
-**`src/main.zig`** (in the search test, replace the end of the loop)
+**`src/main.zig`** (in the search test, replace everything from the comment above `const plan` to the end of the loop)
 
 ```zig
         // The search reads only the castle, so it walks through every
@@ -2246,9 +2244,8 @@ test "Frankenstein: asleep, a bolt can't touch him; awake, it's the end of him" 
 ```
 :::
 
-That last test puts a bolt where no room would. It's a test of `hit` on
-its own, like Chapter 7's sprite-cap test. The room tests play through
-the stick, as a player would.
+That last test puts a bolt where no room would: it tests `hit` on its
+own, like Chapter 7's sprite-cap test.
 
 ![Frankenstein: the explorer has slid down the pole to the floor, and the monster has woken and stepped out of his alcove on the left](images/08-frank.png)
 
@@ -2259,7 +2256,8 @@ you'll make it, this time.
 ## A Trap for Frank
 
 Now let's use the machines against him. In this room he's awake already,
-pacing a walkway on the right. A ladder goes down from it to the floor,
+pacing a walkway on the right. A gap keeps him off your walkway and
+away from your door. A ladder goes down from his walkway to the floor,
 and it ends on a trapdoor:
 
 **`src/training.zig`** (replace the comment at the top)
@@ -2286,12 +2284,13 @@ const shapes = @import("shapes.zig");
             .map = spot(13),
             // He's awake already, on the walkway on the right, and the
             // ladder down from it ends on a trapdoor. Its switch is on the
-            // floor, reached by the pole from where you come in.
+            // floor, reached by the pole from where you come in. A gap
+            // between the two walkways keeps him from your door.
             .door = &.{
                 .{ .x = 16, .y = 96, .to = .frankenstein, .to_door = 1 },
                 .{ .x = 156, .y = 96, .to = .frank_ride },
             },
-            .walkway = &.{ floor, upper_left, upper_right },
+            .walkway = &.{ floor, .{ .length = 18, .x = 16, .y = 128 }, upper_right },
             .pole = &.{.{ .length = 8, .x = 80, .y = 128 }},
             .ladder = &.{.{ .length = 9, .x = 124, .y = 128 }},
             .bell = &.{.{ .x = 140, .y = 104, .door = 1 }},
@@ -2320,11 +2319,10 @@ Go down the pole, and step on the switch. The trapdoor opens. Then wait.
 He reaches the top of his ladder, which is a junction. You're farther
 below him than you are to his left, so down he comes, into the hole.
 
-The switch's place took two tries. Farther left, the explorer was
-nearly as far left as he was below. Frank chose down, took a step, was
-still in the walkway's cell, and now the explorer was less far below. So
-he chose left, stepped back, and chose down again, for ever. Near the
-ladder's foot, down wins all the way.
+The switch's place took two tries. Farther left, the explorer was nearly
+as far left as below. One step down, Frank was still in the walkway's
+cell, the explorer less far below, so he chose left, then down again,
+for ever. Near the ladder's foot, down wins.
 
 :::type-in A Trap for Frank's tests
 **`src/main.zig`** (add above `explorer`)
@@ -2361,7 +2359,7 @@ test "a trap for Frank: caught once, lead him back up, and the trap still works"
     hold(m, 0, 100);
     back(m, 13);
     try std.testing.expectEqual(192 - 21, monster(m, .frankenstein).?.box.y); // he's on the floor now
-    while (feet(m) < 92) hold(m, machine.joy.right, 2); // the end of your walkway, near his ladder
+    while (feet(m) < 84) hold(m, machine.joy.right, 2); // the end of your walkway, near his ladder
     while (monster(m, .frankenstein).?.box.y != 128 - 21) hold(m, 0, 2); // he climbs back up
     while (feet(m) > 81) hold(m, machine.joy.left, 2);
     hold(m, machine.joy.down, 70);
@@ -2573,16 +2571,20 @@ him at its near end. Slide down then, and turn it round.
 16: two mummies and three Frankensteins, a trapdoor, a belt and a storm.
 
 :::inside-the-disk The nearest explorer
-Chapter 5 said a mummy chases the nearest explorer, and so he does in
-1984. Ours chases player 1, because there is only player 1. So do the
-Frankensteins, and so does every gun. Chapter 9 brings player 2, and
-"the explorer" becomes "the nearest one that's playing".
+Chapter 5 said a mummy chases the nearest explorer. That was close,
+not exact. In 1984 he chases player 1 while player 1 is playing, and
+player 2 only after that. Frankenstein measures both explorers and goes
+by the nearer one in each direction. Ours has only player 1 so far, and
+Chapter 9 brings player 2.
 :::
 
 :::inside-the-disk What else is different
 A few smaller differences, so that nothing hides. The ankh's flash
-colours are ours. 1984 draws one more small piece under a Frankenstein
-alcove, its shape `$1C`, which our alcove picture doesn't need. An awake
+colours are ours, and our ankh is 16 rows tall where 1984's is 23.
+1984's alcove is narrower and taller, and stands on the walkway: it rubs
+out a strip of walkway and, under a right-facing one, draws one walkway
+piece back. Ours stands above the walkway and needs neither. Chapter 11
+will have to place both pictures for the real castles. An awake
 Frankenstein's picture byte holds *our* shape number, not 1984's, so
 the real castles in Chapter 11 will need a translation for it. And
 1984's Frankensteins steer round each other, with a mask of ways
@@ -2594,8 +2596,8 @@ one floor yet, so that waits too.
 Need numbers that look random? Keep a seed, and roll it with a little
 sum: a rotate and a couple of XORs is plenty. Start from the same seed
 and you get the same numbers, so tests and replays see the same game.
-Use the bottom bits for small choices, and give everything one shared
-set of dice.
+The bottom bits are fine for small choices like a bolt's flicker. Give
+everything one shared set of dice.
 :::
 
 :::power-up The Follow-It-Back Power-Up
@@ -2609,13 +2611,14 @@ costs a short loop, and it can't go stale when things move.
 moves to `$5F00` and the shape table to `$6000`, so the table has 6,144
 bytes. It uses 5,106 of them, 1,332 more than Chapter 7, for 26 new
 pictures. A mummy's position is two bytes of his record, a
-Frankenstein's six; the castle is 4,652 bytes, 156 more. An object slot
+Frankenstein's four; the castle is 4,652 bytes, 156 more. An object slot
 is still 16 bytes: two of its spare bytes are a monster's plates now.
 
-**Time.** A roll of the dice costs 24 cycles, and a bolt rolls twice a
-turn. A mummy's turn costs about 90 cycles, a Frankenstein's 130 or so
-in a corridor and 40 more for every way he tries at a junction. Any turn
-that changes a picture adds about 650 to unpack the sprite. The busiest
+**Time.** A roll of the dice costs 40 cycles, and a bolt rolls twice a
+turn. A mummy's turn costs about 120 cycles, a Frankenstein's about 200
+in a corridor and 40 more for every way he tries at a junction. Both
+walk with a new picture every turn, and that adds about 650 to unpack
+the sprite. The busiest
 step in the Boss Battle costs 4,248 cycles in the actors' bucket, in the
 Mummy room: about a fifth of a frame.
 :::
@@ -2661,8 +2664,8 @@ overruns: 0, loading pauses: 17
 last frame: frames/frame_04059.ppm
 ```
 
-`frame_00500.ppm` has the mummy out of his tomb and following the
-explorer along the walkway above. `frame_01380.ppm` has Frankenstein
+`frame_00500.ppm` has the mummy out of his tomb and following along the
+floor, under the explorer on the walkway above. `frame_01380.ppm` has Frankenstein
 awake and walking out of his alcove. `frame_02040.ppm` has him climbing
 down his ladder towards the open trapdoor. `frame_02950.ppm` has him
 walking on the spot against the belt. `frame_03780.ppm` has the storm
@@ -2699,8 +2702,9 @@ rm -rf my-creep/.zig-cache my-creep/zig-out my-creep/web
 :::
 
 :::bonus-stage
-- **Loaded dice.** Start the dice from a different seed, say `$01 $00`,
-  and count how long the loop is. Is it 32,767 again?
+- **Loaded dice.** Start the dice from `first_low = 0x01, first_high =
+  0x00` and roll. Then try any other pair. Why do almost all of them give
+  32,767?
 - **Two Frankensteins.** Give the Frankenstein room a second alcove,
   facing left at the far end. What happens when they meet in a
   corridor?

@@ -250,7 +250,7 @@ step('D23', '**`src/guns.zig`** (replace `strike`)', 'replace_fn', fn('src/guns.
 step('D24', '**`src/training.zig`** (replace the `frankenstein` room)', 'replace_text',
      room_of(TR, 'frankenstein', 'frank_trap'), arg=room_of(TR7, 'frankenstein', 'frank_trap'))
 M7 = f7('src/main.zig')
-step('D25', '**`src/main.zig`** (in the search test, replace the end of the loop)', 'replace_text',
+step('D25', '**`src/main.zig`** (in the search test, replace everything from the comment above `const plan` to the end of the loop)', 'replace_text',
      cut(MAIN, '        // The search reads only the castle', '    }\n}\n\ntest "a walkway'),
      arg=cut(M7, '        // The search reads only the castle', '    }\n}\n\ntest "a walkway'))
 step('D26', '**`src/main.zig`** (add above `explorer`)', 'before_text',

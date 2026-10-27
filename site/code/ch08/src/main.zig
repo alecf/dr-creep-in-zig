@@ -812,7 +812,7 @@ test "a trap for Frank: caught once, lead him back up, and the trap still works"
     hold(m, 0, 100);
     back(m, 13);
     try std.testing.expectEqual(192 - 21, monster(m, .frankenstein).?.box.y); // he's on the floor now
-    while (feet(m) < 92) hold(m, machine.joy.right, 2); // the end of your walkway, near his ladder
+    while (feet(m) < 84) hold(m, machine.joy.right, 2); // the end of your walkway, near his ladder
     while (monster(m, .frankenstein).?.box.y != 128 - 21) hold(m, 0, 2); // he climbs back up
     while (feet(m) > 81) hold(m, machine.joy.left, 2);
     hold(m, machine.joy.down, 70);

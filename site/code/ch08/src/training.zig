@@ -354,8 +354,8 @@ pub const plan: author.Castle(Room) = .{
                 "YOU STAND ON HIS",
                 "FLOOR, IN FRONT OF",
                 "HIM. THEN HE PACES",
-                "IT. GO DOWN BEHIND",
-                "HIM, AND RUN!",
+                "IT. HE'S SLOW: RUN",
+                "FOR THE BELL!",
             }),
         },
         .frank_trap = .{
@@ -363,12 +363,13 @@ pub const plan: author.Castle(Room) = .{
             .map = spot(13),
             // He's awake already, on the walkway on the right, and the
             // ladder down from it ends on a trapdoor. Its switch is on the
-            // floor, reached by the pole from where you come in.
+            // floor, reached by the pole from where you come in. A gap
+            // between the two walkways keeps him from your door.
             .door = &.{
                 .{ .x = 16, .y = 96, .to = .frankenstein, .to_door = 1 },
                 .{ .x = 156, .y = 96, .to = .frank_ride },
             },
-            .walkway = &.{ floor, upper_left, upper_right },
+            .walkway = &.{ floor, .{ .length = 18, .x = 16, .y = 128 }, upper_right },
             .pole = &.{.{ .length = 8, .x = 80, .y = 128 }},
             .ladder = &.{.{ .length = 9, .x = 124, .y = 128 }},
             .bell = &.{.{ .x = 140, .y = 104, .door = 1 }},

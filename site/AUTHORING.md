@@ -2081,8 +2081,11 @@ Castle rooms (ch03)".
   trapdoors/belts/lightning, ch07 `directEnumArray` gap (paid: back to
   0), `packed struct(u8)` flag bytes. ch3's `later` preparers: only the
   pattern remains (ch11).
-- **Promises (ch08 → later).** ch9: monsters, guns, ankhs and panels
-  serve the nearest playing explorer; ankh/alcove plate bytes are
+- **Promises (ch08 → later).** ch9 (corrected by the ch08 review): the
+  mummy chases player 1 while P1 is playing, else player 2 (1984 `$3846`,
+  no distance); Frankenstein takes each direction's distance as the
+  smaller of the two playing explorers' (`$3C15`) and wakes for either;
+  ankhs and panels serve either explorer; ankh/alcove plate bytes are
   per-monster already, the explorer's `player_plate` still needs a P2
   copy; the clean castle copy resets mummies (state, x/y), Frankenstein
   records and belts; second explorer as a target for `wakes`/`choose`.
@@ -2090,3 +2093,42 @@ Castle rooms (ch03)".
   castles' mummy/Frankenstein records (1984 frame numbers in awake Franks'
   `frame` byte → our Ids); Frank–Frank avoidance masks; tombs and alcoves
   at X < 16 (the ch06 tint note applies to `glow`); the pattern preparer.
+- **ch08 review fixes (supersede the ch08 entries above where they
+  differ).** *Must-fix:* "A 6510" → "The Comet's CPU" (fiction). *Prose:*
+  both monsters walk at **half the explorer's speed** (pace 2, 1 px; the
+  mummy line said "as fast as you"); Frankenstein is "no faster than the
+  mummy"; the nearest-explorer box now says 1984's mummy chases P1 then
+  P2 and Frankenstein uses the nearer explorer per direction (and the ch9
+  promise above is corrected); the grid claim says forcefields already
+  change the grid ("as a forcefield's wall does, but only one way"); the
+  program-image sentence no longer says our code isn't in the Comet's
+  memory ("the room we keep for the game's code … nearly 22 KB"); the
+  dice are "a quarter each" but **consecutive rolls are linked** (the
+  second's bit 0 follows from the first; 8 of 16 pairs), said in the
+  prose and the Power-Up ("fine for small choices like a bolt's
+  flicker"); Bonus "Loaded dice" names `first_low = 0x01, first_high =
+  0x00` (which falls to the stuck (0, 0) pair) and asks why almost every
+  other pair gives 32,767; tie box: "rare, because the two numbers have
+  to match exactly"; rungs box drops "we said then"; "three things";
+  "carry on", "like the ankh", "rule is short"; frame 500 wording;
+  D25's label names its span. *Costs (measured by the reviewer):* roll
+  40 cycles, mummy turn ≈ 120 (+≈ 650 picture), Frankenstein ≈ 200 in a
+  corridor; a Frankenstein's position is four record bytes. *Sizes logged
+  (deviation, ch11 risk):* our ankh is 8×16, 1984's `$44` is 8×23 (a real
+  castle's `ankh_y` would float ours 7 rows high and shorten its
+  in_front box); our alcove is 16×24 at (x−4, y), above the walkway,
+  1984's `$90/$91` is 8×32 at (x, y) standing on it; 1984 erases shape
+  `$92` (8×6) at (x, y+24) and, for a right-facing alcove only, redraws
+  walkway piece `$1C` at (x+4, y+24). The box says this; ch11 must place
+  both pictures (and the alcove object box / author overlap check) for
+  real castles. *Room 13:* its upper-left walkway is now its own
+  `{18 @ 16,128}` (16–87), leaving a visible gap before Frank's walkway
+  (96–175) instead of an invisible end in a seemingly continuous floor;
+  the revisit test walks to the walkway's end (feet 84). *Room 12 sign:*
+  "… THEN HE PACES / IT. HE'S SLOW: RUN / FOR THE BELL!" (the old "go
+  down behind him" fitted only a revisit). *Art:* the alcove's inside is
+  filled with code 1 (dark grey), so it no longer reads as a doorway.
+  Runs unchanged (same frames work); screenshots re-shot from the new
+  stage runs (`08-frank`, `08-trap`, `08-ride` changed). Not done: renaming
+  the old search test (Writer response in the review). Prose ≈ 5,540
+  words.
