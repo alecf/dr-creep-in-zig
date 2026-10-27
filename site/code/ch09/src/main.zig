@@ -1004,17 +1004,24 @@ fn stormOut(m: *Machine) !void {
 
 /// On the floor of A Trap for Frank, below the pole: the switch, wait
 /// for him to climb down into the hole, the switch again, then up his
-/// ladder to the door.
+/// ladder to the door. In a game for two, player 2 waits at the foot of
+/// the pole and treads the switch the second time: two pairs of feet on
+/// it at once would flip it twice.
 fn trapFrank(m: *Machine) !void {
     const trapdoor = m.view(castle.Trapdoor, room.first(m, .trapdoor).?);
     const f = m.view(castle.Frankenstein, room.first(m, .frankenstein).?);
-    while (feet(m) < 97) hold(m, machine.joy.right, 2); // onto the switch, at x 96
+    while (feet(m) < 97) hold2(m, machine.joy.right, 0, 2); // onto the switch, at x 96
     hold(m, 0, 10);
     try std.testing.expect(trapdoor.state & castle.trapdoor_open != 0);
     while (count(m, .frankenstein) != 0) hold(m, 0, 2); // down he comes
     try std.testing.expect(f.state.dead);
-    hold(m, machine.joy.left, 8); // off the switch, and on again
-    while (feet(m) < 97) hold(m, machine.joy.right, 2);
+    if (m.ram[castle.two] != 0) {
+        const two = actors.slot(m, @intCast(player.record(m, 1).actor));
+        while (two.box.x + player.feet_x < 97) hold2(m, 0, machine.joy.right, 2);
+    } else {
+        hold(m, machine.joy.left, 8); // off the switch, and on again
+        while (feet(m) < 97) hold(m, machine.joy.right, 2);
+    }
     hold(m, 0, 10);
     try std.testing.expect(trapdoor.state & castle.trapdoor_open == 0);
     while (feet(m) < 125) hold(m, machine.joy.right, 2); // over the trapdoor to his ladder
@@ -1091,8 +1098,14 @@ fn count(m: *Machine, kind: actors.Kind) usize {
 }
 
 /// Hold joystick 1's `stick` switches for `frames` frames, then let go.
+/// In a game for two, player 2 does just the same on joystick 2.
 fn hold(m: *Machine, stick: u8, frames: usize) void {
-    m.input = .{ .joy1 = stick };
+    hold2(m, stick, if (m.ram[castle.two] != 0) stick else 0, frames);
+}
+
+/// Hold the two sticks' switches for `frames` frames, then let go.
+fn hold2(m: *Machine, one: u8, two: u8, frames: usize) void {
+    m.input = .{ .joy1 = one, .joy2 = two };
     for (0..frames) |_| _ = m.runFrame(@This());
     m.input = .{};
 }
@@ -1152,7 +1165,7 @@ fn wholeCastle(m: *Machine) !void {
 
     while (explorer(m).box.x > 116) hold(m, machine.joy.left, 2); // the Transmitter's booth
     const booth = m.view(castle.Teleport, room.first(m, .teleport).?);
-    while (booth.target != 0) hold(m, machine.joy.up, 2);
+    while (booth.target != 0) hold2(m, machine.joy.up, 0, 2); // one at a time: both would move it twice
     teleport(m);
     while (feet(m) > 50) hold(m, machine.joy.left, 2);
     try ringAndGo(m, .left, 9);
@@ -1243,7 +1256,7 @@ fn ringAndGo(m: *Machine, way: enum { left, right }, next: u8) !void {
 /// stopped flashing: the booth sends one explorer at a time.
 fn teleport(m: *Machine) void {
     hold(m, machine.joy.fire, 4);
-    hold(m, 0, 40);
+    hold(m, 0, 70); // 32 steps of flashing
     hold(m, machine.joy.fire, 4);
 }
 
@@ -1262,4 +1275,168 @@ fn twosCompany(m: *Machine) !void {
     hold(m, machine.joy.down, 200);
     while (feet(m) > 50) hold(m, machine.joy.left, 2); // through the field, to the bell
     try std.testing.expect(feet(m) <= 50);
+}
+
+test "the whole Training Castle for two, each doing what the other does" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    m.boot(@This());
+    _ = m.runFrame(@This()); // draws the title
+    hold2(m, 0, machine.joy.fire, 1); // fire on stick 2: a game for two
+    try std.testing.expectEqual(1, m.ram[castle.two]);
+    try wholeCastle(m);
+}
+
+/// `inRoom`, in a game for two: fire on stick 2 at the title, and both
+/// press fire on the map.
+fn inRoom2(m: *Machine, n: u8) void {
+    m.boot(@This());
+    _ = m.runFrame(@This()); // draws the title
+    hold2(m, 0, machine.joy.fire, 1);
+    m.ram[castle.room] = n;
+    m.ram[castle.room + 1] = n;
+    m.ram[map.room_number] = n;
+    hold(m, 0, 7);
+    hold(m, machine.joy.fire, 1);
+    _ = m.runFrame(@This()); // draws the room
+}
+
+/// Player 2's actor slot.
+fn second(m: *Machine) *align(1) actors.Actor {
+    return actors.slot(m, @intCast(player.record(m, 1).actor));
+}
+
+test "a game for two: both on the map, and it waits for both" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    m.boot(@This());
+    _ = m.runFrame(@This());
+    hold2(m, 0, machine.joy.fire, 1);
+    try std.testing.expectEqual(1, m.ram[castle.in_game + 1]);
+    hold(m, 0, 4);
+    try std.testing.expectEqual(0b11, m.ram[hw.sprite_enable]); // two arrows
+    hold2(m, machine.joy.fire, 0, 4);
+    try std.testing.expectEqual(@intFromEnum(Mode.map), m.ram[map.game_mode]); // player 2 hasn't pressed
+    hold2(m, 0, machine.joy.fire, 1);
+    _ = m.runFrame(@This());
+    try std.testing.expectEqual(@intFromEnum(Mode.room), m.ram[map.game_mode]);
+    try std.testing.expectEqual(2, count(m, .player));
+    try std.testing.expectEqual(@intFromEnum(Color.yellow), second(m).color); // player 2's coat
+}
+
+test "two's company: one holds the button, the other runs through" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom2(m, 18);
+    while (feet(m) > 139) hold(m, machine.joy.left, 2); // both to the ladder
+    hold2(m, machine.joy.up, 0, 200); // player 1 up it
+    while (feet(m) < 159) hold2(m, machine.joy.right, 0, 2); // to the button
+    const field = actors.slot(m, 0);
+    hold2(m, machine.joy.fire, 0, 600); // and he holds it down, far longer than 240 steps
+    try std.testing.expectEqual(@intFromEnum(shapes.Id.field_off), field.frame);
+    while (second(m).box.x + player.feet_x > 50) hold2(m, machine.joy.fire, machine.joy.left, 2); // through
+    hold2(m, machine.joy.fire, machine.joy.fire, 4); // the bell
+    hold2(m, machine.joy.fire, machine.joy.left, 60);
+    hold2(m, machine.joy.fire, machine.joy.up | machine.joy.right, 4);
+    try std.testing.expectEqual(@intFromEnum(player.Status.doorway), m.ram[castle.status + 1]);
+    try std.testing.expectEqual(19, m.ram[castle.room + 1]);
+    try std.testing.expectEqual(@intFromEnum(Mode.room), m.ram[map.game_mode]); // the room goes on for player 1
+}
+
+test "on a ladder, the other explorer is in the way" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom2(m, 2); // Ladders: the ladder at x 112
+    while (feet(m) < 113) hold(m, machine.joy.right, 2);
+    hold2(m, machine.joy.up, 0, 8); // player 1 four steps up
+    const y = explorer(m).box.y;
+    try std.testing.expectEqual(171 - 8, y);
+    hold2(m, machine.joy.down, 0, 8); // player 2 stands at its foot
+    try std.testing.expectEqual(y, explorer(m).box.y);
+    hold2(m, 0, machine.joy.left, 20); // he steps away
+    hold2(m, machine.joy.down, 0, 8);
+    try std.testing.expectEqual(171, explorer(m).box.y);
+}
+
+test "the gun turns to the nearer explorer, and the mummy goes for player 1" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom2(m, 15); // Under Fire: the ladder at x 112
+    const gun = m.view(castle.RayGun, room.first(m, .ray_gun).?);
+    while (feet(m) > 115) hold(m, machine.joy.left, 2);
+    hold2(m, machine.joy.up, 0, 200); // player 1 upstairs, player 2 on the floor
+    hold(m, 0, 100);
+    try std.testing.expect(gun.gun_y > 160); // down at player 2's level
+
+    inRoom2(m, 11); // the Mummy: in upstairs, the ankh at x 48
+    while (second(m).box.x + player.feet_x < 56) hold2(m, 0, machine.joy.right, 2); // player 2 lets him out
+    try std.testing.expectEqual(castle.mummy_out, m.view(castle.Mummy, room.first(m, .mummy).?).state);
+    hold(m, 0, 200);
+    try std.testing.expect(distance(monster(m, .mummy).?.box.x, explorer(m).box.x) < 2); // under player 1
+}
+
+test "Frankenstein wakes for player 2 too" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom2(m, 12); // upstairs; the pole at x 88
+    const f = m.view(castle.Frankenstein, room.first(m, .frankenstein).?);
+    while (second(m).box.x + player.feet_x < 89) hold2(m, 0, machine.joy.right, 2);
+    hold2(m, 0, machine.joy.down, 70);
+    hold(m, 0, 4);
+    try std.testing.expect(f.state.awake);
+}
+
+test "player 2 out of lives: GAME OVER for him, and player 1 plays on" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom2(m, 0);
+    for (0..3) |life| {
+        // Player 1 rings and goes in; with him in the doorway, X is for
+        // player 2 alone.
+        while (feet(m) > 148) hold2(m, machine.joy.left, 0, 2);
+        hold2(m, machine.joy.fire, 0, 4);
+        while (feet(m) < 165) hold2(m, machine.joy.right, 0, 2);
+        hold2(m, machine.joy.up | machine.joy.right, 0, 4);
+        m.input = .{ .key = 'X' };
+        _ = m.runFrame(@This());
+        m.input = .{};
+        try std.testing.expectEqual(@intFromEnum(player.Status.dead), m.ram[castle.status + 1]);
+        if (life == 2) break;
+        // Two rooms: player 1's turn (player 2 was the last to leave his),
+        // and back to the Gatehouse, where they're together again.
+        onward(m);
+        try std.testing.expectEqual(1, m.ram[map.room_number]);
+        try std.testing.expectEqual(1, count(m, .player));
+        while (m.ram[castle.status] != @intFromEnum(player.Status.playing)) hold(m, 0, 2);
+        hold2(m, machine.joy.up | machine.joy.right, 0, 4); // back through the open door
+        while (m.ram[map.game_mode] != @intFromEnum(Mode.map)) hold(m, 0, 1);
+        hold2(m, 0, 0, 1);
+        hold2(m, machine.joy.fire, machine.joy.fire, 1);
+        _ = m.runFrame(@This());
+        try std.testing.expectEqual(2, count(m, .player));
+        while (m.ram[castle.status] != @intFromEnum(player.Status.playing)) hold(m, 0, 2);
+    }
+    while (m.ram[map.game_mode] != @intFromEnum(Mode.over)) hold(m, 0, 1);
+    try std.testing.expectEqual(0, m.ram[castle.in_game + 1]);
+    try std.testing.expectEqual(1, m.ram[castle.in_game]);
+    while (m.ram[map.game_mode] == @intFromEnum(Mode.over)) hold(m, 0, 1);
+    try std.testing.expectEqual(@intFromEnum(Mode.draw_map), m.ram[map.game_mode]); // on for player 1
+}
+
+test "both through the way out: an escape each, then GAME OVER" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom2(m, 19);
+    while (feet(m) > 50) hold(m, machine.joy.left, 2);
+    hold(m, machine.joy.fire, 4);
+    hold(m, machine.joy.left, 60);
+    hold(m, machine.joy.up | machine.joy.right, 4);
+    while (m.ram[map.game_mode] != @intFromEnum(Mode.escape)) hold(m, 0, 1);
+    try std.testing.expectEqual(0, game.between(m).escape.who);
+    while (m.ram[map.game_mode] != @intFromEnum(Mode.draw_escape)) hold(m, 0, 1);
+    hold(m, 0, 2);
+    try std.testing.expectEqual(1, game.between(m).escape.who);
+    try std.testing.expectEqual(0, m.ram[castle.in_game]);
+    while (m.ram[map.game_mode] != @intFromEnum(Mode.over)) hold(m, 0, 1);
+    try std.testing.expectEqual(0, m.ram[castle.in_game + 1]);
 }
