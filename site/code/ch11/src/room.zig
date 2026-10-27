@@ -45,7 +45,7 @@ const prepares = std.enums.directEnumArray(castle.Kind, Prepare, 0, .{
     .mummy = mummy.prepare,
     .key = locks.prepareKey,
     .lock = locks.prepareLock,
-    .pattern = later,
+    .pattern = pattern,
     .ray_gun = guns.prepare,
     .teleport = transmitter.prepare,
     .trapdoor = trapdoors.prepare,
@@ -72,10 +72,22 @@ pub fn build(m: *Machine, r: castle.Record) void {
     prepares[@intFromEnum(r.kind)](m, r);
 }
 
-/// The title screens' pattern comes alive in Chapter 11.
-fn later(m: *Machine, r: castle.Record) void {
-    _ = m;
-    _ = r;
+/// A pattern: one shape stamped `count` times, each a step on from the
+/// last. 1984's title screens use it; no castle room does, but a castle
+/// from another disk may. Its shape is a picture of ours: one past the
+/// end of the table is skipped.
+fn pattern(m: *Machine, r: castle.Record) void {
+    const p = m.view(castle.Pattern, r.at).*;
+    m.work(24); // the six reads
+    if (p.shape >= std.enums.values(shapes.Id).len) return;
+    var x = p.x;
+    var y = p.y;
+    for (0..p.count) |_| {
+        place(m, @enumFromInt(p.shape), x, y);
+        x +%= p.step_x;
+        y +%= p.step_y;
+        m.work(8); // the adds and the loop
+    }
 }
 
 /// Get room `n` ready to draw: paint the floor pieces its colour, and
@@ -366,4 +378,20 @@ test "a machine hanging off the left edge: what's off the screen is left out, an
     place(m, .panel, 8, 0);
     unplace(m, .panel, 8, 0);
     for (m.ram[hw.bitmap..][0 .. 3 * 320]) |b| try std.testing.expectEqual(0, b);
+}
+
+test "a pattern stamps its shape again and again, a step apart" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    m.* = .{};
+    screen.start(m);
+    m.load(map.shape_table.first, shapes.table);
+    const at = map.staging.first;
+    m.load(at, &.{ 3, @intFromEnum(shapes.Id.panel), 16, 0, 40, 0 }); // three panels, 10 cells apart
+    pattern(m, .{ .kind = .pattern, .at = at, .end = at + @sizeOf(castle.Pattern) });
+    for ([_]u16{ 0, 10, 20, 30 }, 0..) |cell, i| {
+        var ink: u32 = 0;
+        for (m.ram[hw.bitmap + cell * 8 ..][0..8]) |b| ink += b;
+        try std.testing.expectEqual(i < 3, ink != 0);
+    }
 }

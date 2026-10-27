@@ -242,18 +242,22 @@ step('F4', '**`src/room.zig`** (in `tint`, replace the first line)', 'replace_te
 step('F5', '**`src/room.zig`** (in `tint`, replace the inner loop)', 'replace_text',
      line(ROOM, '        while (i < wide)') + '\n', arg=line(ROOM10, '        while (i < across)') + '\n')
 step('F6', '**`src/room.zig`** (add at the end)', 'append', test(ROOM, 'a machine hanging off'))
+step('F7', '**`src/room.zig`** (in `prepares`, replace the `later` line)', 'replace_text',
+     '    .pattern = pattern,\n', arg='    .pattern = later,\n')
+step('F8', '**`src/room.zig`** (replace `later`)', 'replace_fn', fn('src/room.zig', 'pattern'), arg='later')
+step('F9', '**`src/room.zig`** (add at the end)', 'append', test(ROOM, 'a pattern stamps'))
 FRANK = f11('src/frankenstein.zig')
 FRANK10 = f10('src/frankenstein.zig')
-step('F7', '**`src/frankenstein.zig`** (add above `prepare`\'s comment)', 'before_text',
+step('F10', '**`src/frankenstein.zig`** (add above `prepare`\'s comment)', 'before_text',
      cut(FRANK, "/// An awake Frankenstein's record", '/// A Frankenstein record:'), arg='/// A Frankenstein record:')
-step('F8', '**`src/frankenstein.zig`** (in `prepare`, replace the `setFrame`)', 'replace_text',
+step('F11', '**`src/frankenstein.zig`** (in `prepare`, replace the `setFrame`)', 'replace_text',
      line(FRANK, '        actors.setFrame(m, slot, fromRecord') + '\n', arg=line(FRANK10, '        actors.setFrame(m, slot, @enumFromInt(f.frame))') + '\n')
-step('F9', '**`src/frankenstein.zig`** (in `turn`, replace the frame line)', 'replace_text',
+step('F12', '**`src/frankenstein.zig`** (in `turn`, replace the frame line)', 'replace_text',
      '    f.frame = toRecord(m, a.frame);\n', arg='    f.frame = a.frame;\n')
-step('F10', '**`src/frankenstein.zig`** (add at the end)', 'append', cut(FRANK, '// ---- tests'))
+step('F13', '**`src/frankenstein.zig`** (add at the end)', 'append', cut(FRANK, '// ---- tests'))
 TRAINING = f11('src/training.zig')
-step('F11', '**`src/training.zig`** (in the Frankenstein record, replace the frame)', 'replace_text',
+step('F14', '**`src/training.zig`** (in the Frankenstein record, replace the frame)', 'replace_text',
      line(TRAINING, '                .frame = 0x84') + '\n', arg='                .frame = @intFromEnum(shapes.Id.frank_right_0),\n')
-step('F12', '**`src/main.zig`** (add at the end)', 'append', chunk('test "a disk of your own'), run='F')
+step('F15', '**`src/main.zig`** (add at the end)', 'append', chunk('test "a disk of your own'), run='F')
 
 SNAP = set()

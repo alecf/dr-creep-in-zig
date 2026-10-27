@@ -134,8 +134,8 @@ pub const image: drive.Image = blk: {
 ```
 
 `format` writes an empty BAM and directory, and `save` writes a file
-as a chain, the same as a save on the Comet does. Their names start
-with a Z because that's how the 1984 disk told castles apart from
+as a chain, the same as a save on the Comet does. The castles' names
+start with a Z because that's how the 1984 disk told castles apart from
 everything else. Every castle on it is a Z file, saved with the address
 of staging, `$9800`, as its load address. The Entrance Hall from
 Chapter 3 comes along too, as a second castle to choose from.
@@ -467,7 +467,7 @@ memory, after a prefix such as `"Z"`. A stored name ends at its letter
 with bit 7 set, the way the castle's text strings end.
 
 `powerOn` reads the castle list and then the first castle. The list
-comes from the disk's **directory**. Load the name `$`, and the drive
+comes from the disk's directory. Load the name `$`, and the drive
 sends the directory as a little program listing, a line for each file.
 `$0:Z*` asks for only the files whose names start with Z: our castles.
 Each line is two link bytes, a line number, some text, and a 0. The
@@ -1030,10 +1030,9 @@ Entrance Hall.
 
 ## Best times
 
-You know the moment. You've raced through a castle and out of its last
-door, and the game says: that time is one of the best, so sign it. 1984
-kept the ten best times for every castle, one table for games for one
-and another for games for two. We'll do the same, in the same file.
+You've raced out of a castle's last door, and the game says: that's one
+of the best times, sign it. 1984 kept the ten best for every castle, for
+games for one and for two. So will we, in the same file.
 
 The best times print times, and Chapter 9's clock prints one, so let's
 share it. `print` splits in two, and `write` puts a time's letters
@@ -1297,9 +1296,8 @@ the keyboard. A letter, digit, space or full stop takes the next dash.
 Backspace takes one back, Return ends the line, and Esc gives up.
 
 The letters are kept in `shell_line`, with bit 7 on the last one. That
-bit moves along as you type and back as you rub out, so the line is
-always a stored name, ready for `nameFrom`. That's how a saved game's
-name will get to the drive.
+bit moves as you type and rub out, so the line is always a stored name,
+ready for `nameFrom`.
 
 `finish` needs a word. In the browser, Return is also stick 2's fire,
 and Space is stick 1's, so the key that ends a line is also a press of
@@ -1653,17 +1651,16 @@ fn load(m: *Machine) Problem {
 `asked` takes only Esc from the map's keyboard. Every other key is left
 alone, because N and P still flip rooms there.
 
-`draw` shows SAVE GAME or RESUME GAME, as `shell_saving` says, and a
-line of 16 dashes. When the name is typed, `run` blanks the display and
-saves or loads. If that worked, it's done. If not, it says why, under
-the line, and the player can fix the name and press Return again.
-There are six things that can go wrong, from "THE DRIVE IS EMPTY" to
-"THE DRIVE SAYS NO".
+`draw` shows SAVE GAME or RESUME GAME, as `shell_saving` says, and 16
+dashes. When the name is typed, `run` blanks the display and saves or
+loads. If that fails, it says why under the line, from "THE DRIVE IS
+EMPTY" to "THE DRIVE SAYS NO", and the player can fix the name and press
+Return again.
 
 `save` refuses names starting with Z or Y, the castles' and their best
 times'. A saved game called ZOO would turn up in the castle list! Then
-it saves the castle buffer over any file of that name, as long as the
-castle's first two bytes say it is.
+it saves the castle buffer over any file of that name. The length to
+save is in the castle's first two bytes.
 
 `load` loads the named file into the castle buffer. A file that loads
 might be anything, so it checks: the magic byte must say castle, and
@@ -1823,8 +1820,9 @@ last frame: frames/frame_01699.ppm
 
 Saving the game is 22 sectors: the BAM, the directory twice (once to
 look for the name, once for an empty entry), and the castle's 19.
-That's 435,218 cycles, 23 frames of loading pause. The map comes back at once. Resuming reads
-20 sectors, and the game walks into the Long Gallery, where it was.
+That's 435,218 cycles, 23 frames of loading pause, and then the map.
+Resuming reads 20 sectors, and the game walks on into the Long Gallery,
+where it was.
 
 ## Got a castle disk? Slot it in!
 
@@ -1836,14 +1834,15 @@ The page reads the file on your own computer and copies it into the
 Comet's drive: nothing is sent anywhere. Headless, it's `--disk`.
 
 A 1984 castle does a few things our Training Castle never asked for.
-Here are two we can fix and test now.
+Here are three we can fix and test now.
 
 **Machines at the left edge.** A castle X of 16 is the screen's left
-edge, and the Training Castle never puts anything further left. 1984's
-castles do. A machine hanging off the left edge must lose its off-screen
-part. Chapter 6's `unplace` and `tint` subtract 16 from X, and below 16
-that goes past zero: a debug build stops with an overflow. `screen.zig`'s eraser learns to leave out columns, the way
-`drawPart` already does:
+edge, and the Training Castle never puts anything further left. A 1984
+castle may. A machine hanging off the edge must lose its off-screen
+part, but Chapter 6's `unplace` and `tint` subtract 16 from X, and below
+16 that goes past zero: a debug build stops with an overflow.
+`screen.zig`'s eraser learns to leave out columns, the way `drawPart`
+already does:
 
 **`src/screen.zig`** (in `erase`, replace the first line)
 
@@ -1919,6 +1918,62 @@ test "a machine hanging off the left edge: what's off the screen is left out, an
     place(m, .panel, 8, 0);
     unplace(m, .panel, 8, 0);
     for (m.ram[hw.bitmap..][0 .. 3 * 320]) |b| try std.testing.expectEqual(0, b);
+}
+```
+
+**The pattern.** Chapter 8 left one kind of record with nothing to do:
+the pattern, a shape stamped again and again, a step apart. 1984's title
+screens are drawn with patterns, and a castle room may use one too. Our
+rooms never have, but another disk's might:
+
+**`src/room.zig`** (in `prepares`, replace the `later` line)
+
+```zig
+    .pattern = pattern,
+```
+
+**`src/room.zig`** (replace `later`)
+
+```zig
+/// A pattern: one shape stamped `count` times, each a step on from the
+/// last. 1984's title screens use it; no castle room does, but a castle
+/// from another disk may. Its shape is a picture of ours: one past the
+/// end of the table is skipped.
+fn pattern(m: *Machine, r: castle.Record) void {
+    const p = m.view(castle.Pattern, r.at).*;
+    m.work(24); // the six reads
+    if (p.shape >= std.enums.values(shapes.Id).len) return;
+    var x = p.x;
+    var y = p.y;
+    for (0..p.count) |_| {
+        place(m, @enumFromInt(p.shape), x, y);
+        x +%= p.step_x;
+        y +%= p.step_y;
+        m.work(8); // the adds and the loop
+    }
+}
+```
+
+A shape number past the end of our table is skipped. The test stamps
+three panels, ten cells apart:
+
+**`src/room.zig`** (add at the end)
+
+```zig
+test "a pattern stamps its shape again and again, a step apart" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    m.* = .{};
+    screen.start(m);
+    m.load(map.shape_table.first, shapes.table);
+    const at = map.staging.first;
+    m.load(at, &.{ 3, @intFromEnum(shapes.Id.panel), 16, 0, 40, 0 }); // three panels, 10 cells apart
+    pattern(m, .{ .kind = .pattern, .at = at, .end = at + @sizeOf(castle.Pattern) });
+    for ([_]u16{ 0, 10, 20, 30 }, 0..) |cell, i| {
+        var ink: u32 = 0;
+        for (m.ram[hw.bitmap + cell * 8 ..][0..8]) |b| ink += b;
+        try std.testing.expectEqual(i < 3, ink != 0);
+    }
 }
 ```
 

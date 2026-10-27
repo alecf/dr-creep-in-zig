@@ -2503,8 +2503,8 @@ Castle rooms (ch03)".
   starter–ch11 passes `check-all.sh` with it.
 - **Chapter 11 file, title, images.** `site/chapters/11-the-castle-keeper.md`,
   `title: "The Castle Keeper"`, generated from `tools/ch11/ch11.tmpl.md`
-  by `expand.py` (73 listings; none told in prose instead; no quoted
-  compile errors, so no `errs.py`). Prose ≈ 5,520 words by `wc.py`. Stage
+  by `expand.py` (76 listings; none told in prose instead; no quoted
+  compile errors, so no `errs.py`). Prose ≈ 5,550 words by `wc.py`. Stage
   runs: A (10 frames, `--save-disk creep.d64`: 643 blocks free), B (power
   on, 60), C (Esc, five downs, the Entrance Hall, 320), D (N ×19 to the
   Way Out, ACE, then the menu's BEST TIMES, 2,050), E (Gatehouse, save
@@ -2543,7 +2543,8 @@ Castle rooms (ch03)".
   (castle name centred at y 72, or NO CASTLE DISK; ESC FOR THE MENU at
   y 88; stars avoid rows 9 and 11), `clock.zig` (`write` split out of
   `print`), `castle.zig` (`restored = 0x01`), `screen.zig` (`erasePart`),
-  `room.zig` (`unplace`/`tint` clip at the left edge), `frankenstein.zig`
+  `room.zig` (`unplace`/`tint` clip at the left edge; `later` replaced by
+  `pattern`, the MultiDraw preparer), `frankenstein.zig`
   (1984 frame numbers), `training.zig` (Frank `.frame = 0x84`).
 - **Memory (ch11).** `scores` `$B800–$B879` (the score file less its
   load address), `shell` `$B880–$B89F` (+0 disk, +1 castles, +2 castle,
@@ -2577,7 +2578,11 @@ Castle rooms (ch03)".
   *Left edge:* `unplace` → `erasePart(skip = (16 − x + 3) / 4)`; `tint`
   drops off-screen columns. *Frank:* record frame byte = 1984's `$84–$86`
   right, `$87–$89` left, `$8A` slide, `$8B–$8E` climb, `$8F` asleep
-  (`fromRecord`/`toRecord`; unknown → asleep).
+  (`fromRecord`/`toRecord`; unknown → asleep). *Pattern* (1984
+  `obj_MultiDraw`): `count` × `place(shape, x, y)`, stepping `x +%= step_x`,
+  `y +%= step_y`; shape numbers are ours (≥ the Id count skipped): a real
+  castle's MultiDraw would need 1984's image numbers translated (none
+  known to use it; the intro screens use the `$160A` variant).
 - **Deviations (ch11).** (1) Saves are allowed on any disk, including
   the game's own; 1984 refused to save a game to the master disk. We
   refuse Z/Y names instead. (2) The drive costs a frame per sector
@@ -2595,7 +2600,8 @@ Castle rooms (ch03)".
   (ch06 review note: `unplace`, `tint`, `screen.erase` now clip; `place`
   already did; lamps and glow go through these); Frank's frame byte
   translated to 1984's numbers; real castles' `no_gun` records already
-  handled in `guns.prepare`.
+  handled in `guns.zig`; the pattern preparer (ch03/ch08's "comes alive
+  in Chapter 11").
 - **Promises left for the Epilogue (unverified here: no real disk in
   this tree).** Door map bytes vs a real castle's map (ch09);
   Frankenstein–Frankenstein avoidance masks (ch08); ankh and alcove size
@@ -2612,7 +2618,7 @@ Castle rooms (ch03)".
   ≈ 920; save game 435,218 (22 sectors, 23 slots); resume 20 sectors.
   No overruns in any stage run. Wasm 950,746 → 1,181,300 bytes (the
   disk image).
-- **Tests at ch11 (87 in `zig build test`, plus 33 machine).** main:
+- **Tests at ch11 (88 in `zig build test`, plus 33 machine).** main:
   power-on catalog (order, bit 7, staging = training, fresh scores, a
   loading frame); no disk (title stays); menu → Entrance Hall played;
   unlimited lives (5 deaths, lives 3); best time signed, on the disk,
@@ -2620,7 +2626,7 @@ Castle rooms (ch03)".
   Backspace), three deaths, a missing name, resume (room, lives, time,
   `restored`, no best time, onward into room 1); a disk of your own (22
   castles → 16, directory order, a non-castle file ignored). room: left
-  edge clipping. frankenstein: frame byte round trip. Old tests sign
+  edge clipping; a pattern of three panels. frankenstein: frame byte round trip. Old tests sign
   their escapes (`sign`: ACE/DUO, ONE/TWO, WIN). Helpers `typeIn`,
   `sign`, `push`.
 - **Ladder bookkeeping (ch11).** Taught: devices (registers, a command,
