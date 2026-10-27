@@ -92,3 +92,15 @@ export fn comet_bucket(id: u32) u32 {
 export fn comet_kind() u32 {
     return @intFromEnum(m.last.kind);
 }
+
+// One frame slot of sound at a time; 1,000 samples covers a 50,000-a-second
+// speaker.
+var sound_buf: [1000]f32 = undefined;
+
+/// The sound of one frame slot, `count` samples (up to 1,000) at `rate` a
+/// second, from the SOUND chip as the last frame left it. Call it once for
+/// each slot `comet_frame` returned.
+export fn comet_listen(rate: u32, count: u32) [*]const f32 {
+    m.listen(sound_buf[0..@min(count, sound_buf.len)], rate);
+    return &sound_buf;
+}

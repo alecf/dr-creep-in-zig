@@ -2,8 +2,8 @@
 //!
 //! This file is the whole computer as far as a game is concerned: 64 KB of
 //! RAM, the work meter that keeps a frame honest, the raster beam that the
-//! meter drives, and the frame driver that reads the joysticks and runs the
-//! game's frame interrupt.
+//! meter drives, the frame driver that reads the joysticks and runs the
+//! game's frame interrupt, and the SOUND chip's speaker.
 //!
 //! A game never touches anything here except through `Machine`'s methods
 //! and `m.ram`. Everything the game remembers lives in that one array.
@@ -12,6 +12,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 pub const video = @import("video.zig");
+pub const sound = @import("sound.zig");
 pub const font = @import("font.zig");
 const layout = @import("layout.zig");
 
@@ -71,9 +72,14 @@ pub const hw = struct {
     pub const sprite_mc0: u16 = 0xD025;
     pub const sprite_mc1: u16 = 0xD026;
 
-    // SOUND chip: $D400-$D418. The registers hold what you write; the
-    // speaker board isn't fitted to this model yet.
+    // SOUND chip: $D400-$D418, seven registers for each of three voices,
+    // then the filter (not fitted) and the volume. It plays what they say
+    // from the end of each frame to the end of the next.
     pub const sound_chip: u16 = 0xD400;
+    pub fn voice(v: u2) u16 {
+        return 0xD400 + @as(u16, v) * 7;
+    }
+    pub const sound_volume: u16 = 0xD418; // low 4 bits
 
     // Input ports
     pub const joy2: u16 = 0xDC00;
@@ -186,6 +192,11 @@ pub const Machine = struct {
     stats: Stats = .{},
 
     beam: Beam = .{},
+
+    /// The SOUND chip's oscillators and envelopes, and its registers as
+    /// the last frame left them: what it plays while this frame runs.
+    chip: sound.Chip = .{},
+    sound_regs: [sound.register_count]u8 = @splat(0),
 
     // ---- memory ---------------------------------------------------------
 
@@ -376,6 +387,9 @@ pub const Machine = struct {
         m.bucket_cycles = @splat(0);
         m.beam = .{ .active = true, .next_line_at = cycles_per_line };
         m.latchRaster(0);
+        // The SOUND chip takes the last frame's registers, and plays them
+        // while this one runs.
+        m.sound_regs = m.ram[sound.base..][0..sound.register_count].*;
 
         Game.frame(m);
 
@@ -416,6 +430,15 @@ pub const Machine = struct {
         m.beam.next_line_at = std.math.maxInt(u32);
     }
 
+    /// The sound of a frame slot of the frame that just ran: `out` gets a
+    /// frame's worth of samples (`rate / 50`) at `rate` a second. The chip
+    /// plays the registers as the frame *before* left them, all through
+    /// this one, however many slots it took. The shell calls this once for
+    /// each slot `runFrame` reports, and sends the samples to a speaker.
+    pub fn listen(m: *Machine, out: []f32, rate: u32) void {
+        m.chip.render(&m.sound_regs, out, rate);
+    }
+
     /// Back to the power-on state. (Field by field rather than `m.* = .{}`
     /// so no half-megabyte temporary lands on a small wasm stack.)
     fn reset(m: *Machine) void {
@@ -428,6 +451,8 @@ pub const Machine = struct {
         m.last = .{};
         m.stats = .{};
         m.beam = .{};
+        m.chip = .{};
+        m.sound_regs = @splat(0);
     }
 
     fn writeInput(m: *Machine) void {
@@ -465,6 +490,7 @@ fn newMachine() !*Machine {
 
 test {
     _ = video;
+    _ = sound;
     _ = font;
     _ = layout;
 }

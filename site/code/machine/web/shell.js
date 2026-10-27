@@ -1,8 +1,8 @@
 // The Comet 64 in a browser tab.
 //
 // Loads game.wasm, runs it at exactly 50 frames a second, copies the
-// VIDEO chip's picture onto a canvas, and turns the keyboard into two
-// joysticks and a keyboard port.
+// VIDEO chip's picture onto a canvas, plays the SOUND chip through the
+// speakers, and turns the keyboard into two joysticks and a keyboard port.
 //
 // A page uses it with:
 //
@@ -11,6 +11,12 @@
 //   <script type="module" src="shell.js"></script>
 //
 // or, for more control, `import { startComet } from "./shell.js"`.
+//
+// Browsers only let a page make sound after the person has clicked or
+// pressed a key on it. The sound starts at the first click or key press on
+// the canvas; a page that starts the machine from a button can pass its
+// own `audio` (an AudioContext made in that click) to start it at once.
+// Several machines on one page can share one.
 
 const FRAME_MS = 1000 / 50;
 const MAX_CATCH_UP = 5; // frames; beyond this we let time slip instead
@@ -48,7 +54,49 @@ async function instantiate(url, env) {
   }
 }
 
-export async function startComet(canvas, { wasm = "game.wasm", status = null } = {}) {
+// ---- sound ----
+// Each frame slot's samples go into a little buffer, queued to start the
+// moment the last one ends. If the queue runs dry (a busy tab, a pause),
+// it starts again a little way ahead; if it gets too far ahead, a slot's
+// sound is dropped so the speaker never lags the screen.
+const LEAD = 0.06, MAX_AHEAD = 0.25; // seconds
+
+function makeSpeaker(given) {
+  const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
+  if (!given && !AC) return null;
+  let ctx;
+  try { ctx = given ?? new AC(); } catch { return null; }
+  const rate = ctx.sampleRate;
+  const perFrame = rate / 50;
+  let next = 0, owed = 0;
+  return {
+    ctx,
+    wake() { if (ctx.state === "suspended") ctx.resume().catch(() => {}); },
+    // A page's own AudioContext may be shared with other machines, so only
+    // one we made ourselves is put to sleep; a paused machine queues nothing.
+    sleep() { if (!given && ctx.state === "running") ctx.suspend().catch(() => {}); },
+    // One frame slot went by: fetch its samples from the machine and queue them.
+    slot(c) {
+      owed += perFrame;
+      const n = Math.floor(owed);
+      owed -= n;
+      const samples = new Float32Array(c.memory.buffer, c.comet_listen(rate, n), n);
+      if (ctx.state !== "running") return;
+      const now = ctx.currentTime;
+      if (next < now + 0.005) next = now + LEAD;
+      if (next > now + MAX_AHEAD) return;
+      const buf = ctx.createBuffer(1, n, rate);
+      buf.copyToChannel(samples, 0);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(next);
+      next += n / rate;
+    },
+  };
+}
+
+export async function startComet(canvas, { wasm = "game.wasm", status = null, audio = null } = {}) {
   const say = (msg) => { if (status) status.textContent = msg; };
   const decoder = new TextDecoder();
   let c = null; // the machine's exports
@@ -102,6 +150,13 @@ export async function startComet(canvas, { wasm = "game.wasm", status = null } =
   canvas.addEventListener("blur", () => { held.clear(); rebuild(); });
   canvas.addEventListener("pointerdown", () => canvas.focus());
 
+  const speaker = makeSpeaker(audio);
+  if (speaker) {
+    speaker.wake();
+    canvas.addEventListener("pointerdown", () => speaker.wake());
+    canvas.addEventListener("keydown", () => speaker.wake());
+  }
+
   // ---- the frame loop ----
   let running = false, crashed = false, last = 0, owed = 0, handle = 0;
 
@@ -118,13 +173,17 @@ export async function startComet(canvas, { wasm = "game.wasm", status = null } =
     let ran = false;
     try {
       while (owed >= FRAME_MS) {
-        // A long frame uses several slots; the time is spent either way.
-        owed -= c.comet_frame(joy1, joy2) * FRAME_MS;
+        // A long frame uses several slots; the time is spent either way,
+        // and the SOUND chip plays through all of them.
+        const slots = c.comet_frame(joy1, joy2);
+        owed -= slots * FRAME_MS;
+        if (speaker) for (let i = 0; i < slots; i++) speaker.slot(c);
         ran = true;
       }
     } catch (err) {
       running = false;
       crashed = true;
+      speaker?.sleep();
       draw();
       say("The machine stopped (the game panicked). Details are in the console.");
       throw err;
@@ -158,8 +217,10 @@ export async function startComet(canvas, { wasm = "game.wasm", status = null } =
       draw();
       start();
     },
-    pause() { running = false; cancelAnimationFrame(handle); },
-    resume() { if (!crashed) start(); },
+    pause() { running = false; cancelAnimationFrame(handle); speaker?.sleep(); },
+    resume() { if (!crashed) { speaker?.wake(); start(); } },
+    /** The AudioContext the SOUND chip plays through (null if the browser has none). */
+    get audio() { return speaker?.ctx ?? null; },
   };
 }
 

@@ -1,9 +1,10 @@
 //! The Comet 64 with no screen attached: boots the game, plays a scripted
-//! joystick, and saves frames as PPM pictures. Handy for checking a build
-//! without a browser, and for testing.
+//! joystick, and saves frames as PPM pictures (and, if asked, the sound as
+//! a WAV file). Handy for checking a build without a browser, and for
+//! testing.
 //!
 //!   zig build run -- --frames 300 --press 50:rf:20 --press 120:f@2 \
-//!                    --key 200:R --dump frames --dump-every 50
+//!                    --key 200:R --dump frames --dump-every 50 --wav out.wav
 
 const std = @import("std");
 const machine = @import("machine");
@@ -21,6 +22,7 @@ const usage =
     \\  --key FRAME:C           type character C at FRAME (FRAME:#13 types code 13)
     \\  --dump DIR              where pictures go (default "frames")
     \\  --dump-every K          save every Kth frame too (default: last only)
+    \\  --wav FILE              save the sound to FILE (44,100 a second, mono)
     \\
 ;
 
@@ -31,6 +33,7 @@ const Script = struct {
     frames: u32 = 250,
     dump_dir: []const u8 = "frames",
     dump_every: u32 = 0,
+    wav: ?[]const u8 = null,
     presses: std.ArrayList(Press) = .empty,
     keys: std.ArrayList(KeyPress) = .empty,
 
@@ -102,6 +105,8 @@ fn parseArgs(gpa: std.mem.Allocator, args: std.process.Args) !Script {
             s.dump_dir = it.next() orelse return error.MissingValue;
         } else if (std.mem.eql(u8, arg, "--dump-every")) {
             s.dump_every = try std.fmt.parseInt(u32, it.next() orelse return error.MissingValue, 10);
+        } else if (std.mem.eql(u8, arg, "--wav")) {
+            s.wav = it.next() orelse return error.MissingValue;
         } else if (std.mem.eql(u8, arg, "--help") or std.mem.eql(u8, arg, "-h")) {
             std.debug.print("{s}", .{usage});
             std.process.exit(0);
@@ -125,6 +130,30 @@ fn writePpm(io: std.Io, dir: std.Io.Dir, name: []const u8, screen: *const video.
     try dir.writeFile(io, .{ .sub_path = name, .data = &buf });
 }
 
+/// Samples a second in the WAV file; 882 a frame.
+const wav_rate = 44100;
+const per_frame = wav_rate / machine.frame_rate;
+
+fn writeWav(io: std.Io, gpa: std.mem.Allocator, path: []const u8, samples: []const i16) !void {
+    const data_len: u32 = @intCast(samples.len * 2);
+    const buf = try gpa.alloc(u8, 44 + data_len);
+    defer gpa.free(buf);
+    @memcpy(buf[0..4], "RIFF");
+    std.mem.writeInt(u32, buf[4..8], 36 + data_len, .little);
+    @memcpy(buf[8..16], "WAVEfmt ");
+    std.mem.writeInt(u32, buf[16..20], 16, .little); // the format chunk's size
+    std.mem.writeInt(u16, buf[20..22], 1, .little); // plain samples
+    std.mem.writeInt(u16, buf[22..24], 1, .little); // one channel
+    std.mem.writeInt(u32, buf[24..28], wav_rate, .little);
+    std.mem.writeInt(u32, buf[28..32], wav_rate * 2, .little); // bytes a second
+    std.mem.writeInt(u16, buf[32..34], 2, .little); // bytes a sample
+    std.mem.writeInt(u16, buf[34..36], 16, .little); // bits a sample
+    @memcpy(buf[36..40], "data");
+    std.mem.writeInt(u32, buf[40..44], data_len, .little);
+    for (samples, 0..) |x, i| std.mem.writeInt(i16, buf[44 + i * 2 ..][0..2], x, .little);
+    try std.Io.Dir.cwd().writeFile(io, .{ .sub_path = path, .data = buf });
+}
+
 pub fn main(init: std.process.Init) !void {
     const gpa = init.gpa;
     const io = init.io;
@@ -139,6 +168,8 @@ pub fn main(init: std.process.Init) !void {
     };
     defer script.presses.deinit(gpa);
     defer script.keys.deinit(gpa);
+    var sound: std.ArrayList(i16) = .empty;
+    defer sound.deinit(gpa);
     if (script.frames == 0) script.frames = 1;
 
     const m = try gpa.create(Machine);
@@ -158,6 +189,14 @@ pub fn main(init: std.process.Init) !void {
         m.input = script.inputFor(frame);
         const slots = m.runFrame(game);
         const end = @min(script.frames, frame +| slots);
+        if (script.wav != null) {
+            // The chip keeps playing through every slot of a long frame.
+            for (frame..end) |_| {
+                var chunk: [per_frame]f32 = undefined;
+                m.listen(&chunk, wav_rate);
+                for (chunk) |x| try sound.append(gpa, @intFromFloat(std.math.clamp(x, -1, 1) * 32767));
+            }
+        }
         while (frame < end) : (frame += 1) {
             const last = frame == script.frames - 1;
             const due = script.dump_every != 0 and frame % script.dump_every == 0;
@@ -183,5 +222,13 @@ pub fn main(init: std.process.Init) !void {
     }
     try out.print("overruns: {d}, loading pauses: {d}\n", .{ s.overruns, s.loading });
     try out.print("last frame: {s}/frame_{d:0>5}.ppm\n", .{ script.dump_dir, last_saved });
+    if (script.wav) |path| {
+        var loudest: u16 = 0;
+        for (sound.items) |x| loudest = @max(loudest, @abs(x));
+        try writeWav(io, gpa, path, sound.items);
+        try out.print("sound: {s}, {d}.{d:0>2} seconds, loudest {d}%\n", .{
+            path, sound.items.len / wav_rate, sound.items.len % wav_rate * 100 / wav_rate, @as(u32, loudest) * 100 / 32767,
+        });
+    }
     try out.flush();
 }

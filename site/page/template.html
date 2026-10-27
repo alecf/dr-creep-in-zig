@@ -224,9 +224,16 @@ document.addEventListener("click", async (e) => {
   const view = btn.closest(".view").dataset.view;
   btn.disabled = true;
   status.textContent = "Powering on…";
+  // The click is what lets the page make sound, so the speaker is made here,
+  // before anything waits. One speaker serves every chapter's machine.
+  try {
+    window.cometAudio ??= new (window.AudioContext || window.webkitAudioContext)();
+    window.cometAudio.resume().catch(() => {});
+  } catch {}
+  const audio = window.cometAudio ?? null;
   try {
     const { startComet } = await import("./shell.js");
-    const comet = await startComet(canvas, { wasm: canvas.dataset.wasm, status });
+    const comet = await startComet(canvas, { wasm: canvas.dataset.wasm, status, audio });
     running.set(view, comet);
     btn.remove();
     canvas.focus();
