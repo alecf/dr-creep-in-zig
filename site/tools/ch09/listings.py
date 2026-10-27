@@ -146,10 +146,13 @@ WALKIN_A = rep(fn('src/player.zig', 'walkIn'),
 step('A23', '**`src/player.zig`** (replace `walkIn` and `walk`)', 'replace_text',
      WALKIN_A + '\n' + fn('src/player.zig', 'walk'), arg=fn_in(PL8, 'walkIn') + '\n' + fn_in(PL8, 'walk'))
 HIT_A = '''/// His `hit`: his sprite touched actor `other`'s. A forcefield only stands
-/// in his way (the grid sees to that); anything else is deadly.
+/// in his way (the grid sees to that), and the other explorer is a
+/// friend; anything else is deadly.
 pub fn hit(m: *Machine, n: u3, other: u3) bool {
-    if (actors.slot(m, other).kind == .forcefield) return false;
-    return die(m, n);
+    switch (actors.slot(m, other).kind) {
+        .forcefield, .player => return false,
+        else => return die(m, n),
+    }
 }
 '''
 step('A24', '**`src/player.zig`** (replace `kill`, `die`, `hit` and `touch`)', 'replace_text',
@@ -377,10 +380,10 @@ def renamed(text):
     return text
 step('C15', '**`src/main.zig`** (replace the first test, the title screen\'s)', 'replace_text',
      test('fire on the title screen starts'), arg=renamed(test('fire on the title screen opens', MAIN8)))
-step('C16', '**`src/main.zig`** (in the N and P test, two comments)', 'replace_text',
+step('C16', '**`src/main.zig`** (in the N and P test, a comment)', 'replace_text',
      '    _ = m.runFrame(@This()); // draws the map, for room 0\n', arg='    _ = m.runFrame(@This()); // draws room 0\n')
-step('C17', None, 'replace_text', '    _ = m.runFrame(@This()); // the key, on the map\n',
-     arg='    _ = m.runFrame(@This()); // the key\n', file='src/main.zig')
+step('C17', '**`src/main.zig`** (and the one after the N)', 'replace_text', '    _ = m.runFrame(@This()); // the key, on the map\n',
+     arg='    _ = m.runFrame(@This()); // the key\n')
 DOOR_TEST = test('through the door and out')
 DOOR_TEST8 = rep(DOOR_TEST, ('    onward(m); // the map, and fire\n', ''), ('    onward(m);\n', ''))
 step('C18', '**`src/main.zig`** (in the through-the-door test, add after the two `doorway` checks)', 'replace_text',
@@ -457,7 +460,7 @@ step('D22', '**`src/game.zig`** (the fix: replace `Over`)', 'replace_text', OVER
 step('D23', '**`src/game.zig`** (and, in `drawOver`, its last line)', 'replace_text',
      '    between(m).over = .{ .wait = over_frames, .unused = @splat(0) };\n',
      arg='    between(m).over = .{ .wait = over_frames };\n')
-step('D24', '**`src/training.zig`** (in the final room, delete the `YOU ESCAPED!` line)', 'delete_text', None,
+step('D24', None, 'delete_text', None, file='src/training.zig',
      arg='            .{ .x = 48, .y = 16, .color = .yellow, .height = 2, .words = "YOU ESCAPED!" },\n')
 step('D25', '**`src/main.zig`** (in the search test, the loop\'s first line)', 'replace_text',
      lines_of('src/main.zig', '    const names = std.enums.values(training.Room);', '    inline for (0..names.len + 1)') + '        m.ram[map.room_number] = n;\n',

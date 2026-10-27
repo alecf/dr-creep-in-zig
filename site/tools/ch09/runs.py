@@ -3,9 +3,9 @@
 def both(t, k, d):
     """Both sticks the same way at once."""
     return ['--press', '%d:%s:%d' % (t, k, d), '--press', '%d:%s:%d@2' % (t, k, d)]
-# A: fire on stick 2 starts a game for two in the gatehouse; they walk
-# off right, one after the other.
-TWO = (['--frames', '300', '--press', '20:f:5@2', '--press', '60:r:60', '--press', '90:r:60@2']
+# A: fire on stick 2 starts a game for two in the Gatehouse; player 1
+# walks off left, player 2 follows a little way behind.
+TWO = (['--frames', '300', '--press', '20:f:5@2', '--press', '60:l:80', '--press', '100:l:40@2']
        + ['--dump-every', '10'])
 def keys(n, first=45):
     """Fire on stick 2 at the title, then N n times: room n, for two."""

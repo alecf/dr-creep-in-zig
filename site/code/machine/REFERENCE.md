@@ -376,6 +376,8 @@ have exactly the same bytes in Zig as in memory:
   whole record is an even number of bytes;
 - a `packed struct(u8)` (or `u16`, `u32`) for a byte of flags;
 - an `enum(u8)` with a `_` member, so any byte value is allowed;
+- an `extern union` of any of those, every field the same size, so no
+  field leaves bytes that mean nothing to it;
 - arrays of any of those.
 
 Anything else is a compile error that says what's wrong. The view itself

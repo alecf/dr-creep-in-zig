@@ -2132,3 +2132,121 @@ Castle rooms (ch03)".
   stage runs (`08-frank`, `08-trap`, `08-ride` changed). Not done: renaming
   the old search test (Writer response in the review). Prose ≈ 5,540
   words.
+- **Chapter 9 file, title, images.** `site/chapters/09-the-great-escape.md`,
+  `title: "The Great Escape"`, generated from `tools/ch09/ch09.tmpl.md` by
+  `expand.py` (116 listings; told in prose instead: deleting the old
+  `player` region, its `regions` entry, `newGame`, three `map` imports,
+  the final room's "YOU ESCAPED!" line; two `| Replace | With |` tables,
+  the walker test's `room` → `bytes` and the tests' `map.player_*` →
+  `castle.*`; prose ≈ 5,460 words by `wc.py`). Stage runs A (two in the
+  Gatehouse), B (Two's Company for two), C (two through Gatehouse and
+  Gallery, the map), D (N to the Way Out, two escapes, GAME OVER), E
+  (Boss: room 18 for two, P1 alone after, the map, the Way Out, both
+  escapes, GAME OVER, title; 3,500 frames). Screenshots (768×544, by
+  `tools/ch09/shots.py`): `09-escape` (Mission Briefing; D 1150, P1
+  cheering under the built final room), `09-two` (A 170), `09-company`
+  (B 620, P1 holding the button, P2 past the field), `09-map` (C 800,
+  three rooms, one white arrow), `09-over` (D 2000, GAME OVER for both).
+  Diagrams: `ch09-header` (static list, file bytes vs game bytes),
+  `ch09-union` (animated: the three overlays of `$0200–$0206` lit in
+  turn), `ch09-bcd` (animated rows: `$09`+1 = `$0A`, +6 = `$10`; `$59` →
+  `$60` → `$00` carry). Quoted errors (`errs.py`): `shadow` (at-A4:
+  "local constant shadows declaration of 'room'", castle.room vs the
+  walker test's local) and `union` (at-D21: "m.view(game.Between):
+  game.Between.over is smaller than the union; every field must be the
+  same size", `Over` before its `unused: [6]u8`).
+- **Source layout (ch09).** New files `game.zig` (`Between` extern
+  union {chart, escape, over} + size check, `between`, `Over{wait,
+  unused[6]}`, `chosen` (stick 2 wins), `start` (copy staging → castle,
+  room/door from start, `in_game`, `two`), `next`, `Then {map, escape,
+  over}`, `after`, `escaper`, `drawOver`, `over` (210 frames)),
+  `clock.zig` (`Time{frames, seconds, minutes, hours}` at header `$55`
+  + 4p, `tick`, `advance`, `up(digits, limit)`, `print`; 2 tests),
+  `chart.zig` (`Chart{blink[2], lit[2], ready[2], steady}`, `draw`,
+  `sketch`, `gap`, `label`, `wait`), `escape.zig` (`Escape{who, shown,
+  spot, wait, walk, leg, left}`, `draw`, `run`, `piece`, `step`,
+  `picture`). Changed: `map.zig` (`between $0200–$0206` replaces
+  `player`; `players $0211–$021A`; `staging $9800–$B7FF`), `castle.zig`
+  (header names, below; `visited = $80` in a colour byte), `player.zig`
+  (`Number = u1`, `Player extern struct{actor, last_stick, plate,
+  last_plate, mask}` ×2, `ports`, `coats {white, yellow}`, `records`,
+  `record`, `number`, `here`, `arrive`, `coat`, `picture`, `setStatus`,
+  `walking`, `nearest`, `holding`, `jostle`; `newGame`/`nextRoom` gone),
+  `room.zig` (`build` split out of `draw`, `prepare` pub, `flip` sets
+  both players), `text.zig` (`shout`, style | 2), `shapes.zig`/`art.zig`
+  (`map_floor/top/bottom/left/right`, `arrow_down/up/right/left`,
+  `explorer_cheer_0/1`), the handlers (`playing(m, who)`; locks pockets,
+  conveyor per-player bits, forcefield `holding`, guns `nearest`, mummy
+  P1-then-P2, Frankenstein both), `title.zig` ("STICK 2 FOR TWO"),
+  `training.zig` (room 18 rebuilt: floor field at 88 with its button up
+  the ladder; final room loses "YOU ESCAPED!"), `main.zig` (modes
+  `draw_map, map, draw_escape, escape, draw_over, over`; boot loads to
+  staging; `clock.tick` each room frame).
+- **Memory (ch09): the header as game state, 1984's layout.** `$7803/4`
+  start room, `$7805/6` start door, `$7807/8` lives (decremented in play,
+  as 1984), `$7809/A` room, `$780B/C` door, `$780D/E` status (our
+  `player.Status` numbering), `$780F/10` in game, `$7811` last, `$7812`
+  two, `$7813/4` key counts, `$7815+32p` pockets, `$7855+4p` time,
+  `$785D/E` escaped, `$785F` final room. A new game copies 4,644 bytes
+  from `$9800` (37,244 cycles, loading pause), which also zeroes all of
+  this. Bit 7 of a directory colour byte = visited (set when the map is
+  drawn for that room).
+- **Mechanics, as implemented (ch09).** *Next room* (1984 `Game()`):
+  both in game and in one room → it; two rooms → player `last ^ 1`; one
+  in game → his. `roomOver` scans P2 then P1, `last` = the last one
+  still playing; the room goes on while anyone present is playing or in
+  a doorway. *After a room:* dead → lives −1, 0 → `in_game = 0`
+  (→ GAME OVER), else start room/door; through an `exit` door →
+  `escaped` → escape screens, each escaper `in_game = 0` at the end;
+  then GAME OVER (two-player games say "FOR PLAYER n" for those out),
+  then `next`: map for anyone left, else title. *Map:* arrow at (room x +
+  door map_x + dx[side], room y + map_y + dy[side]), dx {−1, +2, −1, −5},
+  dy {−10, −2, +6, −2}; blink P1 12, P2 30 frames; both at one door →
+  steady white; ONE UP/TWO UP coloured by lives (1 pink, 2 yellow, 3+
+  light green) with the time below; fire (fresh press) from everyone
+  here. *Escape:* "PLAYER n ESCAPES" (16,0 light green, double height),
+  "TIME:" (40,24 yellow), time at 88; a final-room record (or one image
+  place) every 10 frames; then 1984's legs, a step every other frame:
+  {128 right, 25 cheer, 45 right}, or when `dice & 0x0E == 0` {172
+  right, 44 left, 25 cheer, 45 right}. *Players:* jostle (1984 `$3534`):
+  other climbing/sliding or same y → nothing; other below → my mask
+  `~down`, above → `~up`, applied to my next step only. Guns: nearest
+  |dy|, P2 checked first, tie → P2. Mummy: P1 while playing, else P2.
+  Frankenstein: wakes for either; per-direction distance = min of both.
+  Forcefield button re-arms every step fire is held (1984). Conveyor:
+  pressed bits 2/3, held bits 4/5, works on pressed & ~held.
+- **Deviations (ch09).** Timer counts frames (50 = 1 s) in software;
+  1984 runs a chip's time-of-day clock (BCD tenths) per room and saves
+  it at `$7855` (seconds/minutes/hours bytes are the same BCD). Status
+  numbers ours. Map: fire needs a fresh press, both sticks polled every
+  frame (1984 waits for release); arrows in coat colours until shared
+  (1984 white); P2 coat yellow, P1 white (1984 P1 yellow, P2 orange).
+  Escape: words drawn before the reveal, reveal 10 frames a piece, cheer
+  2 frames (1984 4), walk on our floor (y = floor_top − 21). Door map
+  bytes come from our builder and are still unverified against a real
+  castle (no `extracted/` here): ch11. Times aren't shown in rooms (as
+  1984).
+- **Costs at ch09 (measured).** Castle copy 37,244; first map draw
+  111,890 (one room); map frame 136; `clock.print` 5,472; `tick` 72 with
+  two explorers; `up` 14; escape screen draw 118,902; busiest escape
+  frame (a piece) 14,238; GAME OVER draw 98,708. Draws are loading
+  pauses; no overruns in any stage run.
+- **Tests at ch09 (67 in `zig build test`).** Clock (BCD carry; an hour
+  a minute a second, printed); title → map → room; map waits for both;
+  N/P on the map; X → GAME OVER → title; search test includes the final
+  room; **the whole Training Castle through the stick, for one and for
+  two** (every room in at door 0, out by door 1, escape, GAME OVER);
+  Two's Company coop; ladder jostle; nearer gun / mummy P1; Frankenstein
+  wakes for P2; P2 out of lives while P1 plays on; both escape. Test
+  helpers: `hold` mirrors P2 in two-player games, `hold2`, `onward`,
+  `inRoom2`, `second`, `ringAndGo`, `teleport`, `arrived`,
+  `twosCompany`; `trapFrank` lets P2 tread the switch's second time.
+- **Ladder bookkeeping (ch09).** Taught: one region two jobs (the header
+  over time; `extern union` for the screens between rooms, and the
+  machine's same-size rule for viewed unions); BCD (nibbles, +1/+6,
+  printing with shift and mask, no divide). `u1` as a player number.
+- **Promises (ch09 → later).** ch10: sounds (map blink, escape, GAME
+  OVER, bells). ch11: real castles' door map bytes checked against the
+  map; saving a castle saves the game (header carries it all); disk load
+  to `$9800` (staging); high scores from `time`; title/menu choosing
+  one or two players (ours: which stick fires).
