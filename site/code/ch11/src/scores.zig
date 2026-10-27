@@ -128,15 +128,23 @@ fn line(m: *Machine, two: u8, k: u8) void {
     _ = text.draw(m, left, rowOf(two, k), colors[k], text.plain, map.text_buffer);
 }
 
+/// `shell_signing` after a score file the disk wouldn't take: the screen
+/// says so, and waits for the player to see it.
+const not_saved = 0xFE;
+
 /// Every frame of the best times. Looking at them: fire on stick 1 or Esc
 /// is done. Signing one: the initials, up to Return (or Esc, and it stays
-/// unsigned); then the score file goes back to the disk. True when done.
+/// unsigned); then the score file goes back to the disk. If the disk says
+/// no, the top line says the time isn't saved, and fire or Esc goes on.
+/// True when done.
 pub fn run(m: *Machine) bool {
     const signing = m.peek(map.shell_signing);
-    if (signing == 0xFF) {
+    if (signing == 0xFF or signing == not_saved) {
         const key = m.peek(hw.key);
         if (key != 0) m.poke(hw.key, 0); // seen it
-        return player.pressedFire(m, 0) or key == typing.key_esc;
+        if (!player.pressedFire(m, 0) and key != typing.key_esc) return false;
+        m.poke(map.shell_signing, 0xFF);
+        return true;
     }
     switch (typing.run(m)) {
         .typing => return false,
@@ -148,8 +156,13 @@ pub fn run(m: *Machine) bool {
         },
         .cancelled => {},
     }
-    m.poke(map.shell_signing, 0xFF);
     m.poke(hw.control, 0); // the save is a loading pause: blank first
-    _ = files.saveScores(m);
-    return true;
+    if (files.saveScores(m) == .ok) {
+        m.poke(map.shell_signing, 0xFF);
+        return true;
+    }
+    m.poke(map.shell_signing, not_saved);
+    m.fill(hw.bitmap + 320, 320, 0); // row 1: INITIALS AND RETURN
+    text.say(m, 24, 8, .red, "TIME NOT SAVED");
+    return false;
 }

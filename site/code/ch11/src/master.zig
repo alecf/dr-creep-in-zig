@@ -1,7 +1,8 @@
 //! The game's own disk, made while the game compiles: a blank disk, then
-//! the castles saved onto it, each as a "Z" file that loads at staging,
-//! the way 1984's castles did. No score files yet: a castle gets one the
-//! first time someone escapes from it.
+//! the castles saved onto it, each as a "Z" file, the way 1984 named its
+//! castles. A load puts a file where it's told, whatever load address it
+//! carries, so a castle loads into staging. No score files yet: a castle
+//! gets one the first time someone escapes from it.
 
 const machine = @import("machine");
 const drive = machine.drive;

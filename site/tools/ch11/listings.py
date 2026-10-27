@@ -202,7 +202,8 @@ step('D17', '**`src/main.zig`** (in the fanfare test, below the escape song)', '
      '    sign(m, "WIN");\n', arg='    try std.testing.expectEqual(tunes.Song.escape, song(m).?);')
 step('D18', '**`src/main.zig`** (add above the power-on test)', 'before_text',
      'const drive = machine.drive;\n\n', arg='test "power on')
-step('D19', '**`src/main.zig`** (add at the end)', 'append', chunk('test "a best time', 'test "saved on'), run='D')
+step('D19', '**`src/main.zig`** (add at the end)', 'append', chunk('test "a best time', 'test "a key pressed'))
+step('D20', '**`src/main.zig`** (add at the end)', 'append', chunk('test "a key pressed', 'test "saved on'), run='D')
 
 # ============================================================================
 # E: saving the game

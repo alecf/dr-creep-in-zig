@@ -42,10 +42,8 @@ so on.
 "Done by the time `poke` returns" doesn't mean free. The drive charges
 for its time, and that's this chapter's first big idea.
 
-Disks slot in from outside too. The headless runner takes `--disk FILE`,
-and `--save-disk FILE` writes the disk out when the run ends, saves and
-all. In the browser there's a disk slot under the screen, and a button
-to save the disk back to your computer.
+Headless, `--disk FILE` slots a disk in and `--save-disk FILE` writes it
+out at the end.
 
 ## Inside a disk
 
@@ -83,16 +81,15 @@ the directory on track 18, then follows the chain: each sector says
 where the next one is.
 :::
 
-Why a chain? Files come and go. When a file is saved, any free sectors
-will do, wherever they are, so the drive never has to find a long run
-of free space. The price is that you can't jump to the middle of a
+Why a chain? When a file is saved, any free sectors will do, wherever
+they are. The price is that you can't jump to the middle of a
 file. To find its tenth sector, you read the first nine.
 
-Look at the order: 17/0, 17/10, 17/20, 17/9. The file skips ten
-sectors each time. A real disk keeps spinning while the drive deals
+Look at the order: 17/0, 17/10, 17/20, 17/8. Each sector is ten on
+from the last, one back each time it wraps round the track. A real disk keeps spinning while the drive deals
 with one sector, so the very next one has already gone past. Ten
-sectors on, the drive is ready just as it comes round. Our drive keeps
-the habit, so its disks look like any other.
+sectors on, the drive is ready just as it comes round. Our drive saves
+files the same way.
 
 Now the cost. **Every sector the drive reads or writes takes a frame's
 worth of cycles: 19,656.** That's 254 bytes of file a frame, about
@@ -112,9 +109,10 @@ compiler can run it:
 
 ```zig
 //! The game's own disk, made while the game compiles: a blank disk, then
-//! the castles saved onto it, each as a "Z" file that loads at staging,
-//! the way 1984's castles did. No score files yet: a castle gets one the
-//! first time someone escapes from it.
+//! the castles saved onto it, each as a "Z" file, the way 1984 named its
+//! castles. A load puts a file where it's told, whatever load address it
+//! carries, so a castle loads into staging. No score files yet: a castle
+//! gets one the first time someone escapes from it.
 
 const machine = @import("machine");
 const drive = machine.drive;
@@ -136,8 +134,9 @@ pub const image: drive.Image = blk: {
 `format` writes an empty BAM and directory, and `save` writes a file
 as a chain, the same as a save on the Comet does. The castles' names
 start with a Z because that's how the 1984 disk told castles apart from
-everything else. Every castle on it is a Z file, saved with the address
-of staging, `$9800`, as its load address. The Entrance Hall from
+everything else. The drive ignores a file's load address and puts it
+where it's told, as 1984's loader did, so a castle loads into staging
+whatever address it carries. The Entrance Hall from
 Chapter 3 comes along too, as a second castle to choose from.
 
 If the castles didn't fit, `save` would return an error, and the
@@ -460,8 +459,7 @@ pub fn ready(m: *Machine) bool {
 }
 ```
 
-`command` is the whole conversation: the address, the length, then the
-command, and the status back. `name` puts a name from the program into
+`command` is the whole conversation: address, length, command, status. `name` puts a name from the program into
 the drive's name register. `nameFrom` builds one from a name stored in
 memory, after a prefix such as `"Z"`. A stored name ends at its letter
 with bit 7 set, the way the castle's text strings end.
@@ -652,7 +650,8 @@ the disk's name, and one directory sector), 20 are for the castle (the
 directory sector to find it, then its 19), and one is the look for a
 score file that isn't there. The other 2,316 cycles read the listing.
 Bucket 1 is the title. The display was blanked, so it's one loading
-pause, about two thirds of a second.
+pause, about two thirds of a second. (The title's Esc line, coming up,
+makes it 638,586.)
 
 ## The menu
 
@@ -830,8 +829,8 @@ Over in `main.zig`, import the menu below `master`:
 const menu = @import("menu.zig");
 ```
 
-`Mode` grows two modes, a screen's usual pair, and one line each is
-easier to read now:
+`Mode` grows two modes, the usual pair for a screen. With twelve modes,
+one to a line is easier to read:
 
 **`src/main.zig`** (replace `Mode`)
 
@@ -1172,15 +1171,23 @@ fn line(m: *Machine, two: u8, k: u8) void {
     _ = text.draw(m, left, rowOf(two, k), colors[k], text.plain, map.text_buffer);
 }
 
+/// `shell_signing` after a score file the disk wouldn't take: the screen
+/// says so, and waits for the player to see it.
+const not_saved = 0xFE;
+
 /// Every frame of the best times. Looking at them: fire on stick 1 or Esc
 /// is done. Signing one: the initials, up to Return (or Esc, and it stays
-/// unsigned); then the score file goes back to the disk. True when done.
+/// unsigned); then the score file goes back to the disk. If the disk says
+/// no, the top line says the time isn't saved, and fire or Esc goes on.
+/// True when done.
 pub fn run(m: *Machine) bool {
     const signing = m.peek(map.shell_signing);
-    if (signing == 0xFF) {
+    if (signing == 0xFF or signing == not_saved) {
         const key = m.peek(hw.key);
         if (key != 0) m.poke(hw.key, 0); // seen it
-        return player.pressedFire(m, 0) or key == typing.key_esc;
+        if (!player.pressedFire(m, 0) and key != typing.key_esc) return false;
+        m.poke(map.shell_signing, 0xFF);
+        return true;
     }
     switch (typing.run(m)) {
         .typing => return false,
@@ -1192,10 +1199,15 @@ pub fn run(m: *Machine) bool {
         },
         .cancelled => {},
     }
-    m.poke(map.shell_signing, 0xFF);
     m.poke(hw.control, 0); // the save is a loading pause: blank first
-    _ = files.saveScores(m);
-    return true;
+    if (files.saveScores(m) == .ok) {
+        m.poke(map.shell_signing, 0xFF);
+        return true;
+    }
+    m.poke(map.shell_signing, not_saved);
+    m.fill(hw.bitmap + 320, 320, 0); // row 1: INITIALS AND RETURN
+    text.say(m, 24, 8, .red, "TIME NOT SAVED");
+    return false;
 }
 ```
 
@@ -1209,14 +1221,15 @@ The copy's source and destination overlap, and `m.copy` handles that.
 His time goes in with blank initials. A tie goes in above the old time,
 so the newest record wins it.
 
-No best times in a game with unlimited lives, of course. That wouldn't
-be fair to everyone else.
+No best times with unlimited lives, of course. That wouldn't be fair.
 
 `draw` shows both tables. If someone's signing, the top line says who,
 in his coat's colour, and dashes wait on his place. `run` waits for
 fire or Esc when you're only looking. When you're signing, it waits for
 the line to be typed, puts the initials in the table, and sends the
-score file back to the disk.
+score file back to the disk. If the disk won't take it (full, or gone),
+the top line says TIME NOT SAVED and waits for fire, so the player
+knows.
 
 Typing gets the rest of its file. Two more constants:
 
@@ -1239,6 +1252,7 @@ pub fn begin(m: *Machine, x: u8, y: u8, max: u8) void {
     m.poke(map.shell_y, y);
     m.poke(map.shell_max, max);
     m.poke(map.shell_typed, 0);
+    m.poke(hw.key, 0); // a key pressed before the line began isn't its first letter
     var i: u8 = 0;
     while (i < max) : (i += 1) letter(m, i, placeholder);
 }
@@ -1291,7 +1305,8 @@ fn letter(m: *Machine, i: u8, c: u8) void {
 }
 ```
 
-`begin` puts a dash where each letter will go. Each frame, `run` reads
+`begin` puts a dash where each letter will go, and clears the keyboard:
+a key pressed during the fanfare isn't an initial. Each frame, `run` reads
 the keyboard. A letter, digit, space or full stop takes the next dash.
 Backspace takes one back, Return ends the line, and Esc gives up.
 
@@ -1475,6 +1490,54 @@ test "a best time: signed, saved to the disk, and still there after the power's 
 }
 ```
 
+Two more: a key pressed in the fanfare signs nothing, and a full disk
+says TIME NOT SAVED:
+
+**`src/main.zig`** (add at the end)
+
+```zig
+test "a key pressed before the best times ask isn't an initial" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom(m, 19); // the Way Out
+    while (feet(m) > 50) hold(m, machine.joy.left, 2);
+    hold(m, machine.joy.fire, 4);
+    hold(m, machine.joy.left, 60);
+    hold(m, machine.joy.up | machine.joy.right, 4);
+    while (m.ram[map.game_mode] != @intFromEnum(Mode.escape)) hold(m, 0, 1);
+    typeIn(m, "\x1b"); // Esc during the fanfare
+    sign(m, "ACE");
+    try std.testing.expectEqualSlices(u8, "ACE", m.ram[map.scores.first + 2 ..][0..3]);
+}
+
+test "a full disk: the best time says it isn't saved, and fire goes on" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    const full = try std.testing.allocator.create(drive.Image);
+    defer std.testing.allocator.destroy(full);
+    full.* = master.image;
+    var n: u32 = 0;
+    const junk = try std.testing.allocator.alloc(u8, @as(usize, drive.blocksFree(full)) * 254 - 2);
+    defer std.testing.allocator.free(junk);
+    @memset(junk, 1);
+    try drive.save(full, "JUNK", 0x1000, junk, &n);
+    try std.testing.expectEqual(0, drive.blocksFree(full));
+    inRoom(m, 19);
+    try m.insert(full);
+    while (feet(m) > 50) hold(m, machine.joy.left, 2);
+    hold(m, machine.joy.fire, 4);
+    hold(m, machine.joy.left, 60);
+    hold(m, machine.joy.up | machine.joy.right, 4);
+    sign(m, "ACE");
+    hold(m, 0, 5);
+    try std.testing.expectEqual(@intFromEnum(Mode.times), m.ram[map.game_mode]); // still showing it
+    try std.testing.expectEqual(@intFromEnum(drive.Status.full), m.ram[hw.drive_status]);
+    push(m, machine.joy.fire);
+    hold(m, 0, 2);
+    try std.testing.expectEqual(@intFromEnum(Mode.over), m.ram[map.game_mode]);
+}
+```
+
 Run it. This is the N key nineteen times to the Way Out, an escape, and
 ACE:
 
@@ -1508,7 +1571,7 @@ OVER, the title, Esc, and BEST TIMES:
 A big castle can take an evening, and the Comet has to be switched off
 some time. So the castle map gets a new key: Esc saves the game.
 
-Chapter 9 promised this would be easy. Everything a game knows between
+Chapter 9 set this up. Everything a game knows between
 rooms is in the castle buffer: the rooms, the doors that are open, the
 keys in each pocket, the lives, the clocks, all of it. So saving the
 game is saving the castle buffer, header and all, as a file. Loading
@@ -1648,8 +1711,8 @@ fn load(m: *Machine) Problem {
 }
 ```
 
-`asked` takes only Esc from the map's keyboard. Every other key is left
-alone, because N and P still flip rooms there.
+`asked` takes only Esc from the map's keyboard, so N and P still flip
+rooms.
 
 `draw` shows SAVE GAME or RESUME GAME, as `shell_saving` says, and 16
 dashes. When the name is typed, `run` blanks the display and saves or
@@ -1733,8 +1796,7 @@ and the name screen's modes:
 ```
 
 Saving goes back to the map, saved or not. A resumed game stops the
-title's tune, works out whose turn it is with `game.next`, and goes to
-the map. Esc on the resume screen goes back to the menu.
+title's tune, asks `game.next` whose turn it is, and goes to the map.
 
 The test plays through the Gatehouse, saves on the map (with a slip
 and a Backspace), and checks the file. Then it gives up three lives,
@@ -2091,28 +2153,20 @@ while it waits. It opens the menu with a different key, and won't save
 a game to the castle disk at all. We save to any disk, and keep the Z
 and Y names for castles and best times instead.
 
-The best times are 1984's file, byte for byte, with 1984's rule: no
-best time with unlimited lives, or in a restored game, marked in the
-same bit. One or two players is still chosen by which stick presses
-fire, and the header's `two` byte picks the table, as in 1984.
-
-1984's drive was much slower than ours. Ours loads a whole castle in
-under half a second.
+The best times are 1984's file and rules, byte for byte. One or two
+players is still chosen by which stick presses fire. And 1984's drive
+was much slower than ours.
 :::
 
 :::inside-the-disk Still to check
 Some details of 1984's castles can only be checked castle by castle.
 They wait for the Epilogue, when every castle loads:
 
-- **The map's door bytes.** Our builder works out where a door's arrow
-  goes on the map. A real castle has its own bytes, which should match.
-- **Two Frankensteins in one room.** 1984 keeps two awake monsters
-  from walking into each other.
-- **Ankhs and alcoves** may come in sizes the Training Castle never
-  used.
-- **Turn order.** When a game for two starts the players in different
-  rooms, 1984 lets player 2 play on until he meets player 1. Ours takes
-  strict turns.
+- **The map's door bytes**, which our builder works out for itself.
+- **Two Frankensteins in one room**, which 1984 keeps apart.
+- **Ankhs and alcoves** in sizes the Training Castle never used.
+- **Turn order** when a game for two starts in different rooms: 1984
+  lets player 2 play on until he meets player 1.
 - **1984's tunes** use our driver's commands, but some of their tempos
   tick faster than once a frame.
 :::
@@ -2125,10 +2179,9 @@ job doesn't arrive while the last one still needs its bytes.
 :::
 
 :::power-up The Slow Device Power-Up
-When a device is slow, count how often you ask it. Every sector costs a
-frame, so read each thing once, at a moment when the player is waiting
-anyway, with the screen blanked. The castle list and the castle come at
-power-on, in one pause, and the best times come with their castle.
+When a device is slow, count how often you ask it. Read each thing
+once, when the player is waiting anyway, with the screen blanked: the
+castle list and the castle come in one pause at power-on.
 :::
 
 :::byte-budget Chapter 11
@@ -2236,4 +2289,6 @@ rm -rf my-creep/.zig-cache my-creep/zig-out my-creep/web
   goes past the bottom of the screen.
 - **A best time on the title.** Show the castle's fastest time under
   its name.
+- **A bad first castle.** If the disk's first Z file isn't a castle,
+  power-on says NO CASTLE DISK. Try the next castle instead.
 :::

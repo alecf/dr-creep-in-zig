@@ -24,6 +24,7 @@ pub fn begin(m: *Machine, x: u8, y: u8, max: u8) void {
     m.poke(map.shell_y, y);
     m.poke(map.shell_max, max);
     m.poke(map.shell_typed, 0);
+    m.poke(hw.key, 0); // a key pressed before the line began isn't its first letter
     var i: u8 = 0;
     while (i < max) : (i += 1) letter(m, i, placeholder);
 }

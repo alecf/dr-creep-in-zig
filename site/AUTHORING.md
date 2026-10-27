@@ -2635,3 +2635,25 @@ Castle rooms (ch03)".
   overlaying memory (the listing in staging under the castle). Also:
   comptime disk building, insertion into a sorted table with an
   overlapping copy.
+- **ch11 review fixes (supersede the ch11 entries above where they
+  differ).** *Machine:* `wasm.zig` exports `comet_has_disk()` (1 iff the
+  game declares `disk`) and `comet_is_disk_size(len)`; `shell.js`
+  `hasDrive` uses the first (starter–ch10 pages no longer show the disk
+  row) and `insertDisk` checks the second before rebooting (a wrong file
+  leaves the game running); the picker's `value` is reset after each pick.
+  `drive.nextFree` steps 10 on and one back on each wrap, as real drives
+  (track 17: 0, 10, 20, 8, 18, 6 …); new drive test (34 machine tests).
+  REFERENCE §12 (slot only for games with a disk; bad files refused) and
+  §13 (a saved disk is 35 tracks). `build.py`'s play note adds the Esc keys
+  for chapters ≥ 11. *Game:* `typing.begin` clears `$DC02`; a failed score
+  save shows TIME NOT SAVED (red, row 1) and waits for stick-1 fire or Esc
+  (`shell_signing = 0xFE`, `scores.not_saved`); `master.zig`'s comment no
+  longer claims 1984's castles carry `$9800` (they carry `$7800`; the
+  loader ignores it). Tests 90 (two new in main: a key during the fanfare,
+  a full disk). Listings 77 (D20 split out). *Chapters:* ch08's alcove
+  sentence and ch09's door-bytes sentence now point at the Epilogue
+  (regenerated; ch08/ch09 rebuilds byte-identical). ch11 prose: load
+  address, "17/0, 17/10, 17/20, 17/8", Mode sentence, "Chapter 9 set this
+  up", 638,586 note, TIME NOT SAVED, the key clear, Bonus Stage "A bad
+  first castle"; diagram legend "(pale until read)"; prose 5,499 words. *Kept:* menu spacing
+  (16 castles) and PRESS FIRE under NO CASTLE DISK (Writer response).

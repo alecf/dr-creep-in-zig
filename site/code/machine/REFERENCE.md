@@ -570,9 +570,10 @@ frames overran or were loading pauses. With `--wav`, the last line says
 how long the sound is and how loud it got at its loudest. With
 `--save-disk`, it says how many blocks are free on the disk it saved.
 
-In the browser, a game with a disk drive gets two more controls under the
-screen: a file picker that slots a disk image in (and powers on again
-with it), and a button that saves the disk in the drive as a file. The
+In the browser, a game with a disk of its own (`pub const disk`) gets two
+more controls under the screen: a file picker that slots a disk image in
+(and powers on again with it; a file that isn't a disk image is refused,
+and the game plays on), and a button that saves the disk in the drive as a file. The
 image is read right there in the page; nothing is sent anywhere.
 
 **Testing:** `zig build test` runs your game's own `test` blocks, then
@@ -587,7 +588,8 @@ file (a `.d64` file). A disk is the classic single-sided kind: **35
 tracks** of **256-byte sectors**, 683 sectors, 174,848 bytes. Tracks 1–17
 have 21 sectors, 18–24 have 19, 25–30 have 18 and 31–35 have 17. The
 drive also takes 40-track images and images with a byte of error codes
-per sector at the end; it uses the first 35 tracks and ignores the rest.
+per sector at the end; it uses the first 35 tracks and ignores the
+rest, and a saved disk comes back as 35 tracks.
 
 ### How a disk is laid out
 

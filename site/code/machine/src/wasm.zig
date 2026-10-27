@@ -54,6 +54,18 @@ export fn comet_disk_buffer_size() u32 {
     return disk_buf.len;
 }
 
+/// 1 if this game has a disk of its own (`pub const disk`), so the page
+/// should offer a disk slot; 0 if the game never uses the drive.
+export fn comet_has_disk() u32 {
+    return @intFromBool(@hasDecl(game, "disk"));
+}
+
+/// 1 if `len` bytes is the size of a disk image, so the page can check a
+/// file before it powers the machine off and on to slot it in.
+export fn comet_is_disk_size(len: u32) u32 {
+    return @intFromBool(std.mem.indexOfScalar(usize, &machine.drive.image_sizes, len) != null);
+}
+
 /// Put the first `len` bytes of the disk buffer in the drive. 0 if that
 /// worked, 1 if they aren't a disk image.
 export fn comet_insert(len: u32) u32 {

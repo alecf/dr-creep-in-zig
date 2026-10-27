@@ -1829,6 +1829,47 @@ test "a best time: signed, saved to the disk, and still there after the power's 
     try std.testing.expectEqual(@intFromEnum(Mode.menu), m.ram[map.game_mode]);
 }
 
+test "a key pressed before the best times ask isn't an initial" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    inRoom(m, 19); // the Way Out
+    while (feet(m) > 50) hold(m, machine.joy.left, 2);
+    hold(m, machine.joy.fire, 4);
+    hold(m, machine.joy.left, 60);
+    hold(m, machine.joy.up | machine.joy.right, 4);
+    while (m.ram[map.game_mode] != @intFromEnum(Mode.escape)) hold(m, 0, 1);
+    typeIn(m, "\x1b"); // Esc during the fanfare
+    sign(m, "ACE");
+    try std.testing.expectEqualSlices(u8, "ACE", m.ram[map.scores.first + 2 ..][0..3]);
+}
+
+test "a full disk: the best time says it isn't saved, and fire goes on" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    const full = try std.testing.allocator.create(drive.Image);
+    defer std.testing.allocator.destroy(full);
+    full.* = master.image;
+    var n: u32 = 0;
+    const junk = try std.testing.allocator.alloc(u8, @as(usize, drive.blocksFree(full)) * 254 - 2);
+    defer std.testing.allocator.free(junk);
+    @memset(junk, 1);
+    try drive.save(full, "JUNK", 0x1000, junk, &n);
+    try std.testing.expectEqual(0, drive.blocksFree(full));
+    inRoom(m, 19);
+    try m.insert(full);
+    while (feet(m) > 50) hold(m, machine.joy.left, 2);
+    hold(m, machine.joy.fire, 4);
+    hold(m, machine.joy.left, 60);
+    hold(m, machine.joy.up | machine.joy.right, 4);
+    sign(m, "ACE");
+    hold(m, 0, 5);
+    try std.testing.expectEqual(@intFromEnum(Mode.times), m.ram[map.game_mode]); // still showing it
+    try std.testing.expectEqual(@intFromEnum(drive.Status.full), m.ram[hw.drive_status]);
+    push(m, machine.joy.fire);
+    hold(m, 0, 2);
+    try std.testing.expectEqual(@intFromEnum(Mode.over), m.ram[map.game_mode]);
+}
+
 test "saved on the map, resumed from the menu: the same room, lives and time, and no best time" {
     const m = try std.testing.allocator.create(Machine);
     defer std.testing.allocator.destroy(m);

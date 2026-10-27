@@ -91,7 +91,7 @@ svg.append('<rect class="head" x="0" y="0" width="%d" height="%d" rx="2"/>' % (C
 svg.append('</svg>')
 out.append('  <div class="scroll">' + ''.join(svg) + '</div>')
 out.append('  <div class="key"><span><i style="background: var(--ink)"></i>track 18: the BAM (sector 0) and the directory (sector 1)</span>'
-           '<span><i style="background: var(--accent)"></i>ZTRAINING, %d sectors</span>'
+           '<span><i style="background: var(--accent)"></i>ZTRAINING, %d sectors (pale until read)</span>'
            '<span><i style="background: var(--ink-soft)"></i>ZENTRANCE HALL, %d</span>'
            '<span><i style="background: var(--code-bg); box-shadow: inset 0 0 0 1px var(--rule)"></i>free</span></div>' % (len(training), len(hall)))
 chain = ' &rarr; '.join('%d/%d' % ts for ts in read[:6])

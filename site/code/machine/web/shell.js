@@ -136,7 +136,8 @@ export async function startComet(canvas, { wasm = "game.wasm", status = null, au
   await powerOn();
 
   // ---- the disk drive (machines from Chapter 11 on) ----
-  const hasDrive = typeof c.comet_insert === "function";
+  // Only a game with a disk of its own offers the slot.
+  const hasDrive = typeof c.comet_has_disk === "function" && c.comet_has_disk() === 1;
   function insert(bytes) {
     if (!hasDrive || bytes.length > c.comet_disk_buffer_size()) return false;
     new Uint8Array(c.memory.buffer, c.comet_disk_buffer(), bytes.length).set(bytes);
@@ -255,7 +256,7 @@ export async function startComet(canvas, { wasm = "game.wasm", status = null, au
     hasDrive,
     /** Power on again with the disk image `bytes` (a Uint8Array) in the drive. False if it isn't one. */
     insertDisk(bytes) {
-      if (crashed || !hasDrive) return false;
+      if (crashed || !hasDrive || !c.comet_is_disk_size(bytes.length)) return false; // the game plays on
       c.comet_boot();
       const ok = insert(bytes);
       draw();
@@ -297,6 +298,7 @@ export function wireDisk(canvas, comet, status, root = document) {
       if (!file) return;
       const ok = comet.insertDisk(new Uint8Array(await file.arrayBuffer()));
       if (status) status.textContent = ok ? `${file.name} is in the drive.` : `${file.name} isn't a disk image (.d64).`;
+      input.value = ""; // so picking the same file again is a change too
       canvas.focus();
     });
   }

@@ -331,12 +331,22 @@ fn listing(img: *const Image, pattern: []const u8, sink: *Sink, touched: *u32) E
 
 // ---- writing ----------------------------------------------------------------
 
+const interleave = 10; // sectors on between one block of a file and the next
+
 /// The next free sector for a file: further round the same track (ten
 /// sectors on, so the disk has turned past while the last was being
-/// handled), else the nearest track to the directory that has room.
+/// handled, and one back each time round, as the drives of the day did),
+/// else the nearest track to the directory that has room.
 fn nextFree(img: *const Image, prev: ?Ts) ?Ts {
     if (prev) |p| {
-        if (freeOn(img, p.track, p.sector + 10)) |s| return .{ .track = p.track, .sector = s };
+        // Ten on, and one back each time it wraps round the track.
+        const n = sectorsOn(p.track);
+        var s = p.sector + interleave;
+        if (s >= n) {
+            s -= n;
+            if (s > 0) s -= 1;
+        }
+        if (freeOn(img, p.track, s)) |f| return .{ .track = p.track, .sector = f };
     }
     var d: u8 = 1;
     while (d < tracks) : (d += 1) {
@@ -564,4 +574,21 @@ test "a disk can be made while the program compiles" {
     var n: u32 = 0;
     try testing.expectEqual(5, try load(&copy, "ZHELLO", &out, &n));
     try testing.expectEqualSlices(u8, "HELLO", &out);
+}
+
+test "a file's sectors go ten on round the track, one back each time it wraps" {
+    var img: Image = undefined;
+    format(&img, "STEPS", "01".*);
+    var n: u32 = 0;
+    try save(&img, "LONG", 0x1000, &([_]u8{7} ** (254 * 5)), &n);
+    const at = (try find(&img, "LONG", &n)).?;
+    var ts = Ts{ .track = img[at + 3], .sector = img[at + 4] };
+    var seen: [6]u8 = undefined;
+    for (&seen) |*s| {
+        try std.testing.expectEqual(17, ts.track);
+        s.* = ts.sector;
+        const o = offset(ts.track, ts.sector).?;
+        ts = .{ .track = img[o], .sector = img[o + 1] };
+    }
+    try std.testing.expectEqualSlices(u8, &.{ 0, 10, 20, 8, 18, 6 }, &seen);
 }

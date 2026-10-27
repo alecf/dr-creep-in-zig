@@ -261,11 +261,13 @@ def main():
             pager += f'<a href="#{next_v["view"]}" class="next">{html.escape(next_v["title"])} →</a>'
         pager += "</nav>"
         play_title = "The starter kit" if v["checkpoint"] == "starter" else f"Checkpoint {v['checkpoint']}"
+        # From Chapter 11 the game has a menu and saves (Esc).
+        esc_note = " Esc on the title opens the menu; Esc on the castle map saves the game." if v["num"] >= 11 else ""
         play = (
             f'<section class="play" aria-label="Playable checkpoint">'
             f'<div class="play-head"><span class="play-eyebrow">Plug in and play</span>'
             f'<h2 class="play-title">{play_title}</h2>'
-            f'<p class="play-note">The game exactly as it stands at the end of this chapter. Click the screen, then use the arrow keys or WASD and Space. IJKL and Return drive joystick 2.</p></div>'
+            f'<p class="play-note">The game exactly as it stands at the end of this chapter. Click the screen, then use the arrow keys or WASD and Space. IJKL and Return drive joystick 2.{esc_note}</p></div>'
             f'<div class="crt"><canvas data-wasm="play/{v["checkpoint"]}.wasm" width="384" height="272" tabindex="0" aria-label="Comet 64 screen"></canvas>'
             f'<button class="power" type="button">Power on</button></div>'
             f'<p class="play-status" data-status>Off</p>'
