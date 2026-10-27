@@ -1946,3 +1946,18 @@ test "a disk of your own: the castle list in its order, up to 16" {
     try std.testing.expectEqualSlices(u8, "FIRS", m.ram[files.entry(1)..][0..4]);
     try std.testing.expectEqualSlices(u8, hall.bytes, m.ram[map.staging.first..][0..hall.bytes.len]);
 }
+
+test "a castle file's own last-player byte can't upset the turns: player 2 goes first when they start apart" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    m.boot(@This());
+    _ = m.runFrame(@This()); // the Training Castle in staging
+    const in_staging = map.staging.first - map.castle.first;
+    m.ram[castle.start_room + 1 + in_staging] = 1; // player 2 starts in room 1
+    m.ram[castle.last + in_staging] = 0xB6; // and the file says anything here
+    m.ram[castle.escaped + in_staging] = 1;
+    hold2(m, 0, machine.joy.fire, 1); // a game for two
+    hold(m, 0, 2);
+    try std.testing.expectEqual(0, m.ram[castle.escaped]);
+    try std.testing.expectEqual(1, m.ram[map.room_number]); // player 2's room first
+}

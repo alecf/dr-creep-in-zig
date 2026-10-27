@@ -54,11 +54,15 @@ pub fn chosen(m: *Machine) ?bool {
 }
 
 /// A new game: a fresh copy of the castle, every door shut and every key
-/// where it was, then each player at the start. The header's scratch
-/// bytes are zeros in the castle file, so the copy clears them too.
-/// Thousands of bytes at 8 cycles each: call it with the display blanked.
+/// where it was, then each player at the start. A castle file may carry
+/// anything in the header's game bytes, so, as 1984 does, the clocks, the
+/// escapes and the last player are cleared. With `last` at 0, player 2
+/// plays first when the two start apart. Thousands of bytes at 8 cycles
+/// each: call it with the display blanked.
 pub fn start(m: *Machine, two: bool) void {
     m.copy(map.castle.first, map.staging.first, m.peek16(map.staging.first));
+    m.fill(castle.time, 2 * 4 + 2, 0); // both clocks, then both escaped bytes
+    m.poke(castle.last, 0);
     m.poke(castle.two, @intFromBool(two));
     for (0..2) |i| {
         const p: u16 = @intCast(i);

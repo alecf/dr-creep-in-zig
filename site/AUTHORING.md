@@ -2605,8 +2605,7 @@ Castle rooms (ch03)".
 - **Promises left for the Epilogue (unverified here: no real disk in
   this tree).** Door map bytes vs a real castle's map (ch09);
   Frankenstein–Frankenstein avoidance masks (ch08); ankh and alcove size
-  differences (ch08); the 1984 turn-order quirk for different start rooms
-  (ch09; we keep strict turns); MUSICn loading and 1984 tempo bytes below
+  differences (ch08); MUSICn loading and 1984 tempo bytes below
   `$13` (> 50 Hz; ch10), B7 notes, the title's 512-tick pause. All are
   listed for readers in the chapter's "Still to check" box.
 - **Costs at ch11 (measured).** Sector 19,656. Power-on frame 638,586
@@ -2655,7 +2654,24 @@ Castle rooms (ch03)".
   (regenerated; ch08/ch09 rebuilds byte-identical). ch11 prose: load
   address, "17/0, 17/10, 17/20, 17/8", Mode sentence, "Chapter 9 set this
   up", 638,586 note, TIME NOT SAVED, the key clear, Bonus Stage "A bad
-  first castle"; diagram legend "(pale until read)"; prose 5,499 words. *Kept:* menu spacing
+  first castle"; diagram legend "(pale until read)"; prose 5,499 words.
+  *From the Epilogue review (supersedes the ch09-review "Deviation for
+  ch11 (1984 turn-order quirk)" paragraph):* 1984 takes strict turns, as
+  ours does. `$0DF6` stores `$7811 = 0` at game start; `$0E38–$0E59`
+  plays the player who is **not** `$7811` when the rooms differ, so
+  player 2 plays the first room; `$1594–$15AF` leaves `$7811` as the last
+  player still walking the room. The only quirk is that `$1594` reads an
+  absent player's status: if the file's status byte is 0 and he has never
+  played, the room never ends (until RESTORE). 1984's `Game()` also clears
+  the clocks `$7855–$785C` (`$0DCC`) and escapes `$785D/E` (`$0DD6`).
+  Ours now does the same in `game.start` (`fill(time, 10, 0)`, `last =
+  0`), so player 2 goes first when the start rooms differ, and a file's
+  `$7811 = $B6` no longer panics `game.next` (`@intCast` into `u1`). New
+  main test with player 2 starting in room 1, `last = $B6`, `escaped = 1`.
+  `castle.zig`'s header comment no longer says the game bytes are zeros
+  on the disk. The turn-order bullet is gone from "Still to check" (now
+  settled); chapter prose for it (listings F16–F18, 80 in all; 91 game
+  tests). *Kept:* menu spacing
   (16 castles) and PRESS FIRE under NO CASTLE DISK (Writer response).
 - **Epilogue file, title, navigation.** `site/chapters/12-epilogue.md`,
   front matter `chapter: 12`, `part: epilogue`, `title: "All the

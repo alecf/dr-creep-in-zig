@@ -259,6 +259,11 @@ step('F13', '**`src/frankenstein.zig`** (add at the end)', 'append', cut(FRANK, 
 TRAINING = f11('src/training.zig')
 step('F14', '**`src/training.zig`** (in the Frankenstein record, replace the frame)', 'replace_text',
      line(TRAINING, '                .frame = 0x84') + '\n', arg='                .frame = @intFromEnum(shapes.Id.frank_right_0),\n')
-step('F15', '**`src/main.zig`** (add at the end)', 'append', chunk('test "a disk of your own'), run='F')
+step('F15', '**`src/main.zig`** (add at the end)', 'append', chunk('test "a disk of your own', 'test "a castle file\'s own'))
+step('F16', '**`src/game.zig`** (replace `start`)', 'replace_fn', fn('src/game.zig', 'start'), arg='start')
+CASTLE10 = f10('src/castle.zig')
+step('F17', '**`src/castle.zig`** (replace the comment above `header`)', 'replace_text',
+     cut(CASTLE, '// The castle file fills in', 'pub const header ='), arg=cut(CASTLE10, '// The castle file fills in', 'pub const header ='))
+step('F18', '**`src/main.zig`** (add at the end)', 'append', chunk('test "a castle file\'s own'), run='F')
 
 SNAP = set()

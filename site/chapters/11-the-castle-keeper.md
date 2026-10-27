@@ -42,8 +42,7 @@ so on.
 "Done by the time `poke` returns" doesn't mean free. The drive charges
 for its time, and that's this chapter's first big idea.
 
-Headless, `--disk FILE` slots a disk in and `--save-disk FILE` writes it
-out at the end.
+Headless, `--disk FILE` slots a disk in and `--save-disk FILE` saves it.
 
 ## Inside a disk
 
@@ -313,8 +312,7 @@ file's own length: 2 + 2 × 10 × 6 = 122 bytes. On the disk the file
 has a load address in front, so it's 124 bytes there. That's 1984's
 score file, byte for byte.
 
-The `comptime` block checks that the struct and the region agree. A
-fresh table is all `$FF`, and `$FF` hours is slower than any real time,
+A fresh table is all `$FF`, and `$FF` hours is slower than any real time,
 so every escape beats an empty place.
 
 Now the game's side of the drive, `files.zig`:
@@ -490,7 +488,7 @@ a 64 KB machine, a 126-byte job doesn't get its own region when a free
 one is right there.
 
 `pick` loads castle `n`, the file Z plus its name, into staging, and
-checks its magic byte, `$80`: any file can be called Z-something. Then
+checks its magic byte, `$80`. Then
 it loads the score file, Y plus the same name, into `scores`. A castle
 nobody's escaped from has none yet, so a failed load means a fresh
 table. `shell_disk` says how it went: `unread`, `ready`, or `none`.
@@ -804,8 +802,7 @@ pub fn run(m: *Machine) Choice {
 }
 ```
 
-`asked` clears any key pressed on the title, so a stray key can't wait
-for a later screen. Only Esc opens the menu.
+`asked` clears any key pressed on the title. Only Esc opens the menu.
 
 The menu has four lines and then the castles. A pointer, `>`, sits left
 of the line it's on, and `shell_pointer` says which. Stick 1 moves it
@@ -814,9 +811,8 @@ frame: `shell_stick` keeps the stick as it was, the way each player's
 `last_stick` does in a room. Down from the last line goes round to the
 top, and up from the top goes round to the bottom.
 
-Fire on a castle blanks the display, because a load is a loading pause,
-and `pick`s it. The title comes back with its name. The castle in
-staging is drawn in white and the others in yellow.
+Fire on a castle blanks the display and `pick`s it, and the title
+comes back with its name. The castle in play is white.
 
 `UNLIMITED LIVES` is drawn in reverse while it's on: its letters dark
 on a light bar. Fire flips it.
@@ -1221,7 +1217,7 @@ The copy's source and destination overlap, and `m.copy` handles that.
 His time goes in with blank initials. A tie goes in above the old time,
 so the newest record wins it.
 
-No best times with unlimited lives, of course. That wouldn't be fair.
+No best times with unlimited lives, of course.
 
 `draw` shows both tables. If someone's signing, the top line says who,
 in his coat's colour, and dashes wait on his place. `run` waits for
@@ -1896,7 +1892,7 @@ The page reads the file on your own computer and copies it into the
 Comet's drive: nothing is sent anywhere. Headless, it's `--disk`.
 
 A 1984 castle does a few things our Training Castle never asked for.
-Here are three we can fix and test now.
+Here are the ones we can fix and test now.
 
 **Machines at the left edge.** A castle X of 16 is the screen's left
 edge, and the Training Castle never puts anything further left. A 1984
@@ -2112,9 +2108,8 @@ The Training Castle's Frankenstein record says it 1984's way too:
                 .frame = 0x84, // walking right, by 1984's numbers (frankenstein.zig)
 ```
 
-The last test makes a disk of its own: castles saved out of order, a
-file that isn't a castle, and more than 16 castles. The menu has room
-for 16, in directory order:
+A test makes a disk of its own: castles out of order, a file that
+isn't a castle, and more than 16 castles. The menu has room for 16:
 
 **`src/main.zig`** (add at the end)
 
@@ -2145,6 +2140,65 @@ test "a disk of your own: the castle list in its order, up to 16" {
 }
 ```
 
+**The header's game bytes.** Ours are zeros in the file, but a disk's
+castle may carry anything there. 1984 clears the clocks, the escapes and
+the last player when a game starts; so will we. A `last` of `$B6` would stop ours.
+And with `last` at 0, player 2 plays the first room when the two start
+apart, as in 1984:
+
+**`src/game.zig`** (replace `start`)
+
+```zig
+/// A new game: a fresh copy of the castle, every door shut and every key
+/// where it was, then each player at the start. A castle file may carry
+/// anything in the header's game bytes, so, as 1984 does, the clocks, the
+/// escapes and the last player are cleared. With `last` at 0, player 2
+/// plays first when the two start apart. Thousands of bytes at 8 cycles
+/// each: call it with the display blanked.
+pub fn start(m: *Machine, two: bool) void {
+    m.copy(map.castle.first, map.staging.first, m.peek16(map.staging.first));
+    m.fill(castle.time, 2 * 4 + 2, 0); // both clocks, then both escaped bytes
+    m.poke(castle.last, 0);
+    m.poke(castle.two, @intFromBool(two));
+    for (0..2) |i| {
+        const p: u16 = @intCast(i);
+        m.poke(castle.room + p, m.peek(castle.start_room + p));
+        m.poke(castle.door + p, m.peek(castle.start_door + p));
+    }
+    m.poke(castle.in_game, 1);
+    m.poke(castle.in_game + 1, @intFromBool(two));
+    m.work(40); // the loop and the stores
+}
+```
+
+**`src/castle.zig`** (replace the comment above `header`)
+
+```zig
+// The castle file fills in the first nine bytes and `final_room`. The
+// rest are the game's own while a game is on; a file may hold anything
+// there, so a new game sets what it relies on (`game.start`), as 1984's
+// did. Most come in pairs: player 1's byte, then player 2's.
+```
+
+**`src/main.zig`** (add at the end)
+
+```zig
+test "a castle file's own last-player byte can't upset the turns: player 2 goes first when they start apart" {
+    const m = try std.testing.allocator.create(Machine);
+    defer std.testing.allocator.destroy(m);
+    m.boot(@This());
+    _ = m.runFrame(@This()); // the Training Castle in staging
+    const in_staging = map.staging.first - map.castle.first;
+    m.ram[castle.start_room + 1 + in_staging] = 1; // player 2 starts in room 1
+    m.ram[castle.last + in_staging] = 0xB6; // and the file says anything here
+    m.ram[castle.escaped + in_staging] = 1;
+    hold2(m, 0, machine.joy.fire, 1); // a game for two
+    hold(m, 0, 2);
+    try std.testing.expectEqual(0, m.ram[castle.escaped]);
+    try std.testing.expectEqual(1, m.ram[map.room_number]); // player 2's room first
+}
+```
+
 :::inside-the-disk The 1984 disk
 The 1984 menu lists the castles in directory order too, up to 24 of
 them. Ours fits 16 in one column. 1984 shows the castle in play
@@ -2165,8 +2219,6 @@ They wait for the Epilogue, when every castle loads:
 - **The map's door bytes**, which our builder works out for itself.
 - **Two Frankensteins in one room**, which 1984 keeps apart.
 - **Ankhs and alcoves** in sizes the Training Castle never used.
-- **Turn order** when a game for two starts in different rooms: 1984
-  lets player 2 play on until he meets player 1.
 - **1984's tunes** use our driver's commands, but some of their tempos
   tick faster than once a frame.
 :::
