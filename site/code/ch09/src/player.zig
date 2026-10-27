@@ -450,10 +450,10 @@ pub fn hit(m: *Machine, n: u3, other: u3) bool {
     }
 }
 
-/// Two explorers touching, on a ladder or a pole: the one who isn't on it
-/// can't step on into the other. Above him, he can't go down; below, he
-/// can't go up. Side by side on a walkway (the same Y), or with the other
-/// one climbing or sliding, they pass straight through each other.
+/// Two explorers touching: he can't step into the other one. With the
+/// other below him, his next step can't be down; above him, it can't be
+/// up. Side by side (the same Y), or with the other one on a ladder or a
+/// pole, they pass straight through each other.
 fn jostle(m: *Machine, n: u3, other: *align(1) actors.Actor) void {
     const a = actors.slot(m, n);
     m.work(24); // the tests

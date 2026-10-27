@@ -6,7 +6,6 @@
 
 const machine = @import("machine");
 const Machine = machine.Machine;
-const map = @import("map.zig");
 const castle = @import("castle.zig");
 const grid = @import("grid.zig");
 const room = @import("room.zig");

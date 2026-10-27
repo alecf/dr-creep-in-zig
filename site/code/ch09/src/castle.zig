@@ -10,8 +10,8 @@ const map = @import("map.zig");
 // ---- the header -----------------------------------------------------------
 
 // The castle file fills in the first nine bytes. The rest are zeros on
-// the disk, and while a game is on, they're the game's own: two bytes
-// of each pair are player 1's, then player 2's.
+// the disk, and while a game is on, they're the game's own. Most come in
+// pairs: player 1's byte, then player 2's.
 pub const header = map.castle.first;
 pub const header_size = 0x100;
 pub const size = header + 0x00; // 2 bytes: the castle's length, header included
