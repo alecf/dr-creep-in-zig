@@ -118,6 +118,11 @@ main { padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-lef
   main { padding-block: 24px 64px; }
 }
 {{DIAGRAM_CSS}}
+{{DESK_CSS}}
+/* On touch screens a checkpoint plays in the desk view (desk.js). */
+.touch-only { display: none; }
+html.touch .touch-only { display: inline; }
+html.touch .keys-only { display: none; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 
@@ -216,6 +221,12 @@ for (const fig of document.querySelectorAll("figure.diagram[data-animated]")) {
 }
 
 // Power on a checkpoint when asked; only the visible chapter's machine runs.
+// On a touch screen (or with ?desk in the address) the machine plays in the
+// desk view instead, with an on-screen joystick, and pauses when it closes.
+const deskMode = matchMedia("(pointer: coarse)").matches || new URLSearchParams(location.search).has("desk");
+document.documentElement.classList.toggle("touch", deskMode);
+const machines = new Map(); // view -> comet, for the desk view
+
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest(".power");
   if (!btn) return;
@@ -236,12 +247,26 @@ document.addEventListener("click", async (e) => {
     window.cometAudio.resume().catch(() => {});
   } catch {}
   const audio = window.cometAudio ?? null;
-  try {
+  const disk = play.querySelector(".play-disk");
+  const power = async () => {
     const { startComet, wireDisk } = await import("./shell.js");
     const comet = await startComet(canvas, { wasm: canvas.dataset.wasm, status, audio });
-    running.set(view, comet);
-    const disk = play.querySelector(".play-disk");
     if (disk && comet.hasDrive && wireDisk) { wireDisk(canvas, comet, status, play); disk.hidden = false; }
+    return comet;
+  };
+  try {
+    if (deskMode) {
+      const { openDesk } = await import("./desk.js");
+      const title = play.querySelector(".play-title").textContent;
+      const keys = play.hasAttribute("data-esc") ? ["Escape"] : [];
+      const onClose = () => { btn.disabled = false; btn.textContent = "Play"; status.textContent = "Paused."; };
+      const comet = await openDesk({ canvas, title, keys, onClose, power: () => machines.get(view) ?? power() });
+      machines.set(view, comet);
+      if (btn.disabled) status.textContent = "Running on the desk.";
+      return;
+    }
+    const comet = await power();
+    running.set(view, comet);
     btn.remove();
     canvas.focus();
     status.textContent = "Running. Click the screen if the keys stop answering.";

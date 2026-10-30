@@ -220,6 +220,7 @@ def main():
         for img in (SITE / "chapters" / "images").glob(pattern):
             shutil.copy(img, OUT / "images" / img.name)
     shutil.copy(CODE / "machine" / "web" / "shell.js", OUT / "shell.js")
+    shutil.copy(SITE / "page" / "desk.js", OUT / "desk.js")
 
     files = sorted((SITE / "chapters").glob("[0-9][0-9]-*.md"))
     chapter_files = {}
@@ -265,11 +266,14 @@ def main():
         play_title = "The starter kit" if v["checkpoint"] == "starter" else "The finished game" if v["view"] == "epilogue" else f"Checkpoint {v['checkpoint']}"
         # From Chapter 11 the game has a menu and saves (Esc).
         esc_note = " Esc on the title opens the menu; Esc on the castle map saves the game." if v["num"] >= 11 else ""
+        esc_touch = " The Esc key on the desk opens the menu on the title and saves on the castle map." if esc_note else ""
         play = (
-            f'<section class="play" aria-label="Playable checkpoint">'
+            f'<section class="play" aria-label="Playable checkpoint"{" data-esc" if esc_note else ""}>'
             f'<div class="play-head"><span class="play-eyebrow">Plug in and play</span>'
             f'<h2 class="play-title">{play_title}</h2>'
-            f'<p class="play-note">{"The whole game, as Chapter 11 left it." if v["view"] == "epilogue" else "The game exactly as it stands at the end of this chapter."} Click the screen, then use the arrow keys or WASD and Space. IJKL and Return drive joystick 2.{esc_note}</p></div>'
+            f'<p class="play-note">{"The whole game, as Chapter 11 left it." if v["view"] == "epilogue" else "The game exactly as it stands at the end of this chapter."} '
+            f'<span class="keys-only">Click the screen, then use the arrow keys or WASD and Space. IJKL and Return drive joystick 2.{esc_note}</span>'
+            f'<span class="touch-only">Power on and the Comet 64 sits down on a desk in front of you. The pad under the screen is joystick 1.{esc_touch}</span></p></div>'
             f'<div class="crt"><canvas data-wasm="play/{v["checkpoint"]}.wasm" width="384" height="272" tabindex="0" aria-label="Comet 64 screen"></canvas>'
             f'<button class="power" type="button">Power on</button></div>'
             f'<p class="play-status" data-status>Off</p>'
@@ -298,6 +302,7 @@ def main():
         .replace("{{HOME}}", HOME)
         .replace("{{PYGMENTS}}", "")
         .replace("{{DIAGRAM_CSS}}", (SITE / "page" / "diagrams.css").read_text())
+        .replace("{{DESK_CSS}}", (SITE / "page" / "desk.css").read_text())
     )
     # the template is a body fragment; give the standalone page a real
     # document head so browsers render in standards mode
