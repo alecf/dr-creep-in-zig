@@ -1,0 +1,191 @@
+/* The desk view (desk.js): on touch screens a checkpoint runs on a little
+   CRT on a desk, the Comet 64 in front of it, and a touch pad below or
+   beside it. The room is always dark, whatever the page theme. The world
+   is drawn in `em`s: .desk-world is 100em wide, sized to fit its stage. */
+.desk {
+  --room: #120f1f;
+  --wall: #231d3a;
+  --putty: #d9cfb6; --putty-lo: #b3a88c; --putty-hi: #ece4cf;
+  --case: #34323f; --case-lo: #22212b; --case-hi: #4a4858;
+  --keycap: #e7ddc4; --keycap-lo: #a3987c; --fkey: #d9822b; --fkey-lo: #8f4f17;
+  --wood: #6b4426; --wood-lo: #3f2614; --wood-hi: #8a5a33;
+  --pad: #1b1928; --pad-hi: #2e2b44; --lit: #a99cf0; --fire: #c8412f; --fire-lo: #7a2117;
+  --glow: #6c5eb5;
+  position: fixed; inset: 0; z-index: 1000;
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "bar" "stage" "pad";
+  background:
+    radial-gradient(70% 45% at 50% 30%, color-mix(in srgb, var(--glow) 22%, transparent), transparent 70%),
+    linear-gradient(var(--wall), var(--room) 70%);
+  color: #e6e4f2; overflow: hidden;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+.desk[hidden] { display: none; }
+html.desk-open, html.desk-open body { overflow: hidden; }
+
+.desk-bar { grid-area: bar; display: flex; align-items: center; gap: 8px; padding: 10px 16px; position: relative; z-index: 3; }
+.desk-title { margin: 0 auto 0 0; font: 400 .85rem/1.2 var(--display); letter-spacing: .1em; color: #a9a6c4; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desk-btn { font: 400 .8rem/1 var(--display); letter-spacing: .08em; color: #e6e4f2; background: #2e2b44; border: 0; border-radius: 8px; padding: 11px 14px 9px; cursor: pointer; }
+.desk-btn[data-act="close"] { background: #b8c76f; color: #352879; }
+
+/* ---- the scene ---- */
+.desk-stage { grid-area: stage; container-type: size; position: relative; z-index: 1; }
+.desk-world {
+  position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 100em; height: 100em;
+  /* 100em wide, fits the stage; on a narrow screen the desk's ends may
+     run off the sides so the monitor can be bigger */
+  font-size: min(1.12cqw, calc(100cqh / 100));
+}
+.desk-world > * { position: absolute; }
+.desk-world * { box-sizing: border-box; }
+
+/* Desk top: a big plank tipped away from us, hinged on the line under the
+   computer (y = 100em), so its grain runs to a vanishing point behind the
+   monitor and its near end runs on under the pad, off the screen. */
+.desk-wood {
+  left: -150em; right: -150em; top: 0; height: 260em;
+  transform-origin: 50% 100em; transform: perspective(150em) rotateX(45deg);
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0) 60em, rgba(0,0,0,0) 120em, rgba(0,0,0,.35) 200em),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0) 0 2.6em, rgba(0,0,0,.12) 2.6em 2.9em, rgba(255,255,255,.04) 2.9em 3.2em, rgba(0,0,0,0) 3.2em 5.5em),
+    linear-gradient(90deg, var(--wood-lo), var(--wood) 30%, var(--wood-hi) 50%, var(--wood) 70%, var(--wood-lo));
+}
+.desk-glow {
+  left: -10em; right: -10em; top: 60em; height: 36em;
+  background: radial-gradient(50% 50% at 50% 30%, var(--glow), transparent 70%);
+  mix-blend-mode: screen; opacity: .35; transition: background .4s;
+}
+
+/* A poster on the wall, shown only when the stage is tall enough for it. */
+.poster { display: none; left: 11em; top: -27em; width: 16em; height: 21em; transform: rotate(-3deg); border: .9em solid #2a2238; box-shadow: 0 1.5em 3em rgba(0,0,0,.5); opacity: .85; }
+@container (max-aspect-ratio: 5 / 7) { .poster { display: block; } }
+.poster text { font: 400 9px var(--display); letter-spacing: 1px; fill: #b8c76f; }
+
+/* Monitor: a putty-coloured CRT. The top face tapers back like the tube
+   behind it; the face is slightly rounded; the glass is a bulging inset. */
+.monitor { left: 7em; top: 0; width: 86em; }
+.monitor-top {
+  position: relative; height: 4em; margin: 0 2em -.2em;
+  background: linear-gradient(var(--putty-lo), var(--putty));
+  clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%);
+}
+.monitor-face {
+  position: relative; padding: 4em 4.5em 0; border-radius: 3em 3em 2em 2em;
+  background: linear-gradient(170deg, var(--putty-hi), var(--putty) 40%, var(--putty-lo));
+  box-shadow: inset 0 -.6em 0 rgba(0,0,0,.18), inset .5em 0 0 rgba(255,255,255,.2), 0 2em 3em rgba(0,0,0,.45);
+}
+.monitor-glass {
+  padding: 1.6em; border-radius: 4em / 5em; background: #0d0c12;
+  box-shadow: inset 0 .8em 1.6em rgba(0,0,0,.9), 0 0 0 .7em #9c9177, 0 0 0 .9em rgba(0,0,0,.25);
+}
+.monitor-screen {
+  position: relative; aspect-ratio: 384 / 272; border-radius: 3em / 4em; overflow: hidden;
+  background: #070610;
+  box-shadow: 0 0 5em color-mix(in srgb, var(--glow) 55%, transparent);
+}
+.monitor-screen canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; filter: saturate(1.15) contrast(1.05); }
+/* scanlines, then the tube's vignette and a reflection on the glass */
+.monitor-screen::before, .monitor-screen::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; }
+/* one scanline per row of the picture, so they never beat against it */
+.monitor-screen::before { background: linear-gradient(rgba(0,0,0,0) 55%, rgba(0,0,0,.22) 55%) 0 0 / 100% calc(100% / 272); }
+.monitor-screen::after {
+  background:
+    linear-gradient(160deg, rgba(255,255,255,.14), rgba(255,255,255,0) 32%),
+    radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,.55) 100%);
+  box-shadow: inset 0 0 3em rgba(0,0,0,.7);
+}
+.monitor-screen.warming canvas { animation: warm .7s ease-out; }
+@keyframes warm {
+  0% { transform: scale(1, .004); filter: brightness(6); }
+  35% { transform: scale(1, .004); filter: brightness(4); }
+  70% { transform: scale(1, 1); filter: brightness(1.6); }
+  100% { transform: none; filter: saturate(1.15) contrast(1.05); }
+}
+.monitor-strip { display: flex; align-items: center; gap: 2.2em; height: 8.5em; padding: 0 1.5em; }
+.monitor-name { margin-right: auto; font: 400 2.6em/1 var(--display); letter-spacing: .14em; color: var(--putty-lo); text-shadow: 0 .06em 0 var(--putty-hi), 0 -.04em 0 rgba(0,0,0,.25); }
+.knob { width: 3.6em; height: 3.6em; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #5c5a66, #26252c 70%); box-shadow: 0 .4em .6em rgba(0,0,0,.35); }
+.led { width: 1.6em; height: 1.6em; border-radius: 50%; background: #7cff6b; box-shadow: 0 0 1.5em #7cff6b, inset 0 -.2em .3em rgba(0,0,0,.3); }
+.monitor-foot {
+  position: relative; height: 4em; width: 40em; margin: 0 auto;
+  background: linear-gradient(var(--putty-lo), #8d8269);
+  clip-path: polygon(12% 0, 88% 0, 100% 100%, 0 100%);
+}
+
+/* The Comet 64: a slim graphite wedge. The key deck tips back in true
+   perspective; the front edge carries the badge and the power light. */
+.computer { left: 6em; width: 88em; top: 75em; filter: drop-shadow(0 2.5em 2em rgba(0,0,0,.55)); }
+.computer-deck {
+  position: relative; display: grid; grid-template-columns: 1fr 7em; gap: 2.4em; height: 30em; padding: 3em 3.5em 2.4em;
+  transform-origin: 50% 100%; transform: perspective(150em) rotateX(52deg); margin-top: -12em;
+  background: linear-gradient(var(--case-lo), var(--case) 25%, var(--case-hi));
+  border-radius: 2.5em 2.5em 0 0;
+}
+.keys { display: grid; grid-template-columns: repeat(16, 1fr); grid-template-rows: repeat(5, 1fr); gap: 1em; }
+.keys i, .fkeys i { display: block; border-radius: .7em; background: linear-gradient(var(--keycap), #d6cbb0); box-shadow: 0 .9em 0 var(--keycap-lo); }
+.keys .space { grid-column: 4 / 13; }
+.fkeys { display: grid; grid-template-rows: repeat(4, 1fr); gap: 1.4em; padding-bottom: 4em; }
+.fkeys i { background: linear-gradient(#ec9a48, var(--fkey)); box-shadow: 0 .9em 0 var(--fkey-lo); }
+.computer-front {
+  display: flex; align-items: center; gap: 2em; height: 6.5em; padding: 0 4em;
+  background: linear-gradient(var(--case-hi), var(--case) 30%, var(--case-lo));
+  border-radius: 0 0 1.5em 1.5em; box-shadow: inset 0 .25em 0 rgba(255,255,255,.08);
+}
+.comet-mark { width: 6em; height: 2.4em; fill: #f0c24a; stroke: #f0c24a; stroke-width: 1.6; stroke-linecap: round; }
+.comet-mark path { fill: none; }
+.computer-name { margin-right: auto; font: 400 2.3em/1 var(--display); letter-spacing: .12em; color: #d8d4e6; }
+.computer-front .led { background: #ff5a3c; box-shadow: 0 0 1.5em #ff5a3c, inset 0 -.2em .3em rgba(0,0,0,.3); }
+
+/* ---- the pad: stick on the left, Fire on the right ---- */
+.pad {
+  grid-area: pad; position: relative; z-index: 2;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px max(20px, 6vw) max(22px, 3dvh);
+  --stick: min(44vw, 28dvh, 220px);
+  touch-action: none;
+}
+.dpad, .fire { touch-action: none; -webkit-tap-highlight-color: transparent; }
+.dpad {
+  position: relative; width: var(--stick); aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, var(--pad-hi), var(--pad) 70%);
+  box-shadow: 0 .8em 1.6em rgba(0,0,0,.6), inset 0 2px 0 rgba(255,255,255,.08);
+  font-size: calc(var(--stick) / 20);
+}
+/* four arms of a plus, each with an arrow */
+.dpad-arm, .dpad-hub { position: absolute; background: #3a3752; box-shadow: inset 0 -.35em 0 rgba(0,0,0,.35); }
+.dpad-arm[data-code="ArrowUp"], .dpad-arm[data-code="ArrowDown"] { left: 7em; width: 6em; height: 6.5em; }
+.dpad-arm[data-code="ArrowLeft"], .dpad-arm[data-code="ArrowRight"] { top: 7em; height: 6em; width: 6.5em; }
+.dpad-arm[data-code="ArrowUp"] { top: 1.5em; border-radius: 1em 1em 0 0; }
+.dpad-arm[data-code="ArrowDown"] { bottom: 1.5em; border-radius: 0 0 1em 1em; }
+.dpad-arm[data-code="ArrowLeft"] { left: 1.5em; border-radius: 1em 0 0 1em; }
+.dpad-arm[data-code="ArrowRight"] { right: 1.5em; border-radius: 0 1em 1em 0; }
+.dpad-hub { left: 7em; top: 7em; width: 6em; height: 6em; }
+.dpad-arm::after { content: ""; position: absolute; inset: 0; margin: auto; width: 0; height: 0; border: 1.2em solid transparent; opacity: .55; }
+.dpad-arm[data-code="ArrowUp"]::after { border-bottom-color: #e6e4f2; border-top-width: 0; }
+.dpad-arm[data-code="ArrowDown"]::after { border-top-color: #e6e4f2; border-bottom-width: 0; }
+.dpad-arm[data-code="ArrowLeft"]::after { border-right-color: #e6e4f2; border-left-width: 0; }
+.dpad-arm[data-code="ArrowRight"]::after { border-left-color: #e6e4f2; border-right-width: 0; }
+.dpad-arm.on { background: var(--lit); box-shadow: 0 0 1.5em color-mix(in srgb, var(--lit) 60%, transparent); }
+.dpad-arm.on::after { opacity: 1; }
+.fire {
+  width: calc(var(--stick) * .62); aspect-ratio: 1; border-radius: 50%; border: 0; cursor: pointer;
+  font: 400 calc(var(--stick) * .085)/1 var(--display); letter-spacing: .12em; color: #fbe9e4;
+  background: radial-gradient(circle at 40% 35%, #e8644f, var(--fire) 60%);
+  box-shadow: 0 calc(var(--stick) * .035) 0 var(--fire-lo), 0 calc(var(--stick) * .06) calc(var(--stick) * .1) rgba(0,0,0,.6);
+}
+.fire.on { transform: translateY(calc(var(--stick) * .025)); box-shadow: 0 calc(var(--stick) * .01) 0 var(--fire-lo), 0 0 calc(var(--stick) * .12) #e8644f; }
+
+/* Sideways: the desk in the middle, stick and Fire either side of it. */
+@media (orientation: landscape) {
+  .desk { grid-template-columns: 1fr auto 1fr; grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "bar bar bar" "stick stage fire"; }
+  .desk-stage { width: min(100vh, 62vw); width: min(100dvh, 62vw); }
+  .pad { display: contents; --stick: min(30vw, 52dvh, 220px); }
+  .dpad { grid-area: stick; align-self: end; justify-self: center; margin-bottom: max(18px, 6dvh); z-index: 2; }
+  .fire { grid-area: fire; align-self: end; justify-self: center; margin-bottom: max(28px, 9dvh); z-index: 2; }
+  .desk-stage { grid-row: 1 / -1; }
+  .desk-world { bottom: auto; top: 50%; transform: translate(-50%, -50%); font-size: min(1.12cqw, calc(100cqh / 108)); }
+  .desk-bar { grid-row: 1; padding-block: 8px; pointer-events: none; }
+  .desk-bar > * { pointer-events: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .monitor-screen.warming canvas { animation: none; }
+}
