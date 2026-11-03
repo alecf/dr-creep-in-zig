@@ -2,8 +2,8 @@
 //!
 //! This file is the whole computer as far as a game is concerned: 64 KB of
 //! RAM, the work meter that keeps a frame honest, the raster beam that the
-//! meter drives, and the frame driver that reads the joysticks and runs the
-//! game's frame interrupt.
+//! meter drives, the frame driver that reads the joysticks and runs the
+//! game's frame interrupt, the SOUND chip's speaker, and the disk drive.
 //!
 //! A game never touches anything here except through `Machine`'s methods
 //! and `m.ram`. Everything the game remembers lives in that one array.
@@ -12,7 +12,9 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 pub const video = @import("video.zig");
+pub const sound = @import("sound.zig");
 pub const font = @import("font.zig");
+pub const drive = @import("drive.zig");
 const layout = @import("layout.zig");
 
 comptime {
@@ -71,14 +73,39 @@ pub const hw = struct {
     pub const sprite_mc0: u16 = 0xD025;
     pub const sprite_mc1: u16 = 0xD026;
 
-    // SOUND chip: $D400-$D418. The registers hold what you write; the
-    // speaker board isn't fitted to this model yet.
+    // SOUND chip: $D400-$D418, seven registers for each of three voices,
+    // then the filter (not fitted) and the volume. It plays what they say
+    // from the end of each frame to the end of the next.
     pub const sound_chip: u16 = 0xD400;
+    pub fn voice(v: u2) u16 {
+        return 0xD400 + @as(u16, v) * 7;
+    }
+    pub const sound_volume: u16 = 0xD418; // low 4 bits
 
     // Input ports
     pub const joy2: u16 = 0xDC00;
     pub const joy1: u16 = 0xDC01;
     pub const key: u16 = 0xDC02;
+
+    // The disk drive: write a command, and it's done before the next
+    // instruction (see `drive.Command`).
+    pub const drive_command: u16 = 0xDD00; // a drive.Command
+    pub const drive_status: u16 = 0xDD01; // a drive.Status, after the command
+    pub const drive_address: u16 = 0xDD02; // 2 bytes: where in RAM
+    pub const drive_length: u16 = 0xDD04; // 2 bytes: how much (a load sets it to what came)
+    pub const drive_name_length: u16 = 0xDD06;
+    pub const drive_name: u16 = 0xDD10; // up to 32 bytes
+    pub const drive_name_max = 32;
+};
+
+/// Each sector the drive reads or writes takes a frame's worth of cycles.
+pub const sector_cycles = frame_budget;
+
+/// What's in the drive: a disk image (outside the 64 KB) and whether
+/// there is one.
+pub const Drive = struct {
+    image: drive.Image = @splat(0),
+    present: bool = false,
 };
 
 /// `$D011` bit 4: the display is on.
@@ -187,6 +214,14 @@ pub const Machine = struct {
 
     beam: Beam = .{},
 
+    /// The SOUND chip's oscillators and envelopes, and its registers as
+    /// the last frame left them: what it plays while this frame runs.
+    chip: sound.Chip = .{},
+    sound_regs: [sound.register_count]u8 = @splat(0),
+
+    /// The disk drive and the disk in it. A power-on doesn't touch it.
+    drive: Drive = .{},
+
     // ---- memory ---------------------------------------------------------
 
     /// Read one byte. 4 cycles.
@@ -195,10 +230,12 @@ pub const Machine = struct {
         return m.ram[addr];
     }
 
-    /// Write one byte. 4 cycles.
+    /// Write one byte. 4 cycles. A write to `hw.drive_command` runs the
+    /// command, and costs its sectors too.
     pub fn poke(m: *Machine, addr: u16, value: u8) void {
         m.charge(4);
         m.ram[addr] = value;
+        if (addr == hw.drive_command) m.driveCommand(value);
     }
 
     /// Read a two-byte value stored low byte first. 8 cycles.
@@ -309,6 +346,67 @@ pub const Machine = struct {
         return &font.rom[code];
     }
 
+    // ---- the disk drive ---------------------------------------------------
+
+    /// Put a disk image in the drive (a 35- or 40-track image file, with
+    /// or without its error bytes). The game sees it at its next command.
+    pub fn insert(m: *Machine, bytes: []const u8) error{NotADiskImage}!void {
+        if (std.mem.indexOfScalar(usize, &drive.image_sizes, bytes.len) == null) return error.NotADiskImage;
+        @memcpy(&m.drive.image, bytes[0..drive.image_size]);
+        m.drive.present = true;
+    }
+
+    /// Take the disk out.
+    pub fn eject(m: *Machine) void {
+        m.drive.present = false;
+    }
+
+    /// The disk in the drive, as it is now (saves included), or null.
+    pub fn diskImage(m: *const Machine) ?*const drive.Image {
+        return if (m.drive.present) &m.drive.image else null;
+    }
+
+    fn driveCommand(m: *Machine, command: u8) void {
+        const r = &m.ram;
+        const address = @as(u16, r[hw.drive_address]) | @as(u16, r[hw.drive_address + 1]) << 8;
+        var length: u32 = @as(u16, r[hw.drive_length]) | @as(u16, r[hw.drive_length + 1]) << 8;
+        length = @min(length, 0x10000 - @as(u32, address)); // the top of memory
+        const name = r[hw.drive_name..][0..@min(r[hw.drive_name_length], hw.drive_name_max)];
+        var name_copy: [hw.drive_name_max]u8 = undefined;
+        @memcpy(name_copy[0..name.len], name);
+        var touched: u32 = 0;
+        const status: drive.Status = if (!m.drive.present) .no_disk else switch (command) {
+            @intFromEnum(drive.Command.load) => blk: {
+                const out = r[address..][0..length];
+                const total = drive.load(&m.drive.image, name_copy[0..name.len], out, &touched) catch |e| break :blk statusOf(e);
+                const got: u16 = @intCast(@min(total, length));
+                r[hw.drive_length] = @truncate(got);
+                r[hw.drive_length + 1] = @truncate(got >> 8);
+                break :blk if (total > length) .too_long else .ok;
+            },
+            @intFromEnum(drive.Command.save) => blk: {
+                const data = r[address..][0..length];
+                drive.save(&m.drive.image, name_copy[0..name.len], address, data, &touched) catch |e| break :blk statusOf(e);
+                break :blk .ok;
+            },
+            else => .bad_name,
+        };
+        r[hw.drive_status] = @intFromEnum(status);
+        r[hw.drive_command] = 0; // done
+        m.charge(sector_cycles * @max(1, touched)); // even a miss spins the disk once
+    }
+
+    fn statusOf(e: drive.Error) drive.Status {
+        return switch (e) {
+            error.NotFound => .not_found,
+            error.Exists => .exists,
+            error.DiskFull => .full,
+            error.TooLong => .too_long,
+            error.BadName => .bad_name,
+            error.BadDisk => .bad_disk,
+        };
+    }
+
     // ---- the meter and the beam -----------------------------------------
 
     inline fn charge(m: *Machine, n: u32) void {
@@ -349,11 +447,15 @@ pub const Machine = struct {
     // ---- the frame driver -----------------------------------------------
 
     /// Power on: clear memory, switch the display on, set the input ports
-    /// to "nothing pressed", then let the game set itself up. Boot time is
-    /// not metered and the beam isn't running.
+    /// to "nothing pressed", put the game's own disk in the drive (if it
+    /// has `pub const disk`; else the drive is empty), then let the game
+    /// set itself up. Boot time is not metered and the beam isn't
+    /// running. A shell can `insert` another disk after.
     pub fn boot(m: *Machine, comptime Game: type) void {
         comptime checkGame(Game);
         m.reset();
+        m.eject();
+        if (@hasDecl(Game, "disk")) m.insert(&Game.disk) catch unreachable;
         m.ram[hw.control] = display_on;
         m.writeInput();
         Game.boot(m);
@@ -376,6 +478,9 @@ pub const Machine = struct {
         m.bucket_cycles = @splat(0);
         m.beam = .{ .active = true, .next_line_at = cycles_per_line };
         m.latchRaster(0);
+        // The SOUND chip takes the last frame's registers, and plays them
+        // while this one runs.
+        m.sound_regs = m.ram[sound.base..][0..sound.register_count].*;
 
         Game.frame(m);
 
@@ -416,6 +521,15 @@ pub const Machine = struct {
         m.beam.next_line_at = std.math.maxInt(u32);
     }
 
+    /// The sound of a frame slot of the frame that just ran: `out` gets a
+    /// frame's worth of samples (`rate / 50`) at `rate` a second. The chip
+    /// plays the registers as the frame *before* left them, all through
+    /// this one, however many slots it took. The shell calls this once for
+    /// each slot `runFrame` reports, and sends the samples to a speaker.
+    pub fn listen(m: *Machine, out: []f32, rate: u32) void {
+        m.chip.render(&m.sound_regs, out, rate);
+    }
+
     /// Back to the power-on state. (Field by field rather than `m.* = .{}`
     /// so no half-megabyte temporary lands on a small wasm stack.)
     fn reset(m: *Machine) void {
@@ -428,6 +542,8 @@ pub const Machine = struct {
         m.last = .{};
         m.stats = .{};
         m.beam = .{};
+        m.chip = .{};
+        m.sound_regs = @splat(0);
     }
 
     fn writeInput(m: *Machine) void {
@@ -451,6 +567,8 @@ fn checkGame(comptime Game: type) void {
         @compileError("a game needs `pub fn boot(m: *Machine) void`");
     if (!@hasDecl(Game, "frame") or @TypeOf(Game.frame) != fn (*Machine) void)
         @compileError("a game needs `pub fn frame(m: *Machine) void`");
+    if (@hasDecl(Game, "disk") and @TypeOf(Game.disk) != drive.Image)
+        @compileError("a game's `disk` must be a `machine.drive.Image`");
 }
 
 // ---- tests ---------------------------------------------------------------
@@ -465,8 +583,10 @@ fn newMachine() !*Machine {
 
 test {
     _ = video;
+    _ = sound;
     _ = font;
     _ = layout;
+    _ = drive;
 }
 
 test "costs" {
@@ -721,4 +841,94 @@ test "buckets split a frame's cycles" {
     try testing.expectEqual([8]u32{ 10, 0, 300, 0, 0, 7, 0, 0 }, m.last.buckets);
     _ = m.runFrame(Lab); // each frame starts back in bucket 0
     try testing.expectEqual(10, m.last.buckets[0]);
+}
+
+test "the SOUND chip plays what the last frame left, all through this one" {
+    const Game = struct {
+        pub fn boot(_: *Machine) void {}
+        pub fn frame(m: *Machine) void {
+            // Frame 0: a note, gate on. Frame 1: a long job, then silence.
+            if (m.ram[0x0200] == 0) {
+                m.poke(hw.sound_volume, 15);
+                m.poke16(hw.voice(0) + sound.freq_lo, 7382);
+                m.poke(hw.voice(0) + sound.sustain_release, 0xF0);
+                m.poke(hw.voice(0) + sound.control, sound.sawtooth | sound.gate);
+            } else {
+                m.work(frame_budget * 2);
+                m.poke(hw.voice(0) + sound.control, 0);
+            }
+            m.ram[0x0200] += 1;
+        }
+    };
+    const m = try newMachine();
+    defer testing.allocator.destroy(m);
+    m.boot(Game);
+    var out: [882]f32 = undefined;
+    try testing.expectEqual(1, m.runFrame(Game));
+    m.listen(&out, 44100); // frame 0 played the power-on silence
+    for (out) |s| try testing.expectEqual(0, s);
+    const slots = m.runFrame(Game);
+    try testing.expectEqual(3, slots);
+    for (0..slots) |_| {
+        m.listen(&out, 44100); // the note, for every slot of the long frame
+        var loudest: f32 = 0;
+        for (out) |s| loudest = @max(loudest, @abs(s));
+        try testing.expect(loudest > 0.1);
+    }
+    _ = m.runFrame(Game);
+    m.listen(&out, 44100); // and then the silence it left, once the note
+    m.listen(&out, 44100); // has faded (a few milliseconds) and the output
+    m.listen(&out, 44100); // stage has settled
+    var loudest: f32 = 0;
+    for (out) |s| loudest = @max(loudest, @abs(s));
+    try testing.expect(loudest < 0.001);
+}
+
+test "the disk drive: a game's own disk, a load, a save, and the time they take" {
+    const Game = struct {
+        pub const disk = blk: {
+            @setEvalBranchQuota(100_000);
+            var d: drive.Image = undefined;
+            drive.format(&d, "LAB DISK", .{ 'L', '1' });
+            var n: u32 = 0;
+            drive.save(&d, "HELLO", 0x1000, "HELLO, DISK", &n) catch unreachable;
+            break :blk d;
+        };
+        pub fn boot(_: *Machine) void {}
+        pub fn frame(m: *Machine) void {
+            m.poke(hw.control, 0); // a loading pause, not an overrun
+            const name = if (m.ram[0x0200] == 0) "HELLO" else "@0:SAVED";
+            @memcpy(m.ram[hw.drive_name..][0..name.len], name);
+            m.ram[hw.drive_name_length] = @intCast(name.len);
+            m.ram[hw.drive_address] = 0x00;
+            m.ram[hw.drive_address + 1] = 0x30;
+            m.ram[hw.drive_length] = 100;
+            m.ram[hw.drive_length + 1] = 0;
+            m.poke(hw.drive_command, @intFromEnum(if (m.ram[0x0200] == 0) drive.Command.load else drive.Command.save));
+        }
+    };
+    const m = try newMachine();
+    defer testing.allocator.destroy(m);
+    m.boot(Game);
+    try testing.expect(m.diskImage() != null);
+    _ = m.runFrame(Game);
+    try testing.expectEqual(@intFromEnum(drive.Status.ok), m.ram[hw.drive_status]);
+    try testing.expectEqualSlices(u8, "HELLO, DISK", m.ram[0x3000..][0..11]);
+    try testing.expectEqual(11, m.ram[hw.drive_length]);
+    try testing.expectEqual(FrameKind.loading, m.last.kind);
+    try testing.expectEqual(2 * sector_cycles + 2 * 4, m.last.cycles); // a directory sector, a file sector, two pokes
+    m.ram[0x0200] = 1;
+    _ = m.runFrame(Game); // 11 bytes saved
+    try testing.expectEqual(@intFromEnum(drive.Status.ok), m.ram[hw.drive_status]);
+    var out: [11]u8 = undefined;
+    var n: u32 = 0;
+    _ = try drive.load(m.diskImage().?, "SAVED", &out, &n);
+    try testing.expectEqualSlices(u8, "HELLO, DISK", &out);
+
+    m.eject();
+    _ = m.runFrame(Game);
+    try testing.expectEqual(@intFromEnum(drive.Status.no_disk), m.ram[hw.drive_status]);
+    try testing.expectError(error.NotADiskImage, m.insert("too short"));
+    m.boot(Game); // power on again: the game's disk is back in
+    try testing.expect(m.diskImage() != null);
 }

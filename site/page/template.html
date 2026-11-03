@@ -49,6 +49,7 @@ main { padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-lef
 .prose li + li { margin-top: .3em; }
 .prose code { font: .86em/1.4 var(--mono); background: var(--code-bg); padding: .08em .3em; border-radius: 4px; color: var(--code-ink); }
 .prose img { display: block; width: 100%; max-width: 768px; image-rendering: pixelated; border-radius: 6px; box-shadow: 0 0 0 1px var(--rule); }
+.prose audio { display: block; width: 100%; max-width: 768px; margin: 0.6em 0 1em; }
 .prose blockquote { margin-left: 0; padding-left: 1em; border-left: 3px solid var(--rule); color: var(--ink-soft); }
 .prose > pre, .box-body > pre { overflow-x: auto; padding: 12px 14px; background: var(--code-bg); border-radius: 8px; font: .8rem/1.5 var(--mono); color: var(--code-ink); }
 .prose hr { border: 0; border-top: 1px solid var(--rule); }
@@ -224,10 +225,23 @@ document.addEventListener("click", async (e) => {
   const view = btn.closest(".view").dataset.view;
   btn.disabled = true;
   status.textContent = "Powering on…";
+  // The click is what lets the page make sound, so the speaker is made here,
+  // before anything waits. One speaker serves every chapter's machine.
   try {
-    const { startComet } = await import("./shell.js");
-    const comet = await startComet(canvas, { wasm: canvas.dataset.wasm, status });
+    if (!window.cometAudio) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      // 48,000 samples a second if the browser takes the option; else the device's rate.
+      try { window.cometAudio = new AC({ sampleRate: 48000 }); } catch { window.cometAudio = new AC(); }
+    }
+    window.cometAudio.resume().catch(() => {});
+  } catch {}
+  const audio = window.cometAudio ?? null;
+  try {
+    const { startComet, wireDisk } = await import("./shell.js");
+    const comet = await startComet(canvas, { wasm: canvas.dataset.wasm, status, audio });
     running.set(view, comet);
+    const disk = play.querySelector(".play-disk");
+    if (disk && comet.hasDrive && wireDisk) { wireDisk(canvas, comet, status, play); disk.hidden = false; }
     btn.remove();
     canvas.focus();
     status.textContent = "Running. Click the screen if the keys stop answering.";

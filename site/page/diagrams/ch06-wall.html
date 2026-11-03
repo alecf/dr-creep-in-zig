@@ -1,0 +1,33 @@
+<style>
+.ch06-wl { display: grid; gap: 10px; }
+.ch06-wl .ch06-wl-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: stretch; }
+.ch06-wl .ch06-wl-cell { position: relative; width: 64px; height: 64px; border-radius: 4px; background: var(--code-bg); box-shadow: inset 0 0 0 1px var(--rule); }
+.ch06-wl .ch06-wl-cell b { position: absolute; left: 0; right: 0; top: 4px; text-align: center; font-size: .66rem; font-weight: 400; color: var(--ink-soft); }
+.ch06-wl .ch06-wl-cell i { position: absolute; top: 28px; font-style: normal; font-size: 1.1rem; line-height: 1; color: var(--ink); }
+.ch06-wl .ch06-wl-cell .ch06-wl-l { left: 6px; }
+.ch06-wl .ch06-wl-cell .ch06-wl-r { right: 6px; }
+.ch06-wl .ch06-wl-gone { color: var(--accent); animation: ch06-wl-blink 4s step-end infinite; }
+.ch06-wl .ch06-wl-hole { box-shadow: inset 0 0 0 2px var(--accent); }
+.ch06-wl .ch06-wl-hole::after { content: ""; position: absolute; left: 22px; right: 22px; bottom: 6px; height: 10px; background: var(--ink-soft); animation: ch06-wl-show 4s step-end infinite; }
+.ch06-wl .ch06-wl-state { display: inline-grid; }
+.ch06-wl .ch06-wl-state > span { grid-area: 1 / 1; }
+.ch06-wl .ch06-wl-up { animation: ch06-wl-show 4s step-end infinite; color: var(--accent); font-weight: 600; }
+.ch06-wl .ch06-wl-down { animation: ch06-wl-blink 4s step-end infinite; }
+.ch06-wl small { color: var(--ink-soft); font-size: .72rem; }
+@keyframes ch06-wl-blink { 0% { opacity: 0 } 50% { opacity: 1 } }
+@keyframes ch06-wl-show { 0% { opacity: 1 } 50% { opacity: 0 } }
+</style>
+<div class="ch06-wl" data-animate>
+  <span class="dg-label">Five cells of the floor, with a trapdoor in the middle one</span>
+  <div class="ch06-wl-row">
+    <div class="ch06-wl-cell"><b>col 13</b><i class="ch06-wl-l">←</i><i class="ch06-wl-r">→</i></div>
+    <div class="ch06-wl-cell"><b>col 14</b><i class="ch06-wl-l">←</i><i class="ch06-wl-r ch06-wl-gone">→</i></div>
+    <div class="ch06-wl-cell ch06-wl-hole"><b>col 15</b><i class="ch06-wl-l">←</i><i class="ch06-wl-r">→</i></div>
+    <div class="ch06-wl-cell"><b>col 16</b><i class="ch06-wl-l ch06-wl-gone">←</i><i class="ch06-wl-r">→</i></div>
+    <div class="ch06-wl-cell"><b>col 17</b><i class="ch06-wl-l">←</i><i class="ch06-wl-r">→</i></div>
+  </div>
+  <div class="ch06-wl-row">
+    <span class="ch06-wl-state"><span class="ch06-wl-up">wall up: col 14 has no way right, col 16 no way left</span><span class="ch06-wl-down">wall down: every cell leads both ways</span></span>
+  </div>
+  <small>grid.wall(m, 15, row, true) changes two bits in two bytes. The hole's own cell keeps its ways, so nothing can walk in, but anything already inside can walk out. A forcefield is the same wall, in the cell under its field.</small>
+</div>

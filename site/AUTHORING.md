@@ -156,9 +156,10 @@ this section differ, the card and the Decision log win.
 | `$CC00–$CFE7` | screen plane: 1000 bytes, one per 8×8 cell. High nibble = colour for pixel code `01`, low nibble = colour for code `10` |
 | `$CFF8–$CFFF` | sprite pointers: block number (0–31) for sprites 0–7; block N lives at `$C000 + N*64` |
 | `$D000–$D3FF` | VIDEO chip registers (see below) |
-| `$D400–$D7FF` | SOUND chip registers (`$D400–$D418`, SID-like layout; audio output arrives in a later chapter) |
+| `$D400–$D7FF` | SOUND chip registers (`$D400–$D418`, SID-like layout; audio since ch10: three voices, ADSR, no filter) |
 | `$D800–$DBE7` | colour RAM: 1000 bytes, low nibble = colour for pixel code `11` |
 | `$DC00–$DCFF` | input: `$DC00` = joystick 2, `$DC01` = joystick 1 (5-bit active-low: bit0 up, bit1 down, bit2 left, bit3 right, bit4 fire; bits 5–7 read as 1). `$DC02` = last key pressed (ASCII, 0 = none; the game writes 0 to acknowledge) |
+| `$DD00–$DD2F` | disk drive (ch11): command, status, address, length, name length, name; card §13 |
 | `$E000–$FF3F` | bitmap: 8000 bytes, 320×200 multicolour (160×200 "fat" pixels, 2 bits each), laid out cell by cell (8 bytes per 8×8 cell, cells left to right, rows top to bottom), exactly like the classic hardware |
 
 The memory-mapped I/O regions are plain RAM that the hardware reads
@@ -446,12 +447,11 @@ Castle rooms (ch03)".
   is not checked in (`site/code/.gitignore`). The wasm build is
   ReleaseSafe so panics show in the browser console. `zig build test`
   runs the game's own tests plus a machine-provided 100-frame boot test.
-- **SOUND chip:** registers are plain RAM; no audio yet. The reference
-  card (§11) says, in-world, that this model "ships without its speaker
-  board" and the SOUND supplement comes with it. The music chapter adds
-  audio output to the machine, replaces card §11 with the register table,
-  and updates the `hw.sound_chip` comment in `machine.zig`. (Author TODO
-  lives here, not in reader-visible files.)
+- **SOUND chip:** registers are plain RAM. Until ch10 the card (§11)
+  said the model "ships without its speaker board". **Ch10 fitted it**
+  (see "The SOUND chip's speaker (ch10, machine)" below): card §11 is the
+  full register table; `hw.voice(v)` and `hw.sound_volume` name the
+  registers.
 - **Beam (racing the raster).** Added so tearing and double-buffering are
   real. 312 raster lines × 63 cycles; the work meter drives the beam
   (line = cycles / 63). `frame()` starts with the beam at line 0. Picture
@@ -511,7 +511,8 @@ Castle rooms (ch03)".
 - **Terminology:** "colour RAM" (`hw.color_ram`) everywhere; "screen
   plane" for `$CC00`. The card's register tables now carry a Zig-name
   column.
-- **Disk drive (planned, not built):** a disk drive device is added to
+- **Disk drive (planned; built in ch11, see "The disk drive (ch11,
+  machine)" below):** a disk drive device is added to
   the machine in chapter 11: a file list (directory in disk order), load
   and save of a named file into RAM at a given address (with a cycle /
   slot cost so loading shows as a loading pause), a wasm-side buffer the
@@ -1485,3 +1486,1307 @@ Castle rooms (ch03)".
   that spawns into a free slot and frees itself), not re-teach them; its new
   material is the ray gun's own flag byte (`RAYGUN_*`) and spawning under
   the 8-sprite cap.
+- **Chapter 6 file, title, images.** `site/chapters/06-flip-the-switch.md`,
+  `title: "Flip the Switch"`, generated from `tools/ch06/ch06.tmpl.md` by
+  `expand.py` (109 listings, prose ≈ 5,430 words by `wc.py`). Screenshots
+  (768×544): `06-lightning.png` (Mission Briefing; run A frame 200, bolts
+  crackling, explorer on the ladder), `06-switch.png` (A 330, lever down,
+  poles dull), `06-zapped.png` (B 260, walking into a bolt),
+  `06-forcefield.png` (C 350, field down, gauge relighting),
+  `06-conveyor.png` (a room-7 run frame 320, carried on the belt),
+  `06-transmitter.png` (F 2520, in the booth, lamp red). Diagrams:
+  `ch06-links` (switch record → machine records → object table → sprite
+  slot), `ch06-wall` (animated; `grid.wall` on five cells),
+  `ch06-belt` (animated; 8 cells recoloured, with the three costs). Quoted
+  error: `'place' is not marked 'pub'` (`errs.py` case `private`).
+- **Source layout (ch06).** New files `lightning.zig`, `forcefields.zig`,
+  `trapdoors.zig`, `conveyors.zig`, `transmitter.zig` (each: constants,
+  `prepare`, the handlers). Changed: `castle.zig` (named state bits:
+  `lightning_switch $80`, `lightning_on $40`, `trapdoor_open 1`,
+  `conveyor_on 1`, `conveyor_left 2`, `conveyor_pressed 4`, `conveyor_held
+  $10`, `conveyor_players $3C`; `Teleport{x, y, target}` + pads), `objects.zig`
+  (`find(m, kind, number)` generalised from `doors.find`, which is deleted;
+  `clock` = `game_tick >> 1`; `none = $FF`; `touching` calls
+  `actors.touch` before `in_front`), `actors.zig` (`none = $FF`,
+  `hitting`, `hit`, `touch`), `room.zig` (`place` now pub; `unplace`,
+  `swap`, `tint`, `boxOf`, `first`), `screen.zig` (`erase`), `grid.zig`
+  (`wall`), `player.zig` (`die`, `hit`, `touch`, `tread`; `feet_y` pub;
+  `underfoot = 4`), `main.zig` (`actors.clear` moved before `room.draw`,
+  because forcefields add their actor in `prepare`; so the explorer is not
+  always slot 0, `player_actor` pays off). `room.prepares`: lightning,
+  forcefield, trapdoor, conveyor, teleport are real; `later` remains for
+  mummy, key, lock, raygun, frankenstein (ch3 promise fully paid in ch8).
+  Shape IDs appended after `explorer_back_1`: `machine_pole, machine_tip,
+  bolt_0..3, lever_plate, lever_up, lever_down, button_frame, button_lit,
+  field_top, field_on_0, field_on_1, field_off, trapdoor_shut,
+  trapdoor_tilt, trapdoor_open, plate, belt, control, control_knob, booth,
+  lamp, pad` (25; bolts comptime-checked consecutive).
+- **Memory map (ch06).** `player` region grows to `$0200–$0206`:
+  `player_plate` (+5, plate object under his feet this turn or `$FF`) and
+  `player_last_plate` (+6). No other region changes. Shape table 3,265
+  bytes (was 2,045); training castle 4,438 bytes (was 4,333).
+- **Slot layouts (ch06; keep offsets).** Actor `Kind = { player,
+  lightning, forcefield, _ }` (1984 numbering 0, 1, 2; later chapters keep
+  1984's: mummy 3, laser 4, frankenstein 5, so ch7 must add `mummy` before
+  `laser` or give the enum explicit values). Object `Kind = { door, bell,
+  machine, lever, button, trapdoor, plate, belt, control, booth, _ }`.
+  Object bytes 8 `number` (generic link number), 9 `open`, 10 `step`, **11
+  `actor`** (slot or `actors.none`), **12 `timer`**, 13–15 `spare[3]`.
+  `Behaviour` gains `hit: ?fn(m, n, other) bool`, `touch: ?fn(m, n,
+  object) bool`, `group: u8` (1984 `$0895` hit masks: player 0, lightning
+  `0b100`, forcefield `0b011`).
+- **Links (ladder row 6), as implemented.** Three kinds of index, no
+  addresses: (1) switch → machines: the castle's 1984 format, byte offsets
+  from the room's first lightning record (`room.first`), `$FF` ends the
+  list; a machine object's `number` = its offset. (2) object ↔ object by
+  `(kind, number)` via `objects.find` (bell→door, switch→machine,
+  plate→trapdoor; trapdoor and plate share the record's offset in the
+  trapdoor group). (3) object → actor by slot in `o.actor` (machine →
+  bolt, button → field).
+- **Sprite–sprite collision (ch5 promise paid).** In `actors.step`, before
+  the countdown, an actor with `hit_sprite` runs `hitting(m, n, hits)`:
+  every other actor whose bit is in `$D01E`, not dying, not sharing group
+  bits, with overlapping boxes; both `hit` handlers are called (n, other
+  and other, n), true sets `flash`. `player.hit`: forcefield → false,
+  anything else → `die` (status dead; true). Runs every step (not only on
+  turns). `actors.touch` (actor's own object handler, 1984
+  `obj_Player_Collision`) is called from `objects.touching` before the
+  object's `in_front`; `player.touch`: feet within `underfoot` of the
+  object's x: trapdoor → `die`, plate → `player_plate`.
+- **Mechanics, as implemented.** *Lightning:* machine object box = emitter;
+  `execute` set if on; first step adds the bolt (x = tip x, y = tip y + 8,
+  `bolt_0`), each 4th step tints the pole (3 colour pairs); off → tint
+  dull, bolt `destroy`, execute off. Bolt turn: pace 1–4, picture 1–3 on
+  (never the same), fake random from `clock ^ slot*$5B`. Switch
+  `in_front`: player, playing, feet within lever width, stick up (0) =
+  on / down (4) = off, flips own bit and each listed machine's bit, sets
+  its `execute`, `swap`s the lever. *Forcefield:* `prepare` draws
+  button/gauge/emitter, adds the button object and the field actor
+  (`field_x`, `field_y + 2`, pace 4) and raises: `grid.wall(column(field_x
+  + 2), (field_y + 27) / 8)` (1984's cell). Button `in_front` on a fire
+  press: lower if up, gauge rows all 0, `step = 8`, `timer = 30`; `execute`
+  each step: every 30 relight one gauge row (one bitmap byte, bottom up),
+  at 0 raise. 240 steps ≈ 9.6 s (1984 same 8 × 30). Field turn alternates
+  `field_on_0/1` while up. *Trapdoor:* `prepare` erases the walkway piece
+  at (x + 4, y), draws the picture at (x + 4, y − 8), panel object 4 × 16
+  (disabled while shut), wall `grid.wall(column(x) + 1, y / 8)` when open
+  (1984's two-cell rule from the ch4 note), plate object + tint (red open,
+  green shut). `tread` (on his turn, after `read`): plate ≠ none and ≠
+  last → `trapdoors.flip` (castle bit, wall at once, tint, panel
+  `execute`; shutting disables at once, opening enables at the end).
+  `swing`: one picture a step. *Conveyor:* `prepare` clears bits 2–5,
+  belt always executes. Control `in_front` on a fire press sets `pressed`.
+  Belt `execute`: fresh press (pressed, not held) → on: `^= on|left`
+  (stop and reverse), off: `|= on`; arrows tinted; held = pressed; if on,
+  every other step shift the 3 shades across 8 cells (tint 224 cycles).
+  `carry` (belt `in_front`): player only, walking frames only, feet on the
+  32-px belt, ±1 per step and ±1 more when `clock & 7 == 0` (1984 exact
+  for the player). *Transmitter:* `prepare` draws booth, lamp (tinted pad
+  `target`'s colour, colour i + 2), pads; booth object (x + 4, y + 8, 8,
+  24). `in_front`: ignored while flashing; fire → x = pad x, y = pad y + 8
+  − `feet_y`, `step = 32`, execute; up (0) and `clock & 15 == 0` → next
+  pad (wrap at the 0 terminator), lamp tint. `flash`: 32 steps, pad white
+  / lamp black when `step & 2`.
+- **Training Castle rooms 4–8 (ch06; numbers unchanged).** 4 Lightning:
+  machines `{on, 104, 112, len 6}`, `{on, 124, 112, len 6}`, switch
+  `{switch|on, 28, 104, machines 0, 8, $FF, $FF}`; new text "TOUCH
+  LIGHTNING AND / YOU'RE TOAST…". 5 Forcefields: `{button 120,160; field
+  80,168}`; text "…ONLY UNTIL / ITS GAUGE FILLS UP…". 6 Trapdoors: `{open,
+  72, 192, switch 112, 184}`; text "A TRAPDOOR IS OPEN…". 7 Conveyors:
+  trapdoor `{open, 52, 192, switch 124, 184}` + belt `{on|left, 60, 184,
+  control 96, 160}` (the belt runs into the hole); text "…THIS ONE / RUNS
+  TO A TRAPDOOR!". 8 Transmitter: the ladder is replaced by a pole `{8, 72,
+  128}` (booth up, pole down), teleport `{112, 160, target 1, pads (60,
+  120) red, (136, 184) cyan}`; text fixed to "PUSH UP … PRESS FIRE AND
+  YOU'RE THERE" (**ch3's sign had up and fire reversed**; 1984 `$4EA8`
+  up changes, fire sends; owned in an Inside the Disk box). Floor gadgets
+  (plate, belt, trapdoor) have foreground pixels at rows 184–191 so the
+  hardware first pass sees his legs.
+- **Deviations (ch06).** (1) Bolt link: we keep the bolt's slot in the
+  machine object; 1984 stores the machine number in the bolt (field_1F)
+  and searches the sprites (box). (2) Forcefield: the button sets the
+  field's picture; 1984's field polls a flag table at `$4750` each turn
+  (box). (3) Recolour instead of redraw: pole (1984 redraws six pieces
+  with patched colour bytes), belt (1984 draws frames `$7E–$81`), lamp and
+  pads (1984 redraws shape `$71/$72`); trapdoor has 3 pictures, 1984 six
+  (`$73–$78`) (box). (4) `conveyor_left` is 1984's `CONVEYOR_MOVING_RIGHT`
+  bit, which moves things left; same bit (box). (5) Presses, not held fire,
+  for button/control/booth (1984 tests the button state; its conveyor has
+  the same edge rule). (6) Bolt randomness is clock-based until ch8. (7)
+  Field sprite 21 rows vs 1984's 25. (8) Switch reach: feet within the
+  lever's width; 1984 tests `x + width − switch x < 4`. (9) Teleport
+  arrival y = pad y + 8 − 21 (1984 pad y + 7 in its sprite coordinates).
+  (10) Flash: 32 steps, 2 on / 2 off; 1984 8 flashes on `ticks & 3`.
+  (11) The search test drops the final room (no plan entry) and expects 2
+  differing cells per raised forcefield / open trapdoor.
+- **Costs at ch06 (measured).** Tint one cell 28 cycles; belt tint 224 vs
+  draw 1,320 vs swap 2,972; pole tint 88 vs draw 1,704; `objects.find` 76;
+  `room.first(.lightning)` 576. Step maxima (actors / objects buckets):
+  room 4 2,218 / 300, room 5 1,208 / 52, room 6 566 / 64, room 7 670 / 336,
+  room 8 514 / 52. Boss Battle (`runs.py` F, 2,900 frames, rooms 4→8 via
+  N×4, ending in the Keys room): 2,786 calls, bucket 3 max 2,750, bucket 4
+  max 2,192, 11 loading pauses, 0 overruns.
+- **Tests at ch06 (34 in `zig build test`).** `main.zig`: lightning
+  (walk into a bolt → dead; climb to the switch, down → 0 bolts, up → 2);
+  forcefield (stopped at feet 87; press; through; back up after 240
+  steps; stopped at 76 from the other side); trapdoor (switch flips once
+  per step-on, both ways); conveyor (carried into the hole → dead; control
+  stops+reverses, restarts right, carries right); transmitter (up moves
+  the lamp within 17 steps, fire lands on pad 0); search test rewritten
+  (`inline for` over `training.Room`, `@field` + `@tagName`). `screen.zig`:
+  `erase` removes only the shape's pixels.
+- **Ladder bookkeeping (ch06).** Taught: linking by index (under-the-hood
+  box: JS references vs ids, `JSON.stringify` copies; the Index Link
+  Power-Up; diagram), toggling a bit with `^=` (one sentence; XOR proper is
+  ch8's), colour cycling via the screen plane (the Recolour Power-Up),
+  patching the navigation grid at runtime (`grid.wall` diagram; "the grid
+  isn't the castle any more"), edge detection "now and not last time"
+  (refers back to ch2's press rule), erase masks (`b | b>>1 & $55 | b<<1 &
+  $AA`). In passing: `inline for`, `@field`, `@tagName`, comptime block
+  checking enum order. Shared state machines: trapdoor's open/step and the
+  conveyor's bits. ch5's "linking by index used lightly" is now paid.
+- **Promises (ch06 → later).** ch7: lasers are actor kind 4 with their own
+  group (1984 `$0895`), keys use `picked`; ray gun + forcefield combo room
+  will need laser vs field groups. ch8: real pseudo-random (replace
+  `crackle`'s clock roll), monsters ride belts (`carry` is player-only,
+  1984 also carries mummies/Frankensteins at 2 px every step) and fall in
+  trapdoors (`touch` for monsters), Frankenstein/mummy `hit`/`group`. ch9:
+  player 2 (conveyor P2 bits `$08/$20` already reserved by
+  `conveyor_players`, player-vs-player groups, `player_plate` per player),
+  the final room back in the search test. ch10: sounds (switch, forcefield
+  tick, trapdoor swing, conveyor switch, teleport change/send).
+- **ch06 review fixes (supersede the ch06 entries above where they
+  differ).** *Rooms 6 and 7 re-laid so the reader meets the open hole in
+  normal play* (with one plate between entry and hole, 1984's step-on rule
+  makes every crossing flip, so a hole met open can only be crossed by
+  turning round *on* the plate; hence:) 6 Trapdoors: trapdoor `{0 (shut),
+  72, 192, switch 32, 184}`, switch beyond the hole: it opens behind him on
+  the way to door 1, and walking back the hole stops him at feet 72; sign
+  "THIS TRAPDOOR IS / SHUT. STEP ON ITS / SWITCH AND IT OPENS / BEHIND YOU.
+  STEP ON / IT AGAIN AND IT / SHUTS." 7 Conveyors: trapdoor `{open, 52,
+  192, switch 28, 184}` (beyond the hole), belt unchanged (runs left into
+  the hole: walking in along the floor kills him), plus a high walkway
+  `{22, 32, 128}`, `ladder_right` (x 112) and a pole `{8, 36, 128}`: the
+  way on is up, along and down the pole; last line of the sign "RUNS INTO A
+  HOLE!". Tests rewritten without setting `box.x`: trapdoor (shut → step on
+  switch → open behind → walk back, stopped alive at 72 → step on again →
+  shut); conveyor (walk in → carried into the hole → dead; control stops
+  and reverses; walking left against the right-running belt he gets no
+  further than 90; ladder, high walkway, pole, onto the switch → shut, then
+  carried right past 100). Search test: room 7's open trapdoor is the only
+  trapdoor wall now. Castle 4,435 bytes (was 4,438 before the review; ch05 4,333). *Runs:* E = straight along the floor
+  into the hole (500 frames); `ROOM7` takes the high road; Boss F is 3,120
+  frames (room 8 from 2,610): 3,006 calls, bucket 3 max 2,750 (the switch
+  throw, frame 318; 3,042 with bucket 4), bucket 4 max 2,420, 11 loading
+  pauses, 0 overruns; named frames 330, 1010, 1760, 2200, 2350, 2770, 3119.
+  *Images:* `06-switch.png` = A 370 (he has stepped away; lever visible),
+  `06-conveyor.png` = E 320 (walking left on the running belt towards the
+  open hole), new `06-trapdoor.png` = F 1760 (trapdoor open behind him at
+  the door), `06-transmitter.png` = F 2740 (same picture as before). Every
+  image now comes from a `runs.py` run. *Listings:* stage B's lightning test
+  is two edits (B6 the name line, B6b the death block replacing the
+  `// Up the ladder` comment), 110 listings; labels A31/A35/D24 corrected.
+  *Diagrams:* `ch06-wall` rests on "wall up" and its hole marker is
+  `--ink-soft`; `ch06-belt` delays −0.17 s/−0.33 s so the paused figure
+  shows three shades; `ch06-links` caption dropped (its small print stays).
+  *Prose:* `find` costs 52–64 cycles (76 was a miss); the forcefield
+  press-vs-held difference is told (1984 re-arms while fire is held, so a
+  second player can hold a field down; ch9 may restore it); the conveyor's
+  `held` bit is explained (1984 reads the held button; room for P2), and
+  the Game Over symptom is now "keeps reversing: clear `pressed`"; the
+  Inside the Disk box no longer quotes a name for the direction bit; ch3's
+  transmitter-sign mistake is owned in the prose, not the lore box; ch1's
+  Edge Detector and ch3's `inline for` are referred back to. Prose ≈ 5,570
+  words.
+- **Note for ch11 (from the ch06 review).** `room.tint`, `room.unplace` and
+  `screen.erase` compute `x − castle.left_edge` and `x / 4` with no
+  off-left handling: a machine at castle X < 16 overflows (panics in Debug
+  and ReleaseSafe). Add them to the "check the real castles for X < 16"
+  list when real castles load.
+- **Chapter 7 file, title, images.** `site/chapters/07-lock-and-load.md`,
+  `title: "Lock and Load"`, generated from `tools/ch07/ch07.tmpl.md` by
+  `expand.py` (65 listings, prose ≈ 5,030 words by `wc.py`). Screenshots
+  (768×544, every one from a `tools/ch07/runs.py` run): `07-under-fire.png`
+  (Mission Briefing; E 470, a laser stopping on the field with the explorer
+  behind it), `07-keys.png` (A 740, at the green key upstairs),
+  `07-locked.png` (B 390, just arrived on the pad), `07-panel.png` (C 480,
+  at the panel, gun climbing), `07-shot.png` (D 340, the laser reaching him
+  on the floor), `07-escape.png` (E 1380, gun at the top, field down, running
+  for the door). Diagrams: `ch07-swap` (animated; the key's slot taken by
+  the last object, count 4 → 3), `ch07-gun-byte` (static; the `Gun` bits,
+  castle-set vs game-set), `ch07-slots` (animated; one laser's life in
+  slot 2, plus the full table where `add` says null). Quoted error:
+  `Cannot create a direct enum array for actors.Kind. It would have 1
+  unused slots, but only 0 are allowed.` (`errs.py` case `gap`). Quoted test
+  failure: the first Under Fire test before the `share` fix (`expected 0,
+  found 3`).
+- **Source layout (ch07).** New files `locks.zig` (`prepareKey`, `take`,
+  `carrying`, `prepareLock`, `unlock`) and `guns.zig` (`gunX`, `picture`,
+  `lowest`, `prepare`, `lamps`, `run`, `move`, `shoot`, `fly`, `gunOf`,
+  `blocked`, `strike`, `steer`; comptime check that each way's 4 gun
+  pictures are consecutive). Changed: `castle.zig` (header `keys_count`
+  `+$13`, `keys_held` `+$15`, `pocket = 32`; documented `Key`, `Lock`;
+  `RayGun.runtime` renamed **`gun_y`** and `state` typed **`Gun`**, a
+  `packed struct(u8)`: bit 0 `left`, 1 `down`, 2 `up`, 3 `fire`, 4
+  `no_gun`, 5 `steered`, 6 `shot`, 7 `end` = 1984 `RAYGUN_*` TRACK_TO_LEFT,
+  MOVE_DOWN, MOVE_UP, FIRED_BY_PLAYER, TRACK_ONLY, PLAYER_CONTROLLING,
+  DONT_FIRE, END), `objects.zig` (kinds `key, lock, gun, panel`; `step`
+  re-reads the count and removes `picked` objects; `remove`), `actors.zig`
+  (`Kind.laser = 4`, `directEnumArray(..., 1, ...)` leaving the mummy's gap;
+  laser `{turn fly, flickers false, hit blocked, touch strike, group
+  0b100}`; **`share`**, a strict box test for sprite pairs, replaces
+  `objects.overlap` in `hitting`), `room.zig` (key/lock/ray_gun preparers;
+  `later` now only mummy, pattern, frankenstein), `author.zig` (keys 8×16
+  and locks 12×24 on screen and in the overlap check; a lock's door must
+  exist), `training.zig` (`key(color, x, y)` / `lock(color, door, x, y)`
+  helpers writing `$50 + colour` / `$57 + colour`), `shapes.zig` (Ids
+  appended after `pad`: `key, lock, track, gun_right_0..3, gun_left_0..3,
+  panel, laser`), `art.zig` (sections "keys and locks", "ray guns"),
+  `main.zig` (`feet` helper, 7 new tests). `map.zig` unchanged.
+- **Memory (ch07).** Inventories live in the **castle header, as in 1984**:
+  `$7813` P1 count, `$7814` P2 count, `$7815–$7834` P1 keys, `$7835–$7854`
+  P2 keys (1984 `obj_Key_Infront`/`obj_Key_NotFound`). So a saved castle
+  carries them and ch9's clean castle copy per game resets them; until
+  then a new game keeps the old pockets *and* the taken keys (consistent).
+  This is a first use of the header as runtime state (ch9 teaches it).
+  Shape table 3,774 bytes (was 3,265); castle 4,496 (was 4,435).
+- **Mechanics, as implemented.** *Key:* prepare skips `shape == 0`, recolours
+  `.key` (`white << 4 | number`), places, adds object. `take` (in_front):
+  player, fire *press*, playing, pocket not full → append number, count+1,
+  record `shape = 0`, erase picture, `picked` + `disable`. *Removal:*
+  `objects.step`, for a `picked` object: count−1, copy the last 16-byte slot
+  over it (`m.copy`), `continue` so the moved object skips this step (1984
+  `object_Execute`). *Lock:* prepare recolours `.lock`, places, adds;
+  `unlock`: player, press, playing, `carrying(number)` → find `.door` with
+  `number == lock.door`, set `execute` if shut; key kept. *Gun prepare:*
+  clear `shot`, draw `length` track pieces 8 rows apart, draw gun at (x+4 or
+  x−8, gun_y) unless `no_gun`, gun object (8×11) with `execute`; panel
+  (8×24) drawn, lamps grey, panel object. *Gun run* (every step, acts on
+  `clock & 3 == 0`): not steered → clear up/down, if playing: `near =
+  |his top − gun_y|`, up if his top < gun_y else down. `move`: one row if
+  track remains (gun_y between y and y + 8·length − 11), erase/draw picture
+  `gun_*_0 + (gun_y & 3)`, box follows, lamps (up green / down red / grey,
+  tinting the 2×1 cells at control_y and control_y + 16). Then steered →
+  clear `steered`, need `fire`, clear it; else need `near < 5`; then not
+  `shot` → `shoot`. *Shoot:* `actors.add(.laser) orelse return`, at (gun x
+  ± 8, gun_y + 5), way 2/6, `setFrame(.laser)`, `shot`, `o.actor = slot`.
+  *Fly* (pace 1): ±4 a step; x < 8 or ≥ 176 → `destroy`; last turn → `free`,
+  `gunOf` (gun object whose `actor` is n) → `actor = none`, `shot = false`.
+  *blocked* (hit): always true (no flicker → gone next step). *strike*
+  (touch): machine → true, a gun other than its own → true. *Panel steer*:
+  player, playing, feet within panel width; stick 0 → up, 4 → down, `0x80` →
+  neither, else return; `steered`; a fire press → `fire`.
+- **Training Castle rooms 9, 10, 15, 17 (ch07).** 9 Keys and Locks: bell
+  removed; key green (168, 112) at the upper walkway's end; lock green door
+  1 (44, 168). 10 Ray Guns: gun `{left, x 132, y 96, length 12, gun_y 152,
+  control 40, 104}` (gun at 124–131, panel beside the ladder top); walking
+  the floor gets him shot before x 124; standing in the doorway, shot in ≈ 3
+  s. 15 Under Fire: walkways floor + `upper_right`, `ladder_right`; field
+  `{button 136,160; field 88,168}`; gun `{right, x 60, y 96, length 12,
+  gun_y 171, control 120, 104}` (lasers from 72 die on the field); new sign
+  "THE FORCEFIELD IS / YOUR SHIELD. TAKE / IT DOWN AND THE / GUN CAN HIT
+  YOU. SO / SEND THE GUN UP / FIRST, THEN RUN!". 17 Locked Away: bell
+  removed; pole `{8, 100, 128}`; teleport `{128, 160, target 0, one pad
+  (136, 120)}`; key light_blue (168, 112); lock light_blue door 1 (44, 168).
+  The panels sit next to ladder tops on purpose: a gun steered to the top
+  reaches the upper walkway's row in ≈ 7 rows (28 steps).
+- **Deviations (ch07).** (1) Key/lock/panel react to a fire *press*; 1984
+  reads the held button (its panel copies held fire into FIRED every turn,
+  so holding fire keeps shooting; box). (2) One key picture recoloured;
+  1984 draws the record's picture `$51–$57`. The record's `shape` byte is
+  only "0 = taken" for us, so **no 1984-ID → `Id` table is needed for keys**
+  (pays the ch3/ch11 note for keys; locks' byte is unused in 1984 too).
+  (3) Lock has a white glint (code 01). (4) Laser 2 rows tall (1984 1).
+  (5) The key erases its own picture in `take`; 1984 erases picked objects
+  in `object_Execute`. (6) The gun is drawn in `prepare`; 1984 on its first
+  execute. (7) Gun→laser link is `o.actor`, with `gunOf` searching back;
+  1984 stores the gun in the laser (`field_1E`). (8) **Full sprite table:**
+  ours holds fire; 1984's `$3A98` ignores the finder's carry and takes slot
+  0 (box). (9) Tracking reads player 1 only (ch9 adds the nearest of two);
+  1984's "y ≥ 200 counts as above" and signed-distance wrap are dropped.
+  (10) Track is one symmetric piece; 1984 has left/right track pictures.
+  (11) Pocket full (32) refuses the key; 1984 would overflow into P2's list.
+  (12) **Sprite–sprite boxes are strict** (`share`, `>`); 1984 uses `>=`
+  (`Sprite_Collision_Check`), which kills an explorer leaning on a field
+  when a laser dies on its far side (field box 88–95, explorer 92, laser
+  84–91: edges meet at 92). Found by the Under Fire test; told in the
+  chapter and a box. Object touching keeps `overlap` (inclusive).
+- **Costs at ch07 (measured).** Removal 120 cycles (`objects.step` 68 → 188
+  with one removal). Gun moving a row ≈ 1,430; idle turn 4; firing turn ≈
+  2,086 (+≈ 650 for the laser's unpack). Laser turn 16, last turn 52.
+  Boss Battle (`runs.py` F, 4,760 frames: rooms 9 → 10, N×4 → 15, N → 17,
+  ending in room 18): 4,555 calls, bucket 3 max 2,138, bucket 4 max 3,622
+  (room 10, a gun row + the door opening), 20 loading pauses, 0 overruns.
+  Named frames 740, 1720, 2740, 3680, 4110.
+- **Tests at ch07 (41 in `zig build test`).** All room tests play through
+  the stick: keys (lock refuses empty-handed; ladder, key, slot-2 swap check,
+  record shape 0; back to the lock; through door 1 to room 10); locked away
+  (booth fire → upstairs, key, pole, lock opens); ray guns death (floor walk,
+  one laser at a time, dies before x 124); ray guns steering (gun holds still
+  at the panel, steered to the top, a laser fired over his head comes and
+  goes, then down and out to room 11); under fire shield (alive leaning on
+  the field for 400 frames with lasers dying, button → dead); under fire
+  solution (panel, gun up, button, run, out to room 16). One unit-style test
+  sets gun flags directly: sprite cap (room 10, slots 1–7 filled, steered +
+  fire → no shot, fire consumed; free slot 5 → laser in 5, `o.actor` 5).
+- **Ladder bookkeeping (ch07).** Taught: fixed list + count instead of a
+  growable array (under-the-hood box, `push`/`includes`); swap-with-last
+  removal (diagram; the Last-One-In Power-Up); a whole device's state in one
+  flag byte shared by castle and game (`Gun`, diagram); spawning under a
+  hard cap, null = wait (diagram, the Spawn-and-Free Power-Up); explicit enum
+  values (`laser = 4`) and `directEnumArray`'s gap count; strict vs inclusive
+  box tests. Built on, not re-taught: ch05's free-slot reuse and the
+  `State` lifecycle (`destroy` last turn → `free` → `unused`), ch06's links
+  by number (`o.actor`, `objects.find`). Outline "you can shoot another
+  player" is ch9's (lasers already kill any `player` actor).
+- **Promises (ch07 → later).** ch8: mummy is actor kind 3 (fill the gap,
+  then `directEnumArray(..., 0)` again or keep 1 for none); lasers kill
+  Frankensteins (1984 laser `touch` on a Frankenstein object; `strike`
+  needs the case) and monsters need laser `hit`s; mummy/frank groups vs
+  `0b100`. ch9: player 2's pocket (`keys_count + 1`, `keys_held + 32`),
+  keys/locks/panels for either player, guns track the nearest playing
+  player, per-player `player_plate` (stale after a swap-removal; box in
+  ch7), the clean castle copy resets pockets and taken keys, the header as
+  scratch state. ch10: sounds (key pickup, gun fire, lock). ch11: real
+  castles' gun records with `no_gun`, panels at X < 16 (the ch06 tint
+  note applies to `lamps`).
+- **ch07 review fixes (supersede the ch07 entries above where they
+  differ).** *Room 10 re-laid so it stays winnable from door 0 after a
+  death on the floor* (the gun's row is in the castle, so a gun parked on
+  the floor's row in front of door 0 shot him as he came in, and nothing
+  resets it until ch9): gun `{right, x 56, y 96, length 12, gun_y 171,
+  control 40, 168}` (gun at 60–67, lasers from 68 run right along the
+  floor); door 0 (16, 160) → keys door 1, door 1 (156, 160); floor walkway
+  only, no ladder; bell (140, 168) for door 1. He arrives at x 22 behind the
+  muzzle with the panel between him and the track. Walking the floor past
+  the muzzle gets him shot between feet 68 and 140. Solution: panel, push
+  up to the top (96), fire (the laser goes high over the room), walk right
+  to the bell and out. Timings: from the top the gun reaches the floor's
+  firing range in 70 rows × 8 frames ≈ 11 s; panel → bell → doorway ≈ 280
+  frames ≈ 6 s ("about eleven seconds … about six"). The first-visit
+  "shot in ≈ 3 s in the doorway" is gone (behind the gun it can't hit him).
+  *One-way rooms, accepted:* coming back into room 10 by door 1, or room 15
+  by door 1, puts him in front of the muzzle; with the gun low he's shot
+  walking back. 1984 castles have one-way rooms too; the chapter's routes
+  never come back that way (Writer response in the review). *Tests (42 in
+  `zig build test`):* death test is "past the muzzle" (one laser, dies at
+  68 < feet < 140); the steering test is `inRoom` + a new helper
+  `escapeRayGuns` (walk to the panel, gun holds still 40 frames, up to the
+  top, fire, laser comes and goes, walk to the bell, out to room 11); new
+  regression test "shot once, the room can still be won from its door"
+  (die on the floor, back at room 0, N×10 through the stick, `gun_y > 166`
+  on arrival, then `escapeRayGuns`). *Listings (67):* C19 adds
+  `escapeRayGuns` (without the firing lines, which D15 adds). The lasers
+  section is reordered so every intermediate build compiles except the
+  one the chapter means to fail: D1–D4 (actors comment, `guns` import,
+  laser Id, picture), D5–D9 (AIM, `run`, `shoot`, `fly`/`gunOf`,
+  `blocked`/`strike`), then D10 `Kind`, D11 the entry, "Build now" and the
+  error, D12 the gap of 1, then tests D13–D17. `rebuild.py` keeps a copy
+  of the project right after D11 (`SNAP` in `listings.py`); `errs.py`
+  builds that copy as-is and requires exactly one error, so the quoted
+  `directEnumArray` message comes from the reader's project at that
+  point. *Runs:* `ROOM10` rewritten; Boss F is 4,745 frames (room 10 from
+  1,326, N×4 from 2,498, room 15 from 2,578, N at 3,978, room 17 from
+  4,013): 4,541 calls, max 236,486, buckets 326 / 235,206 / 1,274 / 2,002
+  / 2,204 (bucket 4 max in room 15, a gun turn that fires at the field), 20
+  loading pauses, 0 overruns; named frames 740, 1720, 2740, 3680, 4110
+  (re-checked on the new run), last frame room 18. *Images:* `07-shot.png`
+  = D 312 (the laser touching him past the muzzle), `07-panel.png` = C 500
+  (at the floor panel, gun climbing; now used after "Run it and play").
+  *Diagrams:* `ch07-swap` rests on the result (animation-delay −3.6 s:
+  lock in slot 2, count 3); `ch07-gun-byte` bit 5 reads `steered`.
+  *Prose:* "overlaps by four fat pixels" in the box story; a lost panel
+  press when the table is full (box, `shoot` comment, Power-Up); plainer
+  slot-zero and plain-words rewrites; "could die the same way"; removal
+  "adds 120 cycles to that step"; castle size without the list; "two
+  locks, two keys and two guns"; `later` keeps the monsters and the title
+  pattern; wheel marks not white; "Two of them, plus `end`"; Bonus Stage
+  "Two guns, two panels"; stale-plate box without the ch9 clause; escape
+  caption; Boss invitation no longer suggests standing in the doorway.
+  Prose ≈ 5,220 words.
+- **Chapter 8 file, title, images.** `site/chapters/08-monster-mash.md`,
+  `title: "Monster Mash"`, generated from `tools/ch08/ch08.tmpl.md` by
+  `expand.py` (84 listings; 3 deletions told in prose: `gunOf`, the
+  explorer's `underfoot` and `tread`; prose ≈ 5,530 words by `wc.py`).
+  Screenshots (768×544, nearest-neighbour, made by `tools/ch08/shots.py`
+  from the `rebuild.py` stage runs): `08-storm.png` (Mission Briefing; C
+  490, the switched-on machine's bolt on the mummy under the explorer),
+  `08-rise.png` (B 420, ankh white, mummy climbing out of the opened
+  tomb), `08-frank.png` (D 560, Frank stepping out of his alcove),
+  `08-trap.png` (E 640, Frank on the ladder above the open trapdoor),
+  `08-ride.png` (E 1620, Frank walking on the spot at the reversed belt's
+  end). Diagrams: `ch08-dice` (animated highlight down the four rows of
+  the first roll: `$57 $C6` → rotr → `$E3`; `$57^$E3 = $B4`; `$C6^$B4 =
+  $72`), `ch08-choose` (static; room 13's junction: down 64 rows beats
+  left 28 fat pixels; the corridor rule table), `ch08-ride` (animated;
+  belt with him +3 a turn, against him on the spot). Quoted error: `the
+  shape table doesn't fit in its region` (`errs.py` case `full`, the
+  snapshot right after listing B3, the mummy's art).
+- **Source layout (ch08).** New files `dice.zig` (`start`, `roll`, 2
+  tests), `mummy.zig` (`prepare`, `open`, `release`, `glow`, `wake`,
+  `walk`, `hit`, `touch`; comptime checks: the rise table drops 8 rows,
+  walking pictures consecutive), `frankenstein.zig` (`prepare`, `turn`,
+  `wakes`, `choose`, `bit`, `move`, `hit`, `touch`; comptime check on
+  picture order). Changed: `map.zig` (region `dice` `$020F–$0210`
+  between `engine` and `text`; **star map `$5F00`, shape table
+  `$6000–$77FF`** (6,144 bytes), forced by the mummy's art overflowing
+  4,096; the program-image reservation shrinks to `$5EFF`), `castle.zig`
+  (`Mummy{state, ankh_x, ankh_y, tomb_x, tomb_y, x, y}` with
+  `mummy_tomb/out/dead` = 1/2/3; `Frankenstein{state: Frank, x, y,
+  frank_x, frank_y, frame, way}`; `Frank` packed: bit 0 `left`, 1
+  `awake`, 2 `dead`, 7 `end`; Pattern's comment points at ch11),
+  `objects.zig` (kinds `ankh {glow, release}`, `alcove {null, null}`;
+  slot bytes `plate`, `last_plate` replace two of the three spares, set
+  to `none` in `add`; **`owner(kind, n)`**, the object whose `actor ==
+  n`, generalising ch07's `gunOf`), `trapdoors.zig` (`underfoot` moved
+  here; `Under {nothing, hole, plate}`, `under(n, object)`,
+  `tread(plate*, last*)` shared by the explorer and monsters),
+  `player.zig` (own `tread`/`underfoot` removed; `touch` switches on
+  `under`), `actors.zig` (`Kind {player, lightning, forcefield, mummy,
+  laser, frankenstein}` = 1984 0–5; `directEnumArray(..., 0, ...)`;
+  mummy `{walk, flickers, hit, touch, group 0b010}`, frankenstein
+  `{turn, flickers, hit, touch, group 0}`), `lightning.zig` (`crackle`
+  rolls the dice), `guns.zig` (`fly` uses `owner`; `strike` stops on
+  `.alcove`), `conveyors.zig` (`carry` takes mummies and Frankensteins:
+  2 px a turn, any frame), `room.zig` (mummy/frankenstein preparers;
+  `later` is the pattern only, "Chapter 11"), `author.zig` (tomb 20×24,
+  ankh 8×16, alcove at x−4 16×24 on screen and in the overlap check),
+  `shapes.zig` (Ids after `laser`: `brick, tomb_open, ankh,
+  mummy_rise_0..2, mummy_right_0..2, mummy_left_0..2, alcove_right,
+  alcove_left, frank_asleep, frank_right_0..2, frank_left_0..2,
+  frank_climb_0..3, frank_slide`), `art.zig` (sections "the mummy",
+  "Frankenstein's monster"), `training.zig` (imports `shapes`; rooms 11,
+  12, 13, 14, 16), `main.zig` (boot calls `dice.start`; search test
+  allows 3 cells per alcove; helpers `monster`, `distance`, `back`,
+  `escapeMummy`, `stormOut`, `trapFrank`, `rideOut`).
+- **Mechanics, as implemented (ch08).** *Dice* (1984 `$5ED5`): turned =
+  low byte of rotr16(high:low, 1); high ^= turned; low = (low & $FE) ^
+  high; return low. Seeds `$C6 $57` at boot only (never reset per game).
+  First rolls 72 FF 8C B8 D0 D0 B8 8C; the seed pair has a tail of 1, then
+  a cycle of 32,767; low two bits ≈ uniform. *Bolt:* pace = 1 + (roll &
+  3); picture = roll & 3, the next one if it equals the current (1984).
+  *Mummy prepare:* 5×3 bricks (4×8 each) from (tomb_x, tomb_y); not in
+  the tomb → middle three of the middle row unplaced, `tomb_open` drawn;
+  ankh drawn + object; state out → actor at record (x, y), climb done,
+  pace 2. *release* (ankh in_front): player, playing, feet − ankh.x < 8,
+  state tomb → out, record x/y = tomb + (6, 3), ankh `execute` with step
+  8, open, actor at tomb + (6, 3 − 8), pace 4, `mummy_rise_0`. *glow:*
+  every 4th step, tint 2×2 white/white or orange/yellow, 8 times.
+  *walk:* destroy → free, clear `o.actor`; tread plates; rise entries
+  (dy 0,0,0,2,2,2,2; pictures rise 0,0,1,1,2,2,2) at pace 4 then pace 2;
+  then (player playing) toward player 1's x unless |dx| < 2, needing the
+  grid's right/left bit at the feet, never changing y, walking frames
+  cycle, record x/y updated. *hit:* lightning or laser → state dead,
+  flicker; anything else nothing. *touch:* open trapdoor → dead; plate →
+  `o.plate`. *Frankenstein prepare:* grid patch at row (y+24)/8: facing
+  right cells col..col+2 lose `left`; facing left col−1..col+1 lose
+  `right` (1984); alcove picture at (x−4, y) + object; not dead → actor:
+  awake → record (frank_x, frank_y, way, frame); asleep → (x, y+3),
+  `frank_asleep`, way still. Pace 2. *turn:* destroy handling; asleep →
+  `wakes` (playing, |his top − Frank's top| < 4, in front: left-facing
+  him.x ≤ x, right-facing him.x > x) → awake, way still; tread; `choose`;
+  `move`; record x/y/frame/way. *choose:* no ways → still; one → it; two
+  opposite and the current way open → keep; else far[up,right,down,left]
+  from player 1 (dx ≥ 0 → right, dy < 0 → up; others 0xFF) and pick the
+  farthest open, each retry only strictly shorter distances, ties to the
+  lower index (1984's quirk kept). *move:* along: y −= feet_y % 8, x ±1,
+  walk frames cycle; up/down: x = x − feet_x % 4 + 1; rungs (feet cell or
+  cell below has `up`) → y ∓ 2, climb frame `climb_0 + ((y>>1)&3)`; else
+  slide y += 2, `frank_slide`. *hit:* awake only; lightning or laser →
+  dead. *touch:* open trapdoor → dead (even asleep); plate → `o.plate`.
+  *Belts:* `carry` runs on the actor's turn (touching), monsters +2 any
+  frame; against him, he walks on the spot at the belt's end (feet 54–57
+  in room 14's test). *Laser:* alcove object stops it (`strike`);
+  an awake Frank or a mummy dies by its `hit`.
+- **Training Castle rooms 11–14, 16 (ch08).** Design rule: every monster
+  room's door 0 is upstairs, unreachable by its monster (poles only go
+  down; mummies never climb), so a death never leaves the monster at the
+  door until ch9's clean castle. 11 The Mummy: doors (16, 96) → ray_guns
+  door 1 and (156, 160) → frankenstein; walkways floor + {30 @ 16,128};
+  pole {8 @ 128,128}; bell (140, 168); mummy {tomb, ankh 48,112, tomb
+  28,168}; sign "A MUMMY SLEEPS IN / HIS TOMB. PASS THE / ANKH AND HE
+  WAKES. / HE KEEPS TO HIS / FLOOR: LEAD HIM ONE / WAY, RUN THE OTHER."
+  12 Frankenstein: doors (16, 96), (156, 160); floor + `upper_left`;
+  pole {8 @ 88,128}; bell 140; frank {right, 24, 168}. 13 A Trap for
+  Frank: doors (16, 96), (156, 96) → frank_ride; floor, `upper_left`,
+  `upper_right`; pole {8 @ 80,128}; ladder {9 @ 124,128}; bell (140,
+  104); trapdoor {shut, 120, 192, **switch 96**, 184}; frank awake at
+  (100, 104), frank (100, 107), frame `frank_right_0`, way still. *The
+  switch moved from 64 to 96 during testing:* with the explorer at feet
+  ≈ 66 Frank dithered at the ladder top for ever (down 64 vs left ≈ 59
+  at the walkway cell; one step down, still in that cell, down 58 < left
+  59 → left, back up, repeat). Told in the chapter. 14 Frank's Ride:
+  doors (16, 96), (156, 160) → under_fire; floor + {25 @ 16,128}; pole
+  {8 @ 104,128}; bell 140; conveyor {on, right, 56, 184, control 116,
+  160}; frank {right, 24, 168}. 16 Mummy in a Storm: doors (156, 96) →
+  under_fire door 1, (16, 160) → locked_away; floor + `upper_right`;
+  ladder {9 @ 100,128}; bell (44, 168); lightning: machine 0 {off, 124,
+  136, length 3}, machine 1 {on, 64, 112, length 6}, switch {120, 104,
+  machines 0 and 8}; mummy {out, ankh 104,176, tomb 72,168, at 78,171}.
+- **Deviations (ch08).** (1) Mummy rise: dy is 1984's, dx is 0 (1984
+  slides him sideways out of its own tomb shape); tomb, rise and walk
+  pictures and the out position (tomb + (6, 3)) are ours (box). (2) Ankh
+  flash colours ours (white / orange-yellow). (3) Alcove picture is ours,
+  drawn at x−4; 1984's extra shape `$1C` under it is not drawn (box).
+  (4) Frank's vertical picture uses our explorer's rungs rule (feet cell
+  **or cell below** has up), a conscious choice paying the ch04 note;
+  1984 copies its explorer's feet-cell-only test (box). (5) An awake
+  Frank's record `frame` byte holds **our shape Id**, not 1984's sprite
+  frame; ch11 needs a translation when real castles have awake Franks
+  (box). (6) Frank–Frank avoidance masks (1984 blocks ways another Frank
+  occupies) skipped; no room has two on one floor (box; ch11). (7)
+  Monsters chase player 1 only; 1984 the nearest playing explorer (ch9;
+  box). (8) The dice are never re-seeded; same as
+  1984 as far as the disassembly shows.
+- **Costs at ch08.** Roll 24 cycles (2 per bolt turn). Mummy turn ≈ 90,
+  Frankenstein ≈ 136 in a corridor, +40 per extra try at a junction; a
+  picture change adds ≈ 650 (sprite unpack). `owner` 12 per object
+  searched. Boss Battle (`runs.py` F, 4,060 frames: room 11 from 215, 12
+  by door at 1,021, 13 at 1,535, 14 at 2,334, N at 3,515 in Under Fire,
+  16 from 3,548, ending in room 16's doorway to Locked Away): 3,881 calls,
+  bucket maxima 348 / 241,532 (room draws) / 1,278 / 4,248 (actors, room
+  11) / 2,432, 17 loading pauses, 0 overruns. Named frames 500, 1380,
+  2040, 2950, 3780. Shape table 5,106 bytes (was 3,774); castle 4,652
+  (was 4,496).
+- **Tests at ch08 (56 in `zig build test`).** Dice: 1984's first eight
+  rolls; cycle 32,767 after the first roll with low-two-bit counts in
+  8,100–8,300. All room tests play through the stick (`inRoom` pokes
+  only the room number; `back` presses N): mummy (sleeps 200 frames,
+  wakes past the ankh, under you on the floor, record x matches, escape
+  to room 12); mummy revisit after a death at the pole (still out, by
+  the pole, escape works); storm (lever under the mummy kills him, count
+  0, state 3, down and out to room 17) and its revisit after a death on
+  the ladder; Frank (asleep 200 frames, awake on landing, run out to room
+  13 with him on his way) and revisit (wait upstairs until he passes
+  under the pole going left, out); Frank vs a stray bolt (asleep immune,
+  awake dies; a `hit` unit test that places a bolt actor directly); trap
+  (switch, he comes down into the hole and dies, switch shut again, up
+  his ladder, out to room 14); trap without the switch (he reaches the
+  floor alive); trap revisit (caught on the floor, back, lead him up his
+  ladder, the trap works again); ride (2 turns on the belt = 6 px; two
+  presses → running left, he holds at feet 54–57 for 100 checks; out to
+  room 15) and its revisit (he's past the belt on your side; wait until
+  he's held at the belt's near end walking left; slide down; same
+  escape). Runs are recorded from these helpers (scratch recorder:
+  the test helpers driven from a headless-like start, printing presses
+  with headless frame numbers) and checked by eye.
+- **Ladder bookkeeping (ch08).** Taught: XOR as "flip where the other
+  has 1s" (ch2's `^` promise paid), bit rotation (`std.math.rotr`),
+  pseudo-random numbers with a seed, determinism for tests and replays
+  (under-the-hood box; ch2's "making numbers look random" paid, with the
+  star LCG as the multiply-add contrast), cycle length and fairness of
+  the low bits (tests), following a link backwards by search (`owner`;
+  the Follow-It-Back Power-Up), sharing per-actor state through pointers
+  (`tread`), grid patching as one-way doors, a chaser that only thinks at
+  junctions (diagram). Built on: ch05 groups and `hit`/`touch`, ch06
+  trapdoors/belts/lightning, ch07 `directEnumArray` gap (paid: back to
+  0), `packed struct(u8)` flag bytes. ch3's `later` preparers: only the
+  pattern remains (ch11).
+- **Promises (ch08 → later).** ch9 (corrected by the ch08 review): the
+  mummy chases player 1 while P1 is playing, else player 2 (1984 `$3846`,
+  no distance); Frankenstein takes each direction's distance as the
+  smaller of the two playing explorers' (`$3C15`) and wakes for either;
+  ankhs and panels serve either explorer; ankh/alcove plate bytes are
+  per-monster already, the explorer's `player_plate` still needs a P2
+  copy; the clean castle copy resets mummies (state, x/y), Frankenstein
+  records and belts; second explorer as a target for `wakes`/`choose`.
+  ch10: sounds (ankh, tomb opening, Frank's steps, deaths). ch11: real
+  castles' mummy/Frankenstein records (1984 frame numbers in awake Franks'
+  `frame` byte → our Ids); Frank–Frank avoidance masks; tombs and alcoves
+  at X < 16 (the ch06 tint note applies to `glow`); the pattern preparer.
+- **ch08 review fixes (supersede the ch08 entries above where they
+  differ).** *Must-fix:* "A 6510" → "The Comet's CPU" (fiction). *Prose:*
+  both monsters walk at **half the explorer's speed** (pace 2, 1 px; the
+  mummy line said "as fast as you"); Frankenstein is "no faster than the
+  mummy"; the nearest-explorer box now says 1984's mummy chases P1 then
+  P2 and Frankenstein uses the nearer explorer per direction (and the ch9
+  promise above is corrected); the grid claim says forcefields already
+  change the grid ("as a forcefield's wall does, but only one way"); the
+  program-image sentence no longer says our code isn't in the Comet's
+  memory ("the room we keep for the game's code … nearly 22 KB"); the
+  dice are "a quarter each" but **consecutive rolls are linked** (the
+  second's bit 0 follows from the first; 8 of 16 pairs), said in the
+  prose and the Power-Up ("fine for small choices like a bolt's
+  flicker"); Bonus "Loaded dice" names `first_low = 0x01, first_high =
+  0x00` (which falls to the stuck (0, 0) pair) and asks why almost every
+  other pair gives 32,767; tie box: "rare, because the two numbers have
+  to match exactly"; rungs box drops "we said then"; "three things";
+  "carry on", "like the ankh", "rule is short"; frame 500 wording;
+  D25's label names its span. *Costs (measured by the reviewer):* roll
+  40 cycles, mummy turn ≈ 120 (+≈ 650 picture), Frankenstein ≈ 200 in a
+  corridor; a Frankenstein's position is four record bytes. *Sizes logged
+  (deviation, ch11 risk):* our ankh is 8×16, 1984's `$44` is 8×23 (a real
+  castle's `ankh_y` would float ours 7 rows high and shorten its
+  in_front box); our alcove is 16×24 at (x−4, y), above the walkway,
+  1984's `$90/$91` is 8×32 at (x, y) standing on it; 1984 erases shape
+  `$92` (8×6) at (x, y+24) and, for a right-facing alcove only, redraws
+  walkway piece `$1C` at (x+4, y+24). The box says this; ch11 must place
+  both pictures (and the alcove object box / author overlap check) for
+  real castles. *Room 13:* its upper-left walkway is now its own
+  `{18 @ 16,128}` (16–87), leaving a visible gap before Frank's walkway
+  (96–175) instead of an invisible end in a seemingly continuous floor;
+  the revisit test walks to the walkway's end (feet 84). *Room 12 sign:*
+  "… THEN HE PACES / IT. HE'S SLOW: RUN / FOR THE BELL!" (the old "go
+  down behind him" fitted only a revisit). *Art:* the alcove's inside is
+  filled with code 1 (dark grey), so it no longer reads as a doorway.
+  Runs unchanged (same frames work); screenshots re-shot from the new
+  stage runs (`08-frank`, `08-trap`, `08-ride` changed). Not done: renaming
+  the old search test (Writer response in the review). Prose ≈ 5,540
+  words.
+- **Chapter 9 file, title, images.** `site/chapters/09-the-great-escape.md`,
+  `title: "The Great Escape"`, generated from `tools/ch09/ch09.tmpl.md` by
+  `expand.py` (116 listings; told in prose instead: deleting the old
+  `player` region, its `regions` entry, `newGame`, three `map` imports,
+  the final room's "YOU ESCAPED!" line; two `| Replace | With |` tables,
+  the walker test's `room` → `bytes` and the tests' `map.player_*` →
+  `castle.*`; prose ≈ 5,460 words by `wc.py`). Stage runs A (two in the
+  Gatehouse), B (Two's Company for two), C (two through Gatehouse and
+  Gallery, the map), D (N to the Way Out, two escapes, GAME OVER), E
+  (Boss: room 18 for two, P1 alone after, the map, the Way Out, both
+  escapes, GAME OVER, title; 3,500 frames). Screenshots (768×544, by
+  `tools/ch09/shots.py`): `09-escape` (Mission Briefing; D 1150, P1
+  cheering under the built final room), `09-two` (A 170), `09-company`
+  (B 620, P1 holding the button, P2 past the field), `09-map` (C 800,
+  three rooms, one white arrow), `09-over` (D 2000, GAME OVER for both).
+  Diagrams: `ch09-header` (static list, file bytes vs game bytes),
+  `ch09-union` (animated: the three overlays of `$0200–$0206` lit in
+  turn), `ch09-bcd` (animated rows: `$09`+1 = `$0A`, +6 = `$10`; `$59` →
+  `$60` → `$00` carry). Quoted errors (`errs.py`): `shadow` (at-A4:
+  "local constant shadows declaration of 'room'", castle.room vs the
+  walker test's local) and `union` (at-D21: "m.view(game.Between):
+  game.Between.over is smaller than the union; every field must be the
+  same size", `Over` before its `unused: [6]u8`).
+- **Source layout (ch09).** New files `game.zig` (`Between` extern
+  union {chart, escape, over} + size check, `between`, `Over{wait,
+  unused[6]}`, `chosen` (stick 2 wins), `start` (copy staging → castle,
+  room/door from start, `in_game`, `two`), `next`, `Then {map, escape,
+  over}`, `after`, `escaper`, `drawOver`, `over` (210 frames)),
+  `clock.zig` (`Time{frames, seconds, minutes, hours}` at header `$55`
+  + 4p, `tick`, `advance`, `up(digits, limit)`, `print`; 2 tests),
+  `chart.zig` (`Chart{blink[2], lit[2], ready[2], steady}`, `draw`,
+  `sketch`, `gap`, `label`, `wait`), `escape.zig` (`Escape{who, shown,
+  spot, wait, walk, leg, left}`, `draw`, `run`, `piece`, `step`,
+  `picture`). Changed: `map.zig` (`between $0200–$0206` replaces
+  `player`; `players $0211–$021A`; `staging $9800–$B7FF`), `castle.zig`
+  (header names, below; `visited = $80` in a colour byte), `player.zig`
+  (`Number = u1`, `Player extern struct{actor, last_stick, plate,
+  last_plate, mask}` ×2, `ports`, `coats {white, yellow}`, `records`,
+  `record`, `number`, `here`, `arrive`, `coat`, `picture`, `setStatus`,
+  `walking`, `nearest`, `holding`, `jostle`; `newGame`/`nextRoom` gone),
+  `room.zig` (`build` split out of `draw`, `prepare` pub, `flip` sets
+  both players), `text.zig` (`shout`, style | 2), `shapes.zig`/`art.zig`
+  (`map_floor/top/bottom/left/right`, `arrow_down/up/right/left`,
+  `explorer_cheer_0/1`), the handlers (`playing(m, who)`; locks pockets,
+  conveyor per-player bits, forcefield `holding`, guns `nearest`, mummy
+  P1-then-P2, Frankenstein both), `title.zig` ("STICK 2 FOR TWO"),
+  `training.zig` (room 18 rebuilt: floor field at 88 with its button up
+  the ladder; final room loses "YOU ESCAPED!"), `main.zig` (modes
+  `draw_map, map, draw_escape, escape, draw_over, over`; boot loads to
+  staging; `clock.tick` each room frame).
+- **Memory (ch09): the header as game state, 1984's layout.** `$7803/4`
+  start room, `$7805/6` start door, `$7807/8` lives (decremented in play,
+  as 1984), `$7809/A` room, `$780B/C` door, `$780D/E` status (our
+  `player.Status` numbering), `$780F/10` in game, `$7811` last, `$7812`
+  two, `$7813/4` key counts, `$7815+32p` pockets, `$7855+4p` time,
+  `$785D/E` escaped, `$785F` final room. A new game copies 4,644 bytes
+  from `$9800` (37,244 cycles, loading pause), which also zeroes all of
+  this. Bit 7 of a directory colour byte = visited (set when the map is
+  drawn for that room).
+- **Mechanics, as implemented (ch09).** *Next room* (1984 `Game()`):
+  both in game and in one room → it; two rooms → player `last ^ 1`; one
+  in game → his. `roomOver` scans P2 then P1, `last` = the last one
+  still playing; the room goes on while anyone present is playing or in
+  a doorway. *After a room:* dead → lives −1, 0 → `in_game = 0`
+  (→ GAME OVER), else start room/door; through an `exit` door →
+  `escaped` → escape screens, each escaper `in_game = 0` at the end;
+  then GAME OVER (two-player games say "FOR PLAYER n" for those out),
+  then `next`: map for anyone left, else title. *Map:* arrow at (room x +
+  door map_x + dx[side], room y + map_y + dy[side]), dx {−1, +2, −1, −5},
+  dy {−10, −2, +6, −2}; blink P1 12, P2 30 frames; both at one door →
+  steady white; ONE UP/TWO UP coloured by lives (1 pink, 2 yellow, 3+
+  light green) with the time below; fire (fresh press) from everyone
+  here. *Escape:* "PLAYER n ESCAPES" (16,0 light green, double height),
+  "TIME:" (40,24 yellow), time at 88; a final-room record (or one image
+  place) every 10 frames; then 1984's legs, a step every other frame:
+  {128 right, 25 cheer, 45 right}, or when `dice & 0x0E == 0` {172
+  right, 44 left, 25 cheer, 45 right}. *Players:* jostle (1984 `$3534`):
+  other climbing/sliding or same y → nothing; other below → my mask
+  `~down`, above → `~up`, applied to my next step only. Guns: nearest
+  |dy|, P2 checked first, tie → P2. Mummy: P1 while playing, else P2.
+  Frankenstein: wakes for either; per-direction distance = min of both.
+  Forcefield button re-arms every step fire is held (1984). Conveyor:
+  pressed bits 2/3, held bits 4/5, works on pressed & ~held.
+- **Deviations (ch09).** Timer counts frames (50 = 1 s) in software;
+  1984 runs a chip's time-of-day clock (BCD tenths) per room and saves
+  it at `$7855` (seconds/minutes/hours bytes are the same BCD). Status
+  numbers ours. Map: fire needs a fresh press, both sticks polled every
+  frame (1984 waits for release); arrows in coat colours until shared
+  (1984 white); P2 coat yellow, P1 white (1984 P1 yellow, P2 orange).
+  Escape: words drawn before the reveal, reveal 10 frames a piece, cheer
+  2 frames (1984 4), walk on our floor (y = floor_top − 21). Door map
+  bytes come from our builder and are still unverified against a real
+  castle (no `extracted/` here): ch11. Times aren't shown in rooms (as
+  1984).
+- **Costs at ch09 (measured).** Castle copy 37,244; first map draw
+  111,890 (one room); map frame 136; `clock.print` 5,472; `tick` 72 with
+  two explorers; `up` 14; escape screen draw 118,902; busiest escape
+  frame (a piece) 14,238; GAME OVER draw 98,708. Draws are loading
+  pauses; no overruns in any stage run.
+- **Tests at ch09 (67 in `zig build test`).** Clock (BCD carry; an hour
+  a minute a second, printed); title → map → room; map waits for both;
+  N/P on the map; X → GAME OVER → title; search test includes the final
+  room; **the whole Training Castle through the stick, for one and for
+  two** (every room in at door 0, out by door 1, escape, GAME OVER);
+  Two's Company coop; ladder jostle; nearer gun / mummy P1; Frankenstein
+  wakes for P2; P2 out of lives while P1 plays on; both escape. Test
+  helpers: `hold` mirrors P2 in two-player games, `hold2`, `onward`,
+  `inRoom2`, `second`, `ringAndGo`, `teleport`, `arrived`,
+  `twosCompany`; `trapFrank` lets P2 tread the switch's second time.
+- **Ladder bookkeeping (ch09).** Taught: one region two jobs (the header
+  over time; `extern union` for the screens between rooms, and the
+  machine's same-size rule for viewed unions); BCD (nibbles, +1/+6,
+  printing with shift and mask, no divide). `u1` as a player number.
+- **Promises (ch09 → later).** ch10: sounds (map blink, escape, GAME
+  OVER, bells). ch11: real castles' door map bytes checked against the
+  map; saving a castle saves the game (header carries it all); disk load
+  to `$9800` (staging); high scores from `time`; title/menu choosing
+  one or two players (ours: which stick fires).
+- **ch09 review fixes (supersede the ch09 entries above where they
+  differ).** *Code:* GAME OVER's "FOR PLAYER n" lines are in
+  `player.coat(p)` (white, yellow), not 1984's yellow/orange (logged in
+  the "What's ours" box); `castle.zig`'s header comment names
+  `final_room` as file-set; the two-player whole-castle test also asserts
+  player 2 escaped, out of the game, 3 lives. *Prose:* Game Over bullet is
+  "the one up the ladder climbs down through the other's head" (two
+  explorers both on a ladder do pass, as 1984 `$353F`); jostle text in
+  "he", and "touching an explorer who is on a ladder or pole himself
+  changes nothing"; "Whose turn" box says apart they take strict turns;
+  the clock box no longer compares hardware ("1984 timed each room in
+  tenths … same four BCD bytes at `$55`"); both replace tables have the
+  find-and-replace lead-in and the compile-error safety net, and the
+  `, m.ram[map.room_number])` → `castle.room` change (17 test checks) is
+  told separately as a change of meaning, with the reason and a search to
+  confirm (listings: A51 = three `player_*` rows, A51r = the room checks);
+  "big idea under the hood" replaces "ladder rung"; "harmless" without
+  "for now"; copy 37,152 for the bytes, 37,244 in all; header state 86
+  bytes; GAME OVER 98,708 / 106,856 with both lines; busiest escape frame
+  ≈ 14,400; Boss: N keys land in rooms after fire on the map; `inRoom`'s
+  8 frames keep the engine's step phase; hours' limit `$A0`; map cells'
+  counts (not sizes) in the entry; Mission Briefing "and then you cheer";
+  the escape-order sentence no longer invents a dead escaper; map caption
+  says where the steady arrow's tip is (on the neighbour's wall, 1984's
+  nudge); "What's ours" box (was "… in the escape") adds 1984's cheer
+  changing every step and rewords the door map bytes; labels A30, A33,
+  C18 say what they replace; union diagram cells no longer split
+  "steady"; JS bridge "one `ArrayBuffer` read through different typed
+  views". Screenshot `09-over.png` re-shot (new colours).
+  *Deviation for ch11 (1984 turn-order quirk):* 1984's `roomMain`
+  (`$1594`) counts an absent player's header status if it is 0 (playing),
+  true only before he has ever been added; so in a two-player game whose
+  **start rooms differ**, player 2 keeps playing until he reaches player
+  1's room or leaves the game. Ours skips absent players (`actor ==
+  none`) and alternates strictly. The Training Castle starts both in the
+  Gatehouse, so it never shows; ch11's real castles may need a decision.
+- **The SOUND chip's speaker (ch10, machine).** `machine/src/sound.zig`
+  is a forgiving software synth: `base = $D400`, 25 registers, voice
+  offsets `freq_lo … sustain_release`, `volume = $18`; control bits
+  `gate, sync, ring, testbit, triangle, sawtooth, pulse, noise`. Per
+  voice: a phase accumulator (register × 1 MHz / 2^24 Hz, so register =
+  Hz × 16.777216; 440 Hz = 7,382 = `$1CD6`; max ≈ 3,906 Hz); triangle,
+  sawtooth, pulse (12-bit width), noise (23-bit LFSR clocked 16× a lap);
+  several waveform bits are averaged (not ANDed); sync and ring use the
+  voice before (2 → 0 → 1); test bit holds silent. ADSR is straight ramps
+  from `attack_ms`/`fall_ms` (fall times are full scale → 0); gate edges
+  are seen once per `render` call. No filter (`$D415–$D417` are plain
+  RAM), `$D418` low nibble is volume; mix = sum / 3 × volume / 15, then
+  a one-pole 12 kHz low-pass and a ≈30 Hz DC blocker (ch10 review; the
+  first version's smoother was inert). **Latching:** `Machine.runFrame` copies
+  `$D400–$D418` into `sound_regs` *before* calling `frame`, i.e. the
+  previous frame's end state, and `Machine.listen(out, rate)` renders from
+  it; a long frame's extra slots replay the same registers (the shells
+  call `listen` once per slot). Card §1 step 4 and §11 ("When the chip
+  listens": once a frame when `frame` returns; a gate must stay off a
+  frame to be seen). Machine test "the SOUND chip plays what the last
+  frame left, all through this one"; `sound.zig` has 4 tests (silence and
+  volume 0, 440 Hz → 438–442 zero crossings, attack/release timing, noise
+  and no-waveform). **Headless:** `--wav FILE` (44,100 Hz mono 16-bit),
+  summary gains a last line `sound: FILE, S.ss seconds, loudest N%` only
+  with `--wav` (all earlier stage outputs unchanged). **Wasm:**
+  `comet_listen(rate, count)` returns a pointer to ≤4,096 f32 samples
+  (was 1,000 before the ch10 review).
+  **Browser:** `shell.js` `makeSpeaker` (AudioContext; schedules one
+  AudioBufferSource per slot, `rate/50` samples with a fractional carry,
+  0.06 s lead, ≤0.25 s ahead); `startComet(canvas, {wasm, status,
+  audio})`; the canvas wakes the speaker on pointerdown/keydown; pause,
+  resume and crash sleep/wake it (only a context the shell made itself is
+  suspended). The tutorial page's Power-on click makes one shared
+  `window.cometAudio` and resumes it *before* the `await import` (the
+  user-gesture rule), passing it as `audio`. Standalone `web/index.html`
+  says "click the screen to play (and to hear it)". `site/build.py` copies
+  `chapters/images/*.mp3` too; `template.html` styles `.prose audio`.
+  Every checkpoint ch01–ch10 passes `check-all.sh` with this machine.
+- **Chapter 10 file, title, images.** `site/chapters/10-things-that-go-bump.md`,
+  `title: "Things That Go Bump"`, generated from `tools/ch10/ch10.tmpl.md`
+  by `expand.py` (58 listings; told in prose instead: the same import
+  lines in 12 more files, as a table after listing E1). Stage runs (all
+  with `--wav creep.wav`, kept as `rb-<tag>.wav`): A and B (the title,
+  150 frames, the experiment's held A4), C (the waltz, 1,200 frames), D
+  (fire at 300 and 330: the map's chime), E (Boss: ch09's BOSS shifted by
+  280 frames, 3,780 frames). `tools/ch10/shots.py` makes `10-waltz.png`
+  (log-frequency spectrogram, A1–A6, of the waltz's first 4 bars from
+  rb-C; 8,192-point FFT per frame, top 48 dB) and MP3 clips (`10-note`
+  A 0–3 s, `10-waltz` C 0–24 s, `10-chime` D 5–8 s, `10-boss` E all,
+  ≈ 445 KB) shown with `<audio controls preload="none">`. Diagrams:
+  `ch10-envelope` (ADSR with gate trace), `ch10-command` (command byte
+  bits; the forcefield's 16 bytes decoded, byte 9 highlighted),
+  `ch10-weave` (two parts at unit 2 → one stream, the composer test),
+  `ch10-interrupt` (animated playhead: 7 slots, driver first, a 3-slot
+  loading pause, the chip holding its registers), `ch10-beat` (animated:
+  tempo `$B0` over 8 frames). Quoted error (`errs.py`): `b7` (at-A5,
+  `note_count = 96`: "note 95 needs a frequency register of 66288, and
+  the register has 16 bits"). Prose ≈ 5,550 words by `wc.py`.
+- **Source layout (ch10).** New `tunes.zig`: `note_count = 95` (C0–A#7),
+  `frequencies` (comptime `@exp2`, compileError past 16 bits), `note(name)`
+  (comptime; `#`/`b`; octave 0–7), composer (`Instrument{wave, width =
+  0x800, attack, decay, sustain = 15, release}`, `Part{sound, notes}`,
+  `Tune{tempo, unit, parts}`, `gap = 1`, `events`, `wait` in ≤255 pieces,
+  `compose` = `comptime weave`), `Song {title, escape, over}`, `music`
+  (frequency table then songs, fit check), `frequency(n)`, `placed`,
+  `Effect` (1984's 13, in 1984's order), `effects`, `effect_at` (checks
+  byte 8 is a voice-0 note-on), `pitch = 9`, `effect_tempo = $EA`,
+  `sounds`, six instruments, `songs`. New `sound.zig`: `Op` (1984 numbers:
+  note_on, note_off, wait, long_wait, instrument, filter, transpose,
+  volume, tempo, end ≥ 9), `lengths {2,1,2,2,6,5,2,2,2}`, `command(op,
+  voice) = op<<2 | voice`, `tune = $FE`, `nothing = $FF`, `start`, `step`,
+  `run`, `silence`, `begin`, `music`, `effect`, `effectAt`, `stop`.
+  `main.zig`: `bucket_sound = 5`; `frame` steps the driver first, in
+  bucket 5; the title starts `.title`, choosing a game calls `stop`.
+  Call sites: listed in "as implemented" below.
+- **Memory (ch10).** `sound` `$021B–$0225` (at+0 2 bytes, loop+2 2,
+  wait+4, tempo+5, beat+6, playing+7, transpose+8 3 bytes); `effects`
+  `$0380–$04FF` (RAM so callers patch byte 9; 267 bytes used); `music`
+  `$5A00–$5EFF` (1,029 used: 190 table, title 482, escape 263, over 94);
+  program image now ends `$59FF`; hardware row `sound_chip` =
+  `$D400–$D418`.
+- **Mechanics, as implemented (ch10).** Tick = carry of `beat +%= tempo`
+  each frame (50 × tempo / 256 Hz): waltz `$B0`, unit 8 (768 ticks ≈
+  22.3 s, loops), escape `$E0`, unit 4 (256 ticks, 5.85 s), over `$80`,
+  unit 4 (96 ticks, 3.84 s, inside GAME OVER's 210 frames); effects `$EA`
+  (≈ 45.7 ticks/s). Composer: gate off one tick before each note's end;
+  offs before ons; instrument for each part at tick 0 just before its
+  first note, so every effect is tempo(2) + instrument(6) + note-on at 8,
+  note at **9**. `begin`: silence all, volume 15, transpose 0, run the
+  first commands at once. **Rules (1984's):** music always plays;
+  `effect`/`effectAt` are dropped unless `sound_playing == nothing`
+  (first come, first served; music never interrupted by an effect).
+  Call sites and notes: door each opening row `C3 + 24 − step` (C3+1 …
+  C5); flash each white step `C4 + flashes × 4` (C4+28 … C4); lightning
+  switch C6 on / C4 off; forcefield press C3 every held step (a
+  continuous buzz that drops other effects), count tick `C4 + (8 −
+  step) × 2`; trapdoor swing `C2 + next × 3`; conveyor box press;
+  transmitter `teleport_change` `C4 + target × 2`, send `teleport` on even
+  flash steps `C4 + (dice & $1F)` (uses the dice); key pickup; gun shot
+  (fixed); mummy rising `C2 + walk × 3`; Frankenstein waking; map close
+  (`chart.wait` when all ready); escape → `music(.escape)` after the
+  clock; GAME OVER → `music(.over)`.
+- **Deviations (ch10).** (1) Tempo is a frame accumulator in the
+  frame interrupt; 1984 runs music from a separate timer interrupt
+  (≈ 45.8 Hz) with its own tempo byte meaning. (2) Our note table is
+  C0-based, equal-tempered from 16.3516 Hz. **1984 uses the same note
+  numbers** (C0 = 0 … our table stops at A#7 = 94; 1984's has B7 = 95);
+  its registers are tuned for a 1.0227 MHz NTSC clock, so on PAL its
+  music sounds about two-thirds of a semitone flat (corrected after the
+  ch10 review). (3) Effect
+  timbres, lengths and pitch formulas are ours; the shapes (door up,
+  flash down, random teleport) follow 1984. 1984's laser pitch depends on
+  the gun; ours is fixed. (4) Music on escape and GAME OVER is ours (1984:
+  title only); the waltz and both other tunes are original. (5) No sound
+  for bell (the door follows), map blink, lock (its door creaks),
+  escape, ankh or Frankenstein's steps, as in 1984 (closes ch08's
+  "ankh … Frank's steps" promise; the tomb opening is the mummy's rise,
+  deaths are the flash). (6) The filter command is a no-op; the
+  `long_wait` command is decoded but unused.
+- **Costs at ch10 (measured).** Driver step: 14 cycles silent, ~30–40 no
+  tick; bucket 5 max 424 / avg 46 (stage C, waltz), max 228 / avg 34
+  (Boss). `music` ≈ 420 cycles, `effect(At)` ≈ 250, dropped effect 10.
+  Boot loads are free.
+- **Tests at ch10 (78 in `zig build test`).** tunes: A4 = 440 Hz (7,382;
+  C0 = 274; A#7 last; C#4 = Db4); composer exact bytes. sound (Lab
+  game): a note's registers and tick timing; tempo `$80` = 50 ticks /
+  100 frames; interrupt rules; the waltz loops for a minute. main: title
+  on three voices + `m.listen` non-silent + fire stops it + map chime;
+  door creak rising to ≥ 3× its first frequency; every machine through
+  the stick (rooms 4–12); a death in Lightning (walk right into it)
+  with ≥ 4 falling beeps; escape fanfare → over → waltz (room 19).
+- **Ladder bookkeeping (ch10).** Taught: interrupts properly (signal,
+  handler, return; `frame` is the frame interrupt's handler, no main
+  loop; no re-entry, so long frames swallow slots); fixed-rate timing by
+  a fractional accumulator and its carry; frequency tables built at
+  comptime (`@exp2`). Also: bytecode and an interpreter, comptime
+  composing with `++` and `@setEvalBranchQuota`, `@addWithOverflow`.
+- **Promises (ch10 → later).** ch11: 1984's MUSICn tunes (same opcodes
+  and lengths; 1984's note bytes play as they are, plus the voice's
+  transpose, which effects reset to `$18` on all three voices; a note
+  landing on 95 (B7) needs handling). Tempo: 1984's tick rate is
+  985,248 / (1,024 × (tempo + 1)) ≈ 962 / (tempo + 1) Hz; every tempo byte
+  below `$13` is faster than 50 Hz, beyond our accumulator's 49.8 Hz, so
+  ch11 must scale waits or let the accumulator carry more than once a
+  frame. 1984's title tune also pauses 512 ticks (≈ 11 s) between loops
+  (`$208B`: rewind to `$7802`, `$20DD = 2`). For the title's music; menu/high-score screens may want sounds; priorities left
+  as a Bonus Stage. Epilogue: resource retrospective has the sound
+  numbers above.
+- **ch10 review fixes (supersede the ch10 entries above where they
+  differ).** *Machine:* wasm `sound_buf` is 4,096 samples; `shell.js`
+  clamps a slot to `SLOT_MAX = 4096`, asks for a 48 kHz AudioContext
+  (`makeAudioContext`, falling back to the device rate), wakes on any
+  state but running/closed (iOS "interrupted"), runs silent if a stale
+  wasm lacks `comet_listen`, and comments the frame/audio clock drift;
+  `template.html`'s Power-on makes `window.cometAudio` at 48 kHz with the
+  same fallback. The reviewer's harness at 44.1/48/96 kHz: 882/960/1,920
+  sample buffers, max 0.717, no non-finite samples. The output stage is
+  a real one-pole 12 kHz low-pass (`k = 1 − e^(−2π·fc·dt)`) plus a 30 Hz DC
+  blocker, then a soft knee above 0.9 so peaks never clip (the Boss's
+  fanfare reached 1.0); a voice whose waveform (or test bit) goes to none fades over
+  ≈4 ms instead of stepping to 0 (the start click). New machine test "a
+  narrow pulse carries no steady offset to the speaker" (26 machine
+  tests); the two silence tests wait one frame more for the fade. Card
+  §11: sustain "0 (silence) to 15 (full)", "the A above middle C", a new
+  "The output" paragraph. *Docs:* `docs/music-format.md` corrected (op 5
+  keeps `$D418`'s low nibble and ORs in; the intro loop's 512-tick pause
+  and `$7802`; effects reset all three transposes; the tempo formula and
+  the >50 Hz limit; table index = our note numbers, NTSC tuning).
+  *Chapter:* fourteen call sites in the "Whose notes?" box; ten commands
+  numbered 0–9; Fraction Power-Up "every frame"; `compose` "ordinary code
+  that runs later"; effects "in free memory rather than among the
+  built-in tables"; "`sound_at`, its stream pointer"; gap mistake "notes
+  run together"; "at its loudest a third of full volume"; quoted error
+  keeps `error: `. Diagrams: command labels spaced, "highlighted byte";
+  envelope caption 0–15; interrupt SVG keeps 560 px and scrolls inside
+  its figure at 400 px. Spectrogram starts at the waltz's first sounding
+  frame (9). Prologue's "3 voices" row: "for music and sound effects
+  alike". Stage outputs, WAVs, MP3s and the spectrogram regenerated.
+  *Declined (Writer response in the review):* PolyBLEP anti-aliasing.
+- **The disk drive (ch11, machine; supersedes "Disk drive (planned, not
+  built)").** `machine/src/drive.zig`: plain functions on `Image =
+  [174_848]u8`, all comptime-capable: `sectorsOn` (21/19/18/17),
+  `offset(t, s)`, `format(img, name, id)` (BAM at 18/0: 4 bytes a track,
+  name `$90`, ID `$A2`, "2A" `$A5`; empty directory at 18/1), `blocksFree`
+  (664 on a fresh disk), `parse(raw)` (`$`/`$0:pattern` listing, `@0:`
+  replace, `0:` drive prefix, ≤16 letters), `matches` (`*` rest, `?` one),
+  `find`, `load(img, raw, out, *touched)` (returns the length less the
+  2-byte load address; `out` gets a prefix if short), `save(img, raw,
+  address, data, *touched)` (allocation nearest track 18, interleave 10;
+  a new directory sector 3 on). Listing: BASIC-style lines (links 1,1,
+  line number, text, 0): line 0 = `$12` + quoted disk name + ID, a line
+  per matching file in directory order (blocks, quoted name, `PRG`),
+  then `N BLOCKS FREE.`, then 0,0. `Command {load = 1, save = 2}`,
+  `Status {ok, no_disk, not_found, exists, full, too_long, bad_name,
+  bad_disk}`. **Registers** `$DD00` command (a `poke` runs it at once,
+  reads back 0), `$DD01` status, `$DD02/3` address, `$DD04/5` length
+  (after a load: bytes that came), `$DD06` name length, `$DD10–$DD2F`
+  name (32). **Time:** `sector_cycles = frame_budget` (19,656) per sector
+  touched, at least one per command, charged by `driveCommand`; the SOUND
+  chip holds its registers meanwhile. `Machine.drive {image, present}`,
+  `insert(bytes)` (35/40 tracks, ± error bytes: 174,848 / 175,531 /
+  196,608 / 197,376), `eject`, `diskImage`; `boot` ejects, then inserts
+  `Game.disk` if declared (`checkGame` checks its type). Headless
+  `--disk FILE` (after boot; a bad image exits 2) and `--save-disk FILE`
+  (prints `disk: PATH, N blocks free`). Wasm: `disk_buf[197_376]`,
+  `comet_disk_buffer(_size)`, `comet_insert(len)` (0 ok), `comet_disk(_size)`.
+  `shell.js`: `insertDisk(bytes)` (boot, insert), `disk()`, `reset()`
+  keeps the disk, `wireDisk` for `input[data-comet-disk]` and
+  `button[data-comet-save-disk]` (downloads `comet-disk.d64`);
+  `build.py`'s play section has a hidden `.play-disk` row shown when the
+  wasm has a drive. Card: memory-map row `$DD00–$DD2F`, reserved
+  `$DC03–$DCFF` and `$DD30–$DFFF`, §12 flags, new §13. Tests: 6 in
+  `drive.zig`, 1 in `machine.zig` (33 machine tests). Every checkpoint
+  starter–ch11 passes `check-all.sh` with it.
+- **Chapter 11 file, title, images.** `site/chapters/11-the-castle-keeper.md`,
+  `title: "The Castle Keeper"`, generated from `tools/ch11/ch11.tmpl.md`
+  by `expand.py` (76 listings; none told in prose instead; no quoted
+  compile errors, so no `errs.py`). Prose ≈ 5,550 words by `wc.py`. Stage
+  runs: A (10 frames, `--save-disk creep.d64`: 643 blocks free), B (power
+  on, 60), C (Esc, five downs, the Entrance Hall, 320), D (N ×19 to the
+  Way Out, ACE, then the menu's BEST TIMES, 2,050), E (Gatehouse, save
+  MY GAME, three X to GAME OVER, resume, 1,700), F (Boss: ch10's BOSS
+  without the WAV, shifted 24 frames for the disk, ACE and DUO, BEST
+  TIMES, 3,800). Screenshots (768×544, `tools/ch11/shots.py`):
+  `11-title` (B 59), `11-menu` (C 130), `11-signing` (D 1610), `11-times`
+  (D 2049), `11-save` (E 430). Diagrams: `ch11-disk` (generated by
+  `tools/ch11/diagrams.py` from stage A's disk image: every sector, the
+  BAM and directory, ZTRAINING's 19-sector chain on track 17 and the
+  Hall's 2, animated read head stepping the chain; scrolls sideways at
+  400 px), `ch11-listing` (static: the `$0:Z*` listing bytes in staging,
+  the two catalog names with bit-7 ends, the castle loading over the
+  listing).
+- **Source layout (ch11).** New `master.zig` (`image`: comptime
+  `format("CASTLES OF CREEP", "84")`, `save` ZTRAINING and ZENTRANCE
+  HALL at `$9800`; `@compileError` if they don't fit), `files.zig`
+  (`load`, `save`, `command`, `name`, `nameFrom` (prefix + bit-7-ended
+  stored name), `max_castles = 16`, `entry`, `length`, `Disk {unread,
+  ready, none}`, `powerOn`, `catalog`, `next`, `pick`, `ready`,
+  `saveScores`), `scores.zig` (`Best` extern {initials[3], seconds,
+  minutes, hours}, `places = 10`, `File` {size[2], tables[2][10]}, 122
+  bytes with a comptime region check, `file`, `address`, `fresh`, `order`,
+  `earned`, `colors`, `draw`, `rowOf`, `line`, `run`), `typing.zig`
+  (`max_letters = 16`, `placeholder '-'`, keys Return 13, Backspace 8, Esc
+  27, `begin`, `Typing {typing, done, cancelled}`, `run` (A–Z, 0–9, space,
+  '.'), `finish`, `letter`), `menu.zig` (`Item`, `Choice`, `asked`,
+  `rowOf`, `draw`, `lives`, `clear`, `pointer`, `pushed`, `run`),
+  `position.zig` (`asked` (Esc only), `draw`, `run`, `Problem`,
+  `problemOf`, `save`, `load`). Changed: `main.zig` (`pub const disk =
+  master.image`; boot no longer loads staging, pokes `shell_signing =
+  0xFF`; `Mode` adds `draw_menu, menu, draw_times, times, draw_name,
+  name`; `draw_title` calls `files.powerOn` while `shell_disk ==
+  unread`; Esc on title → menu, on map → save), `game.zig` (`chosen`
+  needs `files.ready`; `after` loses no life when unlimited), `title.zig`
+  (castle name centred at y 72, or NO CASTLE DISK; ESC FOR THE MENU at
+  y 88; stars avoid rows 9 and 11), `clock.zig` (`write` split out of
+  `print`), `castle.zig` (`restored = 0x01`), `screen.zig` (`erasePart`),
+  `room.zig` (`unplace`/`tint` clip at the left edge; `later` replaced by
+  `pattern`, the MultiDraw preparer), `frankenstein.zig`
+  (1984 frame numbers), `training.zig` (Frank `.frame = 0x84`).
+- **Memory (ch11).** `scores` `$B800–$B879` (the score file less its
+  load address), `shell` `$B880–$B89F` (+0 disk, +1 castles, +2 castle,
+  +3 pointer, +4 stick, +5 unlimited, +6 signing (0xFF none), +7 place,
+  +8 saving, +9 x, +10 y, +11 max, +12 typed, +16 line[16] with bit 7 on
+  the last letter), `catalog` `$B900–$B9FF` (16 × 16-byte names, bit 7 on
+  the last letter), hardware row `disk_drive` `$DD00–$DD2F`. The `$0:Z*`
+  listing (126 bytes on the master disk) is loaded into staging and
+  overwritten by the first castle (ladder row 11's overlay).
+- **Mechanics, as implemented (ch11).** *Power-on:* first `draw_title`
+  frame, display blanked, catalog then `pick(0)`. *Catalog:* names in
+  quotes starting Z from the listing after line 0, less the Z, max 15
+  letters kept, up to 16 castles, directory order. *Pick:* Z+name into
+  staging (≤ 8 KB), magic `& ~restored` must be `$80`, Y+name into
+  `scores` (122 bytes, size word must be 122) else `fresh` (size 122,
+  120 × `$FF`). *Menu:* Esc on title (any other key swallowed); four
+  items at rows 0/16/32/48, heading at 64, castles from 72 (8 apart);
+  stick 1 edges, wraps; fire on a castle blanks and picks; unlimited
+  toggles (reversed text). *Best times:* `earned` after each escape
+  (not with unlimited lives, not `restored`); table `castle.two`; first
+  place whose time is ≥ his (a tie goes above); slower places shift with
+  `m.copy`; initials typed (3), Esc leaves them blank; then `@0:Y`+name
+  saved (122 bytes); signing returns to the escape/GAME OVER flow;
+  viewing (menu) returns to the menu on stick-1 fire or Esc. *Typing:*
+  Return needs ≥ 1 letter; `finish` reads both sticks' fire edges (Return
+  is stick 2's fire, Space stick 1's). *Save:* Esc on the map; names
+  starting Z or Y refused; `@0:`+name, `castle.size` bytes from `$7800`;
+  back to the map either way (Esc too). *Resume:* menu → name → load into
+  `$7800`, magic and `in_game` checked, `restored` set, `sound.stop`,
+  `game.next`, map; errors shown at y 96, retry; Esc → menu.
+  *Left edge:* `unplace` → `erasePart(skip = (16 − x + 3) / 4)`; `tint`
+  drops off-screen columns. *Frank:* record frame byte = 1984's `$84–$86`
+  right, `$87–$89` left, `$8A` slide, `$8B–$8E` climb, `$8F` asleep
+  (`fromRecord`/`toRecord`; unknown → asleep). *Pattern* (1984
+  `obj_MultiDraw`): `count` × `place(shape, x, y)`, stepping `x +%= step_x`,
+  `y +%= step_y`; shape numbers are ours (≥ the Id count skipped): a real
+  castle's MultiDraw would need 1984's image numbers translated (none
+  known to use it; the intro screens use the `$160A` variant).
+- **Deviations (ch11).** (1) Saves are allowed on any disk, including
+  the game's own; 1984 refused to save a game to the master disk. We
+  refuse Z/Y names instead. (2) The drive costs a frame per sector
+  (~12,700 bytes/s), far faster than 1984's. (3) No room tour on the
+  title. (4) Menu: bitmap text, one column, 16 castles (1984 24), picked
+  castle white (1984 reversed), Esc instead of RUN/STOP. (5) One or two
+  players still chosen by which stick fires (1984 `$7812` = `castle.two`,
+  meeting the ch09 promise). (6) The SOUND chip holds the last frame's
+  registers during disk I/O (1984's behaviour here is unchecked). (7)
+  Best-times screen layout and colours are ours; the file and rules are
+  1984's.
+- **Promises kept or checked (ch11).** Disk load to staging (ch3/ch9);
+  saving a castle saves the game (ch9); high scores from `time` (ch9);
+  title/menu choosing players (ch9: by stick, logged above); X < 16
+  (ch06 review note: `unplace`, `tint`, `screen.erase` now clip; `place`
+  already did; lamps and glow go through these); Frank's frame byte
+  translated to 1984's numbers; real castles' `no_gun` records already
+  handled in `guns.zig`; the pattern preparer (ch03/ch08's "comes alive
+  in Chapter 11").
+- **Promises left for the Epilogue (unverified here: no real disk in
+  this tree).** Door map bytes vs a real castle's map (ch09);
+  Frankenstein–Frankenstein avoidance masks (ch08); ankh and alcove size
+  differences (ch08); MUSICn loading and 1984 tempo bytes below
+  `$13` (> 50 Hz; ch10), B7 notes, the title's 512-tick pause. All are
+  listed for readers in the chapter's "Still to check" box.
+- **Costs at ch11 (measured).** Sector 19,656. Power-on frame 638,586
+  cycles (33 slots): bucket 0 454,404 (23 sectors: listing 2, ZTRAINING
+  20, missing Y 1) + title 184,168. Menu draw 139,728 (8 slots), idle
+  102, pointer move 1,086; pick Training 414,074 (21 sectors), pick Hall
+  4 sectors; best-times draw 174,466 signing / 157,712 viewing; score
+  save 78,946 (4 sectors, new or replacing); name screen 133,958; a letter
+  ≈ 920; save game 435,218 (22 sectors, 23 slots); resume 20 sectors.
+  No overruns in any stage run. Wasm 950,746 → 1,181,300 bytes (the
+  disk image).
+- **Tests at ch11 (88 in `zig build test`, plus 33 machine).** main:
+  power-on catalog (order, bit 7, staging = training, fresh scores, a
+  loading frame); no disk (title stays); menu → Entrance Hall played;
+  unlimited lives (5 deaths, lives 3); best time signed, on the disk,
+  kept across a power cycle, viewed from the menu; save on the map (with
+  Backspace), three deaths, a missing name, resume (room, lives, time,
+  `restored`, no best time, onward into room 1); a disk of your own (22
+  castles → 16, directory order, a non-castle file ignored). room: left
+  edge clipping; a pattern of three panels. frankenstein: frame byte round trip. Old tests sign
+  their escapes (`sign`: ACE/DUO, ONE/TWO, WIN). Helpers `typeIn`,
+  `sign`, `push`.
+- **Ladder bookkeeping (ch11).** Taught: devices (registers, a command,
+  a status), blocks and slow storage (tracks, sectors, BAM, directory,
+  chained files, interleave, a frame per sector, blank before I/O);
+  overlaying memory (the listing in staging under the castle). Also:
+  comptime disk building, insertion into a sorted table with an
+  overlapping copy.
+- **ch11 review fixes (supersede the ch11 entries above where they
+  differ).** *Machine:* `wasm.zig` exports `comet_has_disk()` (1 iff the
+  game declares `disk`) and `comet_is_disk_size(len)`; `shell.js`
+  `hasDrive` uses the first (starter–ch10 pages no longer show the disk
+  row) and `insertDisk` checks the second before rebooting (a wrong file
+  leaves the game running); the picker's `value` is reset after each pick.
+  `drive.nextFree` steps 10 on and one back on each wrap, as real drives
+  (track 17: 0, 10, 20, 8, 18, 6 …); new drive test (34 machine tests).
+  REFERENCE §12 (slot only for games with a disk; bad files refused) and
+  §13 (a saved disk is 35 tracks). `build.py`'s play note adds the Esc keys
+  for chapters ≥ 11. *Game:* `typing.begin` clears `$DC02`; a failed score
+  save shows TIME NOT SAVED (red, row 1) and waits for stick-1 fire or Esc
+  (`shell_signing = 0xFE`, `scores.not_saved`); `master.zig`'s comment no
+  longer claims 1984's castles carry `$9800` (they carry `$7800`; the
+  loader ignores it). Tests 90 (two new in main: a key during the fanfare,
+  a full disk). Listings 77 (D20 split out). *Chapters:* ch08's alcove
+  sentence and ch09's door-bytes sentence now point at the Epilogue
+  (regenerated; ch08/ch09 rebuilds byte-identical). ch11 prose: load
+  address, "17/0, 17/10, 17/20, 17/8", Mode sentence, "Chapter 9 set this
+  up", 638,586 note, TIME NOT SAVED, the key clear, Bonus Stage "A bad
+  first castle"; diagram legend "(pale until read)"; prose 5,499 words.
+  *From the Epilogue review (supersedes the ch09-review "Deviation for
+  ch11 (1984 turn-order quirk)" paragraph):* 1984 takes strict turns, as
+  ours does. `$0DF6` stores `$7811 = 0` at game start; `$0E38–$0E59`
+  plays the player who is **not** `$7811` when the rooms differ, so
+  player 2 plays the first room; `$1594–$15AF` leaves `$7811` as the last
+  player still walking the room. The only quirk is that `$1594` reads an
+  absent player's status: if the file's status byte is 0 and he has never
+  played, the room never ends (until RESTORE). 1984's `Game()` also clears
+  the clocks `$7855–$785C` (`$0DCC`) and escapes `$785D/E` (`$0DD6`).
+  Ours now does the same in `game.start` (`fill(time, 10, 0)`, `last =
+  0`), so player 2 goes first when the start rooms differ, and a file's
+  `$7811 = $B6` no longer panics `game.next` (`@intCast` into `u1`). New
+  main test with player 2 starting in room 1, `last = $B6`, `escaped = 1`.
+  `castle.zig`'s header comment no longer says the game bytes are zeros
+  on the disk. The turn-order bullet is gone from "Still to check" (now
+  settled); chapter prose for it (listings F16–F18, 80 in all; 91 game
+  tests). *Kept:* menu spacing
+  (16 castles) and PRESS FIRE under NO CASTLE DISK (Writer response).
+- **Epilogue file, title, navigation.** `site/chapters/12-epilogue.md`,
+  front matter `chapter: 12`, `part: epilogue`, `title: "All the
+  Castles"`, `checkpoint: ch11` (no new checkpoint, no listings, so no
+  `rebuild.py`). `build.py`: `part: epilogue` gives view `epilogue`,
+  nav/kicker label "Epilogue" (sorted after ch11 by file name), play
+  section titled "The finished game" with the note "The whole game, as
+  Chapter 11 left it." (ch11's wasm, disk slot shown). Prose ≈ 3,040
+  words by ch11's `wc.py` (box text included). No screenshots (the real
+  disk isn't in this tree; no castle names or data quoted). The
+  outline's in-browser room editor is deferred to a separate follow-up.
+- **Epilogue tooling (`site/tools/epilogue/`).** `measure.py` copies ch11
+  to scratch, adds `src/probe.zig` (imports the game's own `map.zig`,
+  `main.zig` (its copy's `Mode` made pub), `shapes`, `tunes`,
+  `training`, `title`) and runs it with `zig run -OReleaseSafe`: JSON of
+  `map.regions` + table fills, three room tours (power on, fire ×2, N at
+  100 then every 300 frames; plain, Q at 250, C at 250) recording each
+  room's worst `.ok` frame by bucket and average, and ch11's Boss Battle
+  script frame by frame (calls match headless: 3,478). `diagrams.py`
+  writes `page/diagrams/ep-memory.html` (16 × 16 page grid, one square per
+  256 bytes, classes: working memory `--c-green`, castle `--c-cyan` (+30 %
+  mix for spare), built-in tables `--c-orange` (+spare), hardware
+  `--accent`, stack/program/expansion `--ink-soft` 55 % mix, free
+  `--code-bg`; mixed pages split bottom-up by gradient; `title` tooltips)
+  and `ep-frame.html` (per-room stacked bucket bars on a 0–6,000 scale,
+  red average tick), and prints the prose's numbers. `errs.py` adds a
+  made-up `spider` kind to a scratch copy one table at a time and checks
+  each quoted compile error and the one failing test (see below). Both
+  diagrams static; legible at 400 px (no page scroll), light and dark.
+- **Measured for the Epilogue (finished game, ch11).** *Memory* (65,536):
+  reserved 24,221 (program image 20,992, stack 256, expansion 2,973);
+  hardware 12,179; castle + staging + best times + castle list 9,666
+  filled + 7,096 spare (Training 4,644 of each 8,192); built-in tables
+  7,277 + 1,187 spare (shape table 5,325/6,144, music 1,029/1,280, effects
+  267/384, star map 256 full, row table 400); working memory 1,838 (grid
+  1,000); free 2,072 in 11 runs (largest `$0500–$07FF` 768; zero page 256
+  unused). 33 regions. *Frame* (tour, explorer standing in each arrival
+  doorway 300 frames): room averages 497 (Gatehouse) – 1,238 (Mummy in a
+  Storm); worst Under Fire 3,450 (objects 2,502); average of averages
+  707; with Q 1,408 (worst 5,146); with C 743 (worst 3,780). Boss
+  Battle: 3,478 calls, 34 loading pauses using 356 of 3,800 slots, 0
+  overruns; average room frame 953; busiest room frame 5,090 (frame
+  2,054, the Way Out: actors 2,500, objects 2,146 as the door is drawn
+  open); busiest display-on frame 14,436 (escape screen piece); largest
+  loading frames 638,586 (power-on) and 244,096 (a room draw). Quoted
+  from earlier logs: grid walking step 204 vs 1,626 (ch04); belt tint
+  224 / draw 1,320 / swap 2,972 (ch06); C in a full room ≈ 70 % (ch05
+  review); sound 14 silent, Boss max 228 (ch10); dice 24 (ch08).
+- **Epilogue quest (the "Still to check" list for readers).** Door map
+  bytes (by eye on a filled-in map: N repeatedly on the map marks rooms
+  visited; compare with `author.door`; `chart.zig` arrow tables);
+  two Frankensteins on one floor (`choose` in `frankenstein.zig`); ankh
+  (ours 16 rows, 1984 23) and alcove placement (G grid check); turn
+  order for a castle whose header starts the players in different rooms
+  (`castle.start_room` +0/+1; `game.next`); the disk's own tunes (tempo
+  bytes below `$13`, B7, the 11 s title pause; homes: music region 251
+  spare, `$0500–$07FF`). Survey tool described in prose only:
+  `@embedFile` + `m.insert` + `files.pick` + `game.start` + `castle.Walker`
+  at `room.stream(m, n)`. All five remain unverified in this tree.
+- **Epilogue exercises (Bonus Stages, no answer keys).** Recreate a real
+  castle (compare record by record with `castle.Walker`: the kit writes
+  kinds in tag order and computes door map bytes; the kit may refuse a
+  machine left of x 16 with "runs off the screen"); design your own
+  (new `training.zig`-style file + one `drive.save` line in `master.zig`;
+  kit limits 31 rooms, 8 KB; design rules from the ch06/ch07 reviews);
+  a new kind. *New-kind walkthrough, proven by `errs.py` in this order
+  on ch11:* `castle.Kind` + `spider` → `src/castle.zig:259:12: error:
+  switch must handle all possibilities` (note line 107 'spider'); record
+  + framing → `src/author.zig:321:31: error: no field named 'spider' in
+  struct 'author.Room(training.Room)'`; kit field →
+  `src/room.zig:37:70: error: missing struct field: spider`; prepare fn
+  → builds; `actors.Kind` → `src/actors.zig:76:62: error: missing struct
+  field: spider`; behaviour → builds; `objects.Kind` + `web` →
+  `objects.zig:61:61 missing struct field: web`; handlers → builds;
+  `shapes.Id` → `src/shapes.zig:233:46: error: root source file struct
+  'art' has no member named 'spider'`; then `zig build test` fails only
+  "castle.test.tag codes turn into kinds and back" (expected null, found
+  .spider): 1984's tag codes end at `$0836`, the new one is `$0839`.
+  Line numbers are ch11's; if ch11 changes, rerun `errs.py` and update
+  the prose.
+- **Epilogue review fixes (supersede the Epilogue entries above where
+  they differ).** *Map survey (must-fix 1):* N on the map does not mark
+  rooms visited (only `chart.draw` sets the bit, for the rooms the
+  players enter). The quest now says: in your copy, have `chart.draw`'s
+  room loop call `sketch(m, n)` for every room (a one-line change, put
+  back afterwards); the first map shows the whole castle; headless
+  `--disk`, fire, `--dump` saves it. Proven by new
+  `tools/epilogue/mapcheck.py` (scratch copies of ch11, a test counting
+  rooms with floor pixels on the first map: plain 1 of 20, changed 20 of
+  20; a headless picture of the full Training map). *Turn order (must-fix
+  2):* quest item 4 dropped (settled in ch11, 2063cfc: 1984 takes strict
+  turns, player 2 first when start rooms differ; ch09's box was right).
+  Replaced by **patterns**: a pattern record names its picture by our
+  shape numbers, not 1984's; count `.pattern` records on a real disk and
+  translate if any turn up (none known). Quest is still five items: door
+  bytes, two Frankensteins, ankhs/alcoves, patterns, tunes. *Tour
+  (should-fix 1):* `measure.py`'s tour presses N at 400 + 300·i (i
+  0–19), Q/C at 150 (in the Gatehouse), so every room gets ≈ 287–311
+  in-play frames. New numbers: Gatehouse average 481 (room averages
+  481–1,238, 2.4–6.3 %); average of averages 706; Q 1,455 (worst 5,146);
+  C 743 (worst 3,780); worst frame still Under Fire 3,450; Boss figures
+  unchanged on the updated ch11 (3,478 calls, 5,090, 953, 14,436, 34
+  pauses / 356 slots). *Should-fix 3:* "pick a castle with fire, and the
+  title says its name. Press fire again (stick 2 for a game for two)";
+  the menu holds the first 16 castles. *Should-fix 4:* dice 40 cycles a
+  roll (ch08's byte budget; `m.work(24)` + 2 peeks + 2 pokes).
+  *Nits:* program-image wording (kept empty so the map shows the room
+  code would need); "the hardware and the space kept for the program";
+  "power on the Comet at the bottom of this page"; text printer in
+  working memory; "no cycles to work out"; behaviour = turn, flickers,
+  group (all required); "most of them name the room"; `$` not `$0:Z*`;
+  caption "On a desktop, hover". `ep-memory` spare classes now 50 % mixes
+  and reserved `--ink-soft` 35 % (distinct in dark). `errs.py` asserts each
+  quoted line whole (`file:line:col: error: …`) as the first error, the
+  test failure's two lines exactly, and that the chapter quotes them; line
+  numbers re-derived on ch11 after 2063cfc: `castle.zig:260:12` (note
+  `108:5`), `author.zig:321:31`, `room.zig:37:70`, `actors.zig:76:62`,
+  `objects.zig:61:61`, `shapes.zig:233:46`. Prose ≈ 3,130 by `wc.py`.

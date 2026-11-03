@@ -1,0 +1,308 @@
+<style>
+.ep-mm { display: grid; gap: 12px; }
+.ep-mm .grid { display: grid; grid-template-columns: 3.6em repeat(16, minmax(0, 1fr)); gap: 2px; max-width: 520px; font-size: .62rem; }
+.ep-mm .grid i { display: block; aspect-ratio: 1; border-radius: 2px; box-shadow: inset 0 0 0 1px var(--rule); }
+.ep-mm .grid b { font-weight: 400; color: var(--ink-soft); text-align: right; padding-right: 4px; align-self: center; }
+.ep-mm .grid u { text-decoration: none; color: var(--ink-soft); text-align: center; }
+.ep-mm .key { display: grid; grid-template-columns: auto 1fr auto auto; gap: 3px 10px; font-size: .74rem; align-items: center; max-width: 520px; }
+.ep-mm .key i { display: inline-block; width: 1em; height: 1em; border-radius: 2px; box-shadow: inset 0 0 0 1px var(--rule); }
+.ep-mm .key .n { text-align: right; font-variant-numeric: tabular-nums; }
+.ep-mm .key .p { text-align: right; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.ep-mm .names { font-size: .7rem; color: var(--ink-soft); max-width: 62ch; }
+.ep-mm .state { background: var(--c-green); }
+.ep-mm .castle { background: var(--c-cyan); }
+.ep-mm .castle-empty { background: color-mix(in srgb, var(--c-cyan) 50%, var(--sheet)); }
+.ep-mm .tables { background: var(--c-orange); }
+.ep-mm .tables-empty { background: color-mix(in srgb, var(--c-orange) 50%, var(--sheet)); }
+.ep-mm .hardware { background: var(--accent); }
+.ep-mm .reserved { background: color-mix(in srgb, var(--ink-soft) 35%, var(--sheet)); }
+.ep-mm .free { background: var(--code-bg); }
+</style>
+<div class="ep-mm" role="img" aria-label="The final game's 65,536 bytes as 256 squares of 256 bytes each, coloured by who owns them">
+<div class="grid">
+<span></span><u>0</u><u>1</u><u>2</u><u>3</u><u>4</u><u>5</u><u>6</u><u>7</u><u>8</u><u>9</u><u>A</u><u>B</u><u>C</u><u>D</u><u>E</u><u>F</u>
+<b>$0000</b>
+<i class="free" title="$0000–$00FF: free"></i>
+<i class="reserved" title="$0100–$01FF: stack (reserved)"></i>
+<i style="background: linear-gradient(to top, var(--c-green) 0.0% 14.8%, var(--code-bg) 14.8% 100.0%)" title="$0200–$02FF: between rooms, game, room, debug, engine, dice, players, sound, free"></i>
+<i style="background: linear-gradient(to top, var(--c-green) 0.0% 50.0%, var(--c-orange) 50.0% 100.0%)" title="$0300–$03FF: text, sound effects"></i>
+<i style="background: linear-gradient(to top, var(--c-orange) 0.0% 54.3%, color-mix(in srgb, var(--c-orange) 50%, var(--sheet)) 54.3% 100.0%)" title="$0400–$04FF: sound effects"></i>
+<i class="free" title="$0500–$05FF: free"></i>
+<i class="free" title="$0600–$06FF: free"></i>
+<i class="free" title="$0700–$07FF: free"></i>
+<i class="reserved" title="$0800–$08FF: program image"></i>
+<i class="reserved" title="$0900–$09FF: program image"></i>
+<i class="reserved" title="$0A00–$0AFF: program image"></i>
+<i class="reserved" title="$0B00–$0BFF: program image"></i>
+<i class="reserved" title="$0C00–$0CFF: program image"></i>
+<i class="reserved" title="$0D00–$0DFF: program image"></i>
+<i class="reserved" title="$0E00–$0EFF: program image"></i>
+<i class="reserved" title="$0F00–$0FFF: program image"></i>
+<b>$1000</b>
+<i class="reserved" title="$1000–$10FF: program image"></i>
+<i class="reserved" title="$1100–$11FF: program image"></i>
+<i class="reserved" title="$1200–$12FF: program image"></i>
+<i class="reserved" title="$1300–$13FF: program image"></i>
+<i class="reserved" title="$1400–$14FF: program image"></i>
+<i class="reserved" title="$1500–$15FF: program image"></i>
+<i class="reserved" title="$1600–$16FF: program image"></i>
+<i class="reserved" title="$1700–$17FF: program image"></i>
+<i class="reserved" title="$1800–$18FF: program image"></i>
+<i class="reserved" title="$1900–$19FF: program image"></i>
+<i class="reserved" title="$1A00–$1AFF: program image"></i>
+<i class="reserved" title="$1B00–$1BFF: program image"></i>
+<i class="reserved" title="$1C00–$1CFF: program image"></i>
+<i class="reserved" title="$1D00–$1DFF: program image"></i>
+<i class="reserved" title="$1E00–$1EFF: program image"></i>
+<i class="reserved" title="$1F00–$1FFF: program image"></i>
+<b>$2000</b>
+<i class="reserved" title="$2000–$20FF: program image"></i>
+<i class="reserved" title="$2100–$21FF: program image"></i>
+<i class="reserved" title="$2200–$22FF: program image"></i>
+<i class="reserved" title="$2300–$23FF: program image"></i>
+<i class="reserved" title="$2400–$24FF: program image"></i>
+<i class="reserved" title="$2500–$25FF: program image"></i>
+<i class="reserved" title="$2600–$26FF: program image"></i>
+<i class="reserved" title="$2700–$27FF: program image"></i>
+<i class="reserved" title="$2800–$28FF: program image"></i>
+<i class="reserved" title="$2900–$29FF: program image"></i>
+<i class="reserved" title="$2A00–$2AFF: program image"></i>
+<i class="reserved" title="$2B00–$2BFF: program image"></i>
+<i class="reserved" title="$2C00–$2CFF: program image"></i>
+<i class="reserved" title="$2D00–$2DFF: program image"></i>
+<i class="reserved" title="$2E00–$2EFF: program image"></i>
+<i class="reserved" title="$2F00–$2FFF: program image"></i>
+<b>$3000</b>
+<i class="reserved" title="$3000–$30FF: program image"></i>
+<i class="reserved" title="$3100–$31FF: program image"></i>
+<i class="reserved" title="$3200–$32FF: program image"></i>
+<i class="reserved" title="$3300–$33FF: program image"></i>
+<i class="reserved" title="$3400–$34FF: program image"></i>
+<i class="reserved" title="$3500–$35FF: program image"></i>
+<i class="reserved" title="$3600–$36FF: program image"></i>
+<i class="reserved" title="$3700–$37FF: program image"></i>
+<i class="reserved" title="$3800–$38FF: program image"></i>
+<i class="reserved" title="$3900–$39FF: program image"></i>
+<i class="reserved" title="$3A00–$3AFF: program image"></i>
+<i class="reserved" title="$3B00–$3BFF: program image"></i>
+<i class="reserved" title="$3C00–$3CFF: program image"></i>
+<i class="reserved" title="$3D00–$3DFF: program image"></i>
+<i class="reserved" title="$3E00–$3EFF: program image"></i>
+<i class="reserved" title="$3F00–$3FFF: program image"></i>
+<b>$4000</b>
+<i class="reserved" title="$4000–$40FF: program image"></i>
+<i class="reserved" title="$4100–$41FF: program image"></i>
+<i class="reserved" title="$4200–$42FF: program image"></i>
+<i class="reserved" title="$4300–$43FF: program image"></i>
+<i class="reserved" title="$4400–$44FF: program image"></i>
+<i class="reserved" title="$4500–$45FF: program image"></i>
+<i class="reserved" title="$4600–$46FF: program image"></i>
+<i class="reserved" title="$4700–$47FF: program image"></i>
+<i class="reserved" title="$4800–$48FF: program image"></i>
+<i class="reserved" title="$4900–$49FF: program image"></i>
+<i class="reserved" title="$4A00–$4AFF: program image"></i>
+<i class="reserved" title="$4B00–$4BFF: program image"></i>
+<i class="reserved" title="$4C00–$4CFF: program image"></i>
+<i class="reserved" title="$4D00–$4DFF: program image"></i>
+<i class="reserved" title="$4E00–$4EFF: program image"></i>
+<i class="reserved" title="$4F00–$4FFF: program image"></i>
+<b>$5000</b>
+<i class="reserved" title="$5000–$50FF: program image"></i>
+<i class="reserved" title="$5100–$51FF: program image"></i>
+<i class="reserved" title="$5200–$52FF: program image"></i>
+<i class="reserved" title="$5300–$53FF: program image"></i>
+<i class="reserved" title="$5400–$54FF: program image"></i>
+<i class="reserved" title="$5500–$55FF: program image"></i>
+<i class="reserved" title="$5600–$56FF: program image"></i>
+<i class="reserved" title="$5700–$57FF: program image"></i>
+<i class="reserved" title="$5800–$58FF: program image"></i>
+<i class="reserved" title="$5900–$59FF: program image"></i>
+<i class="tables" title="$5A00–$5AFF: music"></i>
+<i class="tables" title="$5B00–$5BFF: music"></i>
+<i class="tables" title="$5C00–$5CFF: music"></i>
+<i class="tables" title="$5D00–$5DFF: music"></i>
+<i style="background: linear-gradient(to top, var(--c-orange) 0.0% 2.0%, color-mix(in srgb, var(--c-orange) 50%, var(--sheet)) 2.0% 100.0%)" title="$5E00–$5EFF: music"></i>
+<i class="tables" title="$5F00–$5FFF: star map"></i>
+<b>$6000</b>
+<i class="tables" title="$6000–$60FF: shape table"></i>
+<i class="tables" title="$6100–$61FF: shape table"></i>
+<i class="tables" title="$6200–$62FF: shape table"></i>
+<i class="tables" title="$6300–$63FF: shape table"></i>
+<i class="tables" title="$6400–$64FF: shape table"></i>
+<i class="tables" title="$6500–$65FF: shape table"></i>
+<i class="tables" title="$6600–$66FF: shape table"></i>
+<i class="tables" title="$6700–$67FF: shape table"></i>
+<i class="tables" title="$6800–$68FF: shape table"></i>
+<i class="tables" title="$6900–$69FF: shape table"></i>
+<i class="tables" title="$6A00–$6AFF: shape table"></i>
+<i class="tables" title="$6B00–$6BFF: shape table"></i>
+<i class="tables" title="$6C00–$6CFF: shape table"></i>
+<i class="tables" title="$6D00–$6DFF: shape table"></i>
+<i class="tables" title="$6E00–$6EFF: shape table"></i>
+<i class="tables" title="$6F00–$6FFF: shape table"></i>
+<b>$7000</b>
+<i class="tables" title="$7000–$70FF: shape table"></i>
+<i class="tables" title="$7100–$71FF: shape table"></i>
+<i class="tables" title="$7200–$72FF: shape table"></i>
+<i class="tables" title="$7300–$73FF: shape table"></i>
+<i style="background: linear-gradient(to top, var(--c-orange) 0.0% 80.1%, color-mix(in srgb, var(--c-orange) 50%, var(--sheet)) 80.1% 100.0%)" title="$7400–$74FF: shape table"></i>
+<i class="tables-empty" title="$7500–$75FF: shape table"></i>
+<i class="tables-empty" title="$7600–$76FF: shape table"></i>
+<i class="tables-empty" title="$7700–$77FF: shape table"></i>
+<i class="castle" title="$7800–$78FF: castle"></i>
+<i class="castle" title="$7900–$79FF: castle"></i>
+<i class="castle" title="$7A00–$7AFF: castle"></i>
+<i class="castle" title="$7B00–$7BFF: castle"></i>
+<i class="castle" title="$7C00–$7CFF: castle"></i>
+<i class="castle" title="$7D00–$7DFF: castle"></i>
+<i class="castle" title="$7E00–$7EFF: castle"></i>
+<i class="castle" title="$7F00–$7FFF: castle"></i>
+<b>$8000</b>
+<i class="castle" title="$8000–$80FF: castle"></i>
+<i class="castle" title="$8100–$81FF: castle"></i>
+<i class="castle" title="$8200–$82FF: castle"></i>
+<i class="castle" title="$8300–$83FF: castle"></i>
+<i class="castle" title="$8400–$84FF: castle"></i>
+<i class="castle" title="$8500–$85FF: castle"></i>
+<i class="castle" title="$8600–$86FF: castle"></i>
+<i class="castle" title="$8700–$87FF: castle"></i>
+<i class="castle" title="$8800–$88FF: castle"></i>
+<i class="castle" title="$8900–$89FF: castle"></i>
+<i style="background: linear-gradient(to top, var(--c-cyan) 0.0% 14.1%, color-mix(in srgb, var(--c-cyan) 50%, var(--sheet)) 14.1% 100.0%)" title="$8A00–$8AFF: castle"></i>
+<i class="castle-empty" title="$8B00–$8BFF: castle"></i>
+<i class="castle-empty" title="$8C00–$8CFF: castle"></i>
+<i class="castle-empty" title="$8D00–$8DFF: castle"></i>
+<i class="castle-empty" title="$8E00–$8EFF: castle"></i>
+<i class="castle-empty" title="$8F00–$8FFF: castle"></i>
+<b>$9000</b>
+<i class="castle-empty" title="$9000–$90FF: castle"></i>
+<i class="castle-empty" title="$9100–$91FF: castle"></i>
+<i class="castle-empty" title="$9200–$92FF: castle"></i>
+<i class="castle-empty" title="$9300–$93FF: castle"></i>
+<i class="castle-empty" title="$9400–$94FF: castle"></i>
+<i class="castle-empty" title="$9500–$95FF: castle"></i>
+<i class="castle-empty" title="$9600–$96FF: castle"></i>
+<i class="castle-empty" title="$9700–$97FF: castle"></i>
+<i class="castle" title="$9800–$98FF: staging"></i>
+<i class="castle" title="$9900–$99FF: staging"></i>
+<i class="castle" title="$9A00–$9AFF: staging"></i>
+<i class="castle" title="$9B00–$9BFF: staging"></i>
+<i class="castle" title="$9C00–$9CFF: staging"></i>
+<i class="castle" title="$9D00–$9DFF: staging"></i>
+<i class="castle" title="$9E00–$9EFF: staging"></i>
+<i class="castle" title="$9F00–$9FFF: staging"></i>
+<b>$A000</b>
+<i class="castle" title="$A000–$A0FF: staging"></i>
+<i class="castle" title="$A100–$A1FF: staging"></i>
+<i class="castle" title="$A200–$A2FF: staging"></i>
+<i class="castle" title="$A300–$A3FF: staging"></i>
+<i class="castle" title="$A400–$A4FF: staging"></i>
+<i class="castle" title="$A500–$A5FF: staging"></i>
+<i class="castle" title="$A600–$A6FF: staging"></i>
+<i class="castle" title="$A700–$A7FF: staging"></i>
+<i class="castle" title="$A800–$A8FF: staging"></i>
+<i class="castle" title="$A900–$A9FF: staging"></i>
+<i style="background: linear-gradient(to top, var(--c-cyan) 0.0% 14.1%, color-mix(in srgb, var(--c-cyan) 50%, var(--sheet)) 14.1% 100.0%)" title="$AA00–$AAFF: staging"></i>
+<i class="castle-empty" title="$AB00–$ABFF: staging"></i>
+<i class="castle-empty" title="$AC00–$ACFF: staging"></i>
+<i class="castle-empty" title="$AD00–$ADFF: staging"></i>
+<i class="castle-empty" title="$AE00–$AEFF: staging"></i>
+<i class="castle-empty" title="$AF00–$AFFF: staging"></i>
+<b>$B000</b>
+<i class="castle-empty" title="$B000–$B0FF: staging"></i>
+<i class="castle-empty" title="$B100–$B1FF: staging"></i>
+<i class="castle-empty" title="$B200–$B2FF: staging"></i>
+<i class="castle-empty" title="$B300–$B3FF: staging"></i>
+<i class="castle-empty" title="$B400–$B4FF: staging"></i>
+<i class="castle-empty" title="$B500–$B5FF: staging"></i>
+<i class="castle-empty" title="$B600–$B6FF: staging"></i>
+<i class="castle-empty" title="$B700–$B7FF: staging"></i>
+<i style="background: linear-gradient(to top, var(--c-green) 0.0% 12.5%, var(--c-cyan) 12.5% 60.2%, var(--code-bg) 60.2% 100.0%)" title="$B800–$B8FF: best times, free, shell"></i>
+<i class="castle" title="$B900–$B9FF: castle list"></i>
+<i class="free" title="$BA00–$BAFF: free"></i>
+<i class="tables" title="$BB00–$BBFF: row table"></i>
+<i style="background: linear-gradient(to top, var(--c-orange) 0.0% 56.2%, var(--code-bg) 56.2% 100.0%)" title="$BC00–$BCFF: row table, free"></i>
+<i style="background: linear-gradient(to top, var(--c-green) 0.0% 50.0%, var(--code-bg) 50.0% 100.0%)" title="$BD00–$BDFF: actors, free"></i>
+<i class="state" title="$BE00–$BEFF: objects"></i>
+<i class="state" title="$BF00–$BFFF: objects"></i>
+<b>$C000</b>
+<i class="hardware" title="$C000–$C0FF: sprite frames"></i>
+<i class="hardware" title="$C100–$C1FF: sprite frames"></i>
+<i class="hardware" title="$C200–$C2FF: sprite frames"></i>
+<i class="hardware" title="$C300–$C3FF: sprite frames"></i>
+<i class="hardware" title="$C400–$C4FF: sprite frames"></i>
+<i class="hardware" title="$C500–$C5FF: sprite frames"></i>
+<i class="hardware" title="$C600–$C6FF: sprite frames"></i>
+<i class="hardware" title="$C700–$C7FF: sprite frames"></i>
+<i class="state" title="$C800–$C8FF: navigation grid"></i>
+<i class="state" title="$C900–$C9FF: navigation grid"></i>
+<i class="state" title="$CA00–$CAFF: navigation grid"></i>
+<i style="background: linear-gradient(to top, var(--c-green) 0.0% 90.6%, var(--code-bg) 90.6% 100.0%)" title="$CB00–$CBFF: navigation grid, free"></i>
+<i class="hardware" title="$CC00–$CCFF: screen plane"></i>
+<i class="hardware" title="$CD00–$CDFF: screen plane"></i>
+<i class="hardware" title="$CE00–$CEFF: screen plane"></i>
+<i style="background: linear-gradient(to top, var(--accent) 0.0% 93.8%, var(--code-bg) 93.8% 100.0%)" title="$CF00–$CFFF: screen plane, free, sprite pointers"></i>
+<b>$D000</b>
+<i style="background: linear-gradient(to top, var(--accent) 0.0% 18.4%, color-mix(in srgb, var(--ink-soft) 35%, var(--sheet)) 18.4% 100.0%)" title="$D000–$D0FF: VIDEO chip, reserved for expansion hardware"></i>
+<i class="reserved" title="$D100–$D1FF: reserved for expansion hardware"></i>
+<i class="reserved" title="$D200–$D2FF: reserved for expansion hardware"></i>
+<i class="reserved" title="$D300–$D3FF: reserved for expansion hardware"></i>
+<i style="background: linear-gradient(to top, var(--accent) 0.0% 9.8%, color-mix(in srgb, var(--ink-soft) 35%, var(--sheet)) 9.8% 100.0%)" title="$D400–$D4FF: SOUND chip, reserved for expansion hardware"></i>
+<i class="reserved" title="$D500–$D5FF: reserved for expansion hardware"></i>
+<i class="reserved" title="$D600–$D6FF: reserved for expansion hardware"></i>
+<i class="reserved" title="$D700–$D7FF: reserved for expansion hardware"></i>
+<i class="hardware" title="$D800–$D8FF: colour RAM"></i>
+<i class="hardware" title="$D900–$D9FF: colour RAM"></i>
+<i class="hardware" title="$DA00–$DAFF: colour RAM"></i>
+<i style="background: linear-gradient(to top, var(--accent) 0.0% 90.6%, color-mix(in srgb, var(--ink-soft) 35%, var(--sheet)) 90.6% 100.0%)" title="$DB00–$DBFF: colour RAM, reserved for expansion hardware"></i>
+<i style="background: linear-gradient(to top, var(--accent) 0.0% 1.2%, color-mix(in srgb, var(--ink-soft) 35%, var(--sheet)) 1.2% 100.0%)" title="$DC00–$DCFF: input ports, reserved for expansion hardware"></i>
+<i style="background: linear-gradient(to top, var(--accent) 0.0% 18.8%, color-mix(in srgb, var(--ink-soft) 35%, var(--sheet)) 18.8% 100.0%)" title="$DD00–$DDFF: disk drive, reserved for expansion hardware"></i>
+<i class="reserved" title="$DE00–$DEFF: reserved for expansion hardware"></i>
+<i class="reserved" title="$DF00–$DFFF: reserved for expansion hardware"></i>
+<b>$E000</b>
+<i class="hardware" title="$E000–$E0FF: bitmap"></i>
+<i class="hardware" title="$E100–$E1FF: bitmap"></i>
+<i class="hardware" title="$E200–$E2FF: bitmap"></i>
+<i class="hardware" title="$E300–$E3FF: bitmap"></i>
+<i class="hardware" title="$E400–$E4FF: bitmap"></i>
+<i class="hardware" title="$E500–$E5FF: bitmap"></i>
+<i class="hardware" title="$E600–$E6FF: bitmap"></i>
+<i class="hardware" title="$E700–$E7FF: bitmap"></i>
+<i class="hardware" title="$E800–$E8FF: bitmap"></i>
+<i class="hardware" title="$E900–$E9FF: bitmap"></i>
+<i class="hardware" title="$EA00–$EAFF: bitmap"></i>
+<i class="hardware" title="$EB00–$EBFF: bitmap"></i>
+<i class="hardware" title="$EC00–$ECFF: bitmap"></i>
+<i class="hardware" title="$ED00–$EDFF: bitmap"></i>
+<i class="hardware" title="$EE00–$EEFF: bitmap"></i>
+<i class="hardware" title="$EF00–$EFFF: bitmap"></i>
+<b>$F000</b>
+<i class="hardware" title="$F000–$F0FF: bitmap"></i>
+<i class="hardware" title="$F100–$F1FF: bitmap"></i>
+<i class="hardware" title="$F200–$F2FF: bitmap"></i>
+<i class="hardware" title="$F300–$F3FF: bitmap"></i>
+<i class="hardware" title="$F400–$F4FF: bitmap"></i>
+<i class="hardware" title="$F500–$F5FF: bitmap"></i>
+<i class="hardware" title="$F600–$F6FF: bitmap"></i>
+<i class="hardware" title="$F700–$F7FF: bitmap"></i>
+<i class="hardware" title="$F800–$F8FF: bitmap"></i>
+<i class="hardware" title="$F900–$F9FF: bitmap"></i>
+<i class="hardware" title="$FA00–$FAFF: bitmap"></i>
+<i class="hardware" title="$FB00–$FBFF: bitmap"></i>
+<i class="hardware" title="$FC00–$FCFF: bitmap"></i>
+<i class="hardware" title="$FD00–$FDFF: bitmap"></i>
+<i class="hardware" title="$FE00–$FEFF: bitmap"></i>
+<i style="background: linear-gradient(to top, var(--accent) 0.0% 25.0%, var(--code-bg) 25.0% 100.0%)" title="$FF00–$FFFF: bitmap, free"></i>
+</div>
+<div class="key">
+<i class="state"></i><span>the game's working memory</span><span class="n">1,838</span><span class="p">2.8%</span>
+<i class="castle"></i><span>the castle and its files</span><span class="n">9,666</span><span class="p">14.7%</span>
+<i class="castle-empty"></i><span>castle room to spare</span><span class="n">7,096</span><span class="p">10.8%</span>
+<i class="tables"></i><span>built-in tables</span><span class="n">7,277</span><span class="p">11.1%</span>
+<i class="tables-empty"></i><span>table room to spare</span><span class="n">1,187</span><span class="p">1.8%</span>
+<i class="hardware"></i><span>the hardware's</span><span class="n">12,179</span><span class="p">18.6%</span>
+<i class="reserved"></i><span>stack, program, expansion</span><span class="n">24,221</span><span class="p">37.0%</span>
+<i class="free"></i><span>nobody's</span><span class="n">2,072</span><span class="p">3.2%</span>
+</div>
+<p class="names">Rows are $1000 apart and columns $100. A square shared by two owners is split, bottom up, in the order of the key. Generated from <code>map.zig</code>.</p>
+</div>

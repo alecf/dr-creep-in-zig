@@ -1,0 +1,45 @@
+<style>
+.ch11-ls { display: grid; gap: 14px; }
+.ch11-ls .step { display: grid; gap: 6px; }
+.ch11-ls .line { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font: .74rem/1.3 var(--mono); }
+.ch11-ls .line .dg-byte { min-width: 0; padding: 2px 5px; font-size: .72rem; }
+.ch11-ls .line .what { color: var(--ink-soft); font-size: .68rem; margin-left: 4px; }
+.ch11-ls .txt { white-space: pre; padding: 2px 6px; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--rule); }
+.ch11-ls .name { color: var(--accent); font-weight: 600; }
+.ch11-ls .z { color: var(--ink-soft); text-decoration: line-through; }
+.ch11-ls .cat { display: grid; grid-template-columns: auto repeat(16, minmax(0, 1.6em)); gap: 2px; align-items: center; font: .72rem/1.2 var(--mono); max-width: 34em; }
+.ch11-ls .cat > span { text-align: center; padding: 3px 0; border-radius: 3px; background: var(--code-bg); box-shadow: inset 0 0 0 1px var(--rule); }
+.ch11-ls .cat > .a { background: none; box-shadow: none; color: var(--ink-soft); padding-right: 6px; text-align: right; }
+.ch11-ls .cat > .end { background: var(--accent); color: var(--sheet); box-shadow: none; }
+.ch11-ls .bar { position: relative; height: 26px; border-radius: 4px; background: var(--code-bg); box-shadow: inset 0 0 0 1px var(--rule); max-width: 560px; }
+.ch11-ls .bar i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 4px; }
+.ch11-ls .bar .castle { width: 56.7%; background: var(--accent); }
+.ch11-ls .bar .listing { width: 1.54%; min-width: 3px; background: var(--ink); top: -6px; bottom: auto; height: 6px; }
+.ch11-ls .scale { display: flex; justify-content: space-between; max-width: 560px; font: .66rem/1 var(--mono); color: var(--ink-soft); }
+.ch11-ls small { color: var(--ink-soft); }
+</style>
+<div class="ch11-ls">
+  <div class="step">
+    <span class="dg-label">1. "$0:Z*" loads into staging at $9800: a listing, 126 bytes</span>
+    <div class="line"><span class="dg-byte">01 01</span><span class="dg-byte">00 00</span><span class="txt">"CASTLES OF CREEP" 84 2A</span><span class="dg-byte">00</span><span class="what">line 0: the disk's name and ID</span></div>
+    <div class="line"><span class="dg-byte">01 01</span><span class="dg-byte">13 00</span><span class="txt">  "<span class="z">Z</span><span class="name">TRAINING</span>"       PRG</span><span class="dg-byte">00</span><span class="what">19 sectors</span></div>
+    <div class="line"><span class="dg-byte">01 01</span><span class="dg-byte">02 00</span><span class="txt">   "<span class="z">Z</span><span class="name">ENTRANCE HALL</span>"   PRG</span><span class="dg-byte">00</span><span class="what">2 sectors</span></div>
+    <div class="line"><span class="dg-byte">01 01</span><span class="dg-byte">83 02</span><span class="txt">BLOCKS FREE.</span><span class="dg-byte">00</span><span class="what">643 free: no quotes, so no castle</span></div>
+    <div class="line"><span class="dg-byte">00 00</span><span class="what">the end</span></div>
+    <small>Each line: two link bytes, the line number low byte first, the text, a 0.</small>
+  </div>
+  <div class="step">
+    <span class="dg-label">2. The names, less their Z, into the castle list at $B900</span>
+    <div class="cat">
+      <span class="a">$B900</span><span>T</span><span>R</span><span>A</span><span>I</span><span>N</span><span>I</span><span>N</span><span class="end">G</span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      <span class="a">$B910</span><span>E</span><span>N</span><span>T</span><span>R</span><span>A</span><span>N</span><span>C</span><span>E</span><span>&nbsp;</span><span>H</span><span>A</span><span>L</span><span class="end">L</span><span></span><span></span><span></span>
+    </div>
+    <small>16 bytes a name. The highlighted letter has bit 7 set: the name ends there.</small>
+  </div>
+  <div class="step">
+    <span class="dg-label">3. The first castle loads into staging, right over the listing</span>
+    <div class="bar"><i class="listing"></i><i class="castle"></i></div>
+    <div class="scale"><span>$9800</span><span>4,644 bytes of castle</span><span>$B7FF</span></div>
+    <small>The listing's job is done by the time the castle comes, so the castle can have its bytes.</small>
+  </div>
+</div>

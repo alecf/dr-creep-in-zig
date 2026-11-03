@@ -37,9 +37,49 @@ fn log(
 // zeroed memory instead of a half-megabyte data section.
 var m: Machine = undefined;
 
-/// Power on (or reset) the machine.
+/// Power on (or reset) the machine, with the game's own disk in the
+/// drive (if it has one).
 export fn comet_boot() void {
     m.boot(game);
+}
+
+// A disk image from the page: the shell copies a file's bytes here, then
+// calls `comet_insert`. Big enough for the largest image file.
+var disk_buf: [197_376]u8 = undefined;
+
+export fn comet_disk_buffer() [*]u8 {
+    return &disk_buf;
+}
+export fn comet_disk_buffer_size() u32 {
+    return disk_buf.len;
+}
+
+/// 1 if this game has a disk of its own (`pub const disk`), so the page
+/// should offer a disk slot; 0 if the game never uses the drive.
+export fn comet_has_disk() u32 {
+    return @intFromBool(@hasDecl(game, "disk"));
+}
+
+/// 1 if `len` bytes is the size of a disk image, so the page can check a
+/// file before it powers the machine off and on to slot it in.
+export fn comet_is_disk_size(len: u32) u32 {
+    return @intFromBool(std.mem.indexOfScalar(usize, &machine.drive.image_sizes, len) != null);
+}
+
+/// Put the first `len` bytes of the disk buffer in the drive. 0 if that
+/// worked, 1 if they aren't a disk image.
+export fn comet_insert(len: u32) u32 {
+    m.insert(disk_buf[0..@min(len, disk_buf.len)]) catch return 1;
+    return 0;
+}
+
+/// The disk in the drive, saves and all (`comet_disk_size` bytes), for
+/// the page to keep or download. Size 0: the drive is empty.
+export fn comet_disk() [*]const u8 {
+    return &m.drive.image;
+}
+export fn comet_disk_size() u32 {
+    return if (m.diskImage() != null) machine.drive.image_size else 0;
 }
 
 /// Run one frame with the given held joystick bits (see `machine.joy`).
@@ -91,4 +131,16 @@ export fn comet_bucket(id: u32) u32 {
 /// Last frame's kind: 0 fitted, 1 overrun, 2 loading pause.
 export fn comet_kind() u32 {
     return @intFromEnum(m.last.kind);
+}
+
+// One frame slot of sound at a time; 4,096 samples covers a speaker running
+// at up to 204,800 samples a second (shells ask for 48,000).
+var sound_buf: [4096]f32 = undefined;
+
+/// The sound of one frame slot, `count` samples (up to 4,096) at `rate` a
+/// second, from the SOUND chip as the last frame left it. Call it once for
+/// each slot `comet_frame` returned.
+export fn comet_listen(rate: u32, count: u32) [*]const f32 {
+    m.listen(sound_buf[0..@min(count, sound_buf.len)], rate);
+    return &sound_buf;
 }

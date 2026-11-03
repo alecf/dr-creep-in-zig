@@ -1,0 +1,45 @@
+<style>
+.ch06-lk { display: grid; gap: 10px; }
+.ch06-lk .ch06-lk-row { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.ch06-lk .ch06-lk-sw { box-shadow: inset 0 0 0 2px var(--accent); }
+.ch06-lk .ch06-lk-dim { opacity: .45; }
+.ch06-lk small { color: var(--ink-soft); font-size: .72rem; }
+.ch06-lk .ch06-lk-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px 18px; }
+.ch06-lk .ch06-lk-card { display: grid; gap: 5px; align-content: start; padding: 8px 10px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--rule); min-width: 0; }
+.ch06-lk .ch06-lk-tbl { border-collapse: collapse; font-size: .74rem; }
+.ch06-lk .ch06-lk-tbl th { font: 400 .6rem/1.2 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); text-align: left; padding: 2px 6px; }
+.ch06-lk .ch06-lk-tbl td { padding: 4px 6px; background: var(--code-bg); border: 2px solid var(--sheet); white-space: nowrap; }
+.ch06-lk .ch06-lk-tbl td.ch06-lk-on { background: var(--accent); color: var(--sheet); font-weight: 700; }
+.ch06-lk .ch06-lk-scroll { max-width: 100%; overflow-x: auto; }
+</style>
+<div class="ch06-lk">
+  <span class="dg-label">The switch's record: the room's third lightning record, at first + 16</span>
+  <div class="ch06-lk-row">
+    <span class="dg-bytes"><span class="dg-byte ch06-lk-dim">$C0</span><span class="dg-byte ch06-lk-dim">28</span><span class="dg-byte ch06-lk-dim">104</span><span class="dg-byte ch06-lk-dim">0</span><span class="dg-byte ch06-lk-sw">0</span><span class="dg-byte ch06-lk-sw">8</span><span class="dg-byte ch06-lk-dim">$FF</span><span class="dg-byte ch06-lk-dim">$FF</span></span>
+    <small>state (switch, on), x, y, unused, then machines 0 and 8, and $FF: no more</small>
+  </div>
+  <span class="dg-arrow">↓ <small>each number is a distance from the room's first lightning record</small></span>
+  <div class="ch06-lk-cols">
+    <div class="ch06-lk-card">
+      <span class="dg-label">first + 0: machine 0</span>
+      <span class="dg-bytes"><span class="dg-byte">$40</span><span class="dg-byte">104</span><span class="dg-byte">112</span><span class="dg-byte">6</span><span class="dg-byte ch06-lk-dim">…</span></span>
+      <small>bit 6 flips when the switch is thrown</small>
+    </div>
+    <div class="ch06-lk-card">
+      <span class="dg-label">first + 8: machine 8</span>
+      <span class="dg-bytes"><span class="dg-byte">$40</span><span class="dg-byte">124</span><span class="dg-byte">112</span><span class="dg-byte">6</span><span class="dg-byte ch06-lk-dim">…</span></span>
+      <small>8 bytes on: the next record</small>
+    </div>
+  </div>
+  <span class="dg-arrow">↓ <small>objects.find(m, .machine, 8): the object whose number is 8</small></span>
+  <div class="ch06-lk-scroll">
+    <table class="ch06-lk-tbl">
+      <tr><th>object</th><th>kind</th><th>number</th><th>actor</th></tr>
+      <tr><td>3</td><td>machine</td><td>0</td><td>1</td></tr>
+      <tr><td>4</td><td>machine</td><td class="ch06-lk-on">8</td><td class="ch06-lk-on">2</td></tr>
+      <tr><td>5</td><td>lever</td><td>0</td><td>$FF (none)</td></tr>
+    </table>
+  </div>
+  <span class="dg-arrow">↓ <small>actors.slot(m, 2): sprite 2, the second bolt</small></span>
+  <small>No address is stored anywhere: a distance in the castle, an object's number, a sprite's slot. Add a walkway to the room and every address after it moves, but these numbers stay right.</small>
+</div>

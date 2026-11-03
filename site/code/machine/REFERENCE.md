@@ -5,7 +5,8 @@ the Comet 64 is on it.*
 
 The Comet 64 is a home computer with **64 KB of memory**, a **1 MHz**
 processor, a **50 Hz** colour display, a VIDEO chip with **eight hardware
-sprites**, a three-voice SOUND chip and **two joystick ports**. You program
+sprites**, a three-voice SOUND chip, **two joystick ports** and a **disk
+drive**. You program
 it in Zig. Your program is a game module with two functions, and the
 machine does the rest.
 
@@ -26,6 +27,9 @@ pub fn frame(m: *Machine) void { ... }  // 50 times a second
   isn't running yet.
 - **`frame`** is the frame interrupt. It runs fifty times a second, for as
   long as the machine is on. Each call is one frame of your game.
+- **`disk`** (optional): `pub const disk: machine.drive.Image` is the disk
+  that comes with your game. At power-on the machine puts it in the
+  drive (section 13).
 
 **All of your game's changing state lives in memory, in `m.ram`.** A
 `const` table in your program is fine (it's part of the program image),
@@ -40,6 +44,8 @@ Every frame goes like this:
 3. As your code spends cycles, the beam sweeps down the screen and the
    VIDEO chip draws each line it passes (section 6). When `frame`
    returns, the beam finishes the picture from what's in memory then.
+4. The SOUND chip reads its registers and plays them until the next
+   frame (section 11).
 
 ---
 
@@ -60,13 +66,14 @@ Every frame goes like this:
 | `$D000–$D02E` | 47 | VIDEO chip registers (section 4). | `hw.video_chip` |
 | `$D400–$D418` | 25 | SOUND chip registers (section 11). | `hw.sound_chip` |
 | `$D800–$DBE7` | 1000 | Colour RAM: one byte per cell (low 4 bits used). | `hw.color_ram` |
-| `$DC00–$DC02` | 3 | Input ports (section 7). | `hw.joy2`, `hw.joy1`, `hw.key` |
+| `$DC00–$DC02` | 3 | Input ports (section 8). | `hw.joy2`, `hw.joy1`, `hw.key` |
+| `$DD00–$DD2F` | 48 | Disk drive registers (section 13). | `hw.drive_command` … `hw.drive_name` |
 | `$E000–$FF3F` | 8000 | The bitmap: 320×200 pixels. | `hw.bitmap` |
 | `$FF40–$FFFF` | 192 | Free memory. | |
 
 The rest of `$D000–$DFFF` (`$D02F–$D3FF`, `$D419–$D7FF`, `$DBE8–$DBFF`,
-`$DC03–$DFFF`) is **reserved** for expansion hardware. Don't keep
-anything there.
+`$DC03–$DCFF`, `$DD30–$DFFF`) is **reserved** for expansion hardware.
+Don't keep anything there.
 
 Addresses are written in hexadecimal: `$D020` on this card is `0xD020` in
 Zig. The Zig names live in `machine.hw` (for example `machine.hw.border`).
@@ -376,6 +383,8 @@ have exactly the same bytes in Zig as in memory:
   whole record is an even number of bytes;
 - a `packed struct(u8)` (or `u16`, `u32`) for a byte of flags;
 - an `enum(u8)` with a `_` member, so any byte value is allowed;
+- an `extern union` of any of those, every field the same size, so no
+  field leaves bytes that mean nothing to it;
 - arrays of any of those.
 
 Anything else is a compile error that says what's wrong. The view itself
@@ -420,10 +429,106 @@ The names are also an enum, `machine.Color`: `@intFromEnum(machine.Color.purple)
 
 ## 11. The SOUND chip
 
-The SOUND chip's registers sit at `$D400–$D418`: three voices of seven
-registers each, then the filter and volume. You can already write them,
-and they hold what you write, but this model ships without its speaker
-board. The SOUND chip has its own supplement, which comes with the board.
+The SOUND chip plays **three voices** at once. Each voice is an
+oscillator, which makes a wave at the frequency you ask for, and an
+**envelope**, which makes it louder and softer over time. All three go
+through one volume control to the speaker.
+
+### Registers
+
+Each voice has seven registers. Voice 0's start at `$D400`, voice 1's at
+`$D407` and voice 2's at `$D40E` (`hw.voice(v)`):
+
+| Offset | Zig name (`machine.sound.`) | What it does |
+|---|---|---|
+| +0, +1 | `freq_lo`, `freq_hi` | Frequency, 16 bits, low byte first (below) |
+| +2, +3 | `pulse_lo`, `pulse_hi` | Pulse width, 12 bits (low 4 bits of +3): how much of each wave the pulse is high, out of 4096. 2048 is a square wave. |
+| +4 | `control` | Waveform and gate (below) |
+| +5 | `attack_decay` | High 4 bits: attack. Low 4 bits: decay. |
+| +6 | `sustain_release` | High 4 bits: sustain level, 0–15. Low 4 bits: release. |
+
+Then:
+
+| Address | Zig name | What it does |
+|---|---|---|
+| `$D415–$D417` | | The filter. This model doesn't have one fitted: these hold what you write and do nothing. |
+| `$D418` | `hw.sound_volume` | Low 4 bits: the volume, 0 (silent) to 15. The high bits do nothing. |
+
+At power-on every register is 0, so the chip is silent until you set the
+volume.
+
+### The control register
+
+| Bit | Zig name | What it does |
+|---|---|---|
+| 0 | `sound.gate` | On: the envelope rises and holds (a key held down). Off: it fades away (the key let go). |
+| 1 | `sound.sync` | Start this voice's wave again each time the voice before it starts one. |
+| 2 | `sound.ring` | With the triangle: flip it over while the voice before it is in the second half of its wave. A bell-like clang. |
+| 3 | `sound.testbit` | Hold the oscillator at the start of its wave, silent. |
+| 4 | `sound.triangle` | Triangle wave: soft, like a flute. |
+| 5 | `sound.sawtooth` | Sawtooth wave: bright and buzzy, like brass. |
+| 6 | `sound.pulse` | Pulse wave: hollow and reedy; its width sets how hollow. |
+| 7 | `sound.noise` | Noise: a hiss, a crash, a bang. |
+
+The voice before voice 0 is voice 2. With no waveform bit set a voice is
+silent. With two or more set, it plays them mixed together.
+
+### Frequency
+
+The oscillator keeps a 24-bit counter. On every cycle of the 1 MHz
+clock it adds the frequency register to it, and each time the counter
+goes all the way round, the wave has played once. So:
+
+    frequency in Hz = register × 1,000,000 / 16,777,216
+
+or, the other way, **register = Hz × 16.777216**. The A above middle C, 440 Hz, is
+7,382 (`$1CD6`). The highest frequency, `$FFFF`, is just over 3,906 Hz.
+
+### The envelope
+
+Turn the gate on, and the voice's loudness climbs from silence to full in
+the **attack** time. Then it falls in the **decay** time towards the
+**sustain** level, and stays there as long as the gate is on. Turn the
+gate off, and it falls to silence in the **release** time. Each time is a
+4-bit number:
+
+| Value | Attack | Decay, release | Value | Attack | Decay, release |
+|---|---|---|---|---|---|
+| 0 | 2 ms | 6 ms | 8 | 100 ms | 300 ms |
+| 1 | 8 ms | 24 ms | 9 | 250 ms | 750 ms |
+| 2 | 16 ms | 48 ms | 10 | 500 ms | 1.5 s |
+| 3 | 24 ms | 72 ms | 11 | 800 ms | 2.4 s |
+| 4 | 38 ms | 114 ms | 12 | 1 s | 3 s |
+| 5 | 56 ms | 168 ms | 13 | 3 s | 9 s |
+| 6 | 68 ms | 204 ms | 14 | 5 s | 15 s |
+| 7 | 80 ms | 240 ms | 15 | 8 s | 24 s |
+
+The decay and release times are for the whole fall, from full to
+silence; a fall from a lower level is quicker. The sustain level runs
+from 0 (silence) to 15 (full). The tables are
+`machine.sound.attack_ms` and `machine.sound.fall_ms`.
+
+### The output
+
+The three voices are mixed, scaled by the volume, and sent to the speaker
+through a gentle smoothing and a capacitor that lets no steady offset
+through: a narrow pulse wave sounds centred, not pushed to one side.
+The loudest peaks are rounded off rather than clipped. A
+voice whose waveform you switch off fades out over a few milliseconds
+instead of clicking.
+
+### When the chip listens
+
+The SOUND chip reads its registers **once a frame, when your `frame`
+returns**, and plays what they say until the end of the next frame. So:
+
+- Where in `frame` you write them doesn't matter, and nothing tears.
+- A change lasts at least a frame. Turn a gate off and on again in the
+  same frame, and the chip never sees it off. Leave it off for a frame.
+- During a long frame (section 6) the chip plays the last frame's
+  registers for as long as it takes.
+
+The registers are ordinary memory: you can read back what you wrote.
 
 ---
 
@@ -436,7 +541,8 @@ zig build wasm
 python3 -m http.server -d web
 ```
 
-then open <http://localhost:8000> and click the screen.
+then open <http://localhost:8000> and click the screen. The click lets
+the browser make sound, too.
 
 **Headless** (no screen: runs the game and saves pictures):
 
@@ -451,13 +557,132 @@ zig build run -- --frames 250 --press 50:rf:20 --dump frames --dump-every 50
 | `--key FRAME:C` | type the character C at FRAME; `--key FRAME:#13` types code 13 (Return) |
 | `--dump DIR` | where to save pictures (default `frames`) |
 | `--dump-every K` | also save every Kth frame (the last frame is always saved) |
+| `--wav FILE` | save the sound to FILE, a WAV file (44,100 samples a second, mono) that any music player opens |
+| `--disk FILE` | put the disk image FILE (a `.d64` file) in the drive, instead of your game's own disk |
+| `--save-disk FILE` | when the run ends, save the disk in the drive, with everything the game saved on it, to FILE |
 
 Frames are counted from 0, the first frame after `boot`. A long frame
 covers several frame numbers, and they all get its picture. Pictures are
 saved as `DIR/frame_NNNNN.ppm`, border and meter included, 384 × 272.
 When the run ends you get a summary: frames run, the most and average
 cycles per call to `frame`, each meter bucket that was used, and how many
-frames overran or were loading pauses.
+frames overran or were loading pauses. With `--wav`, the last line says
+how long the sound is and how loud it got at its loudest. With
+`--save-disk`, it says how many blocks are free on the disk it saved.
+
+In the browser, a game with a disk of its own (`pub const disk`) gets two
+more controls under the screen: a file picker that slots a disk image in
+(and powers on again with it; a file that isn't a disk image is refused,
+and the game plays on), and a button that saves the disk in the drive as a file. The
+image is read right there in the page; nothing is sent anywhere.
 
 **Testing:** `zig build test` runs your game's own `test` blocks, then
 powers the machine on with your game and runs 100 frames.
+
+---
+
+## 13. The disk drive
+
+The drive reads and writes **disk images**: a disk, byte for byte, as a
+file (a `.d64` file). A disk is the classic single-sided kind: **35
+tracks** of **256-byte sectors**, 683 sectors, 174,848 bytes. Tracks 1–17
+have 21 sectors, 18–24 have 19, 25–30 have 18 and 31–35 have 17. The
+drive also takes 40-track images and images with a byte of error codes
+per sector at the end; it uses the first 35 tracks and ignores the
+rest, and a saved disk comes back as 35 tracks.
+
+### How a disk is laid out
+
+- **Track 18 is the disk's own.** Sector 0 is the **BAM** (block
+  availability map): four bytes per track, a count of its free sectors
+  and a bit for each sector (1 = free), then at `$90` the disk's name
+  (16 bytes, padded with `$A0`) and at `$A2` its two-letter ID.
+- **The directory** is a chain of sectors starting at 18/1. Each holds
+  eight 32-byte entries: a file type at byte 2 (`$82`: a program file,
+  closed), its first track and sector at 3–4, its name at 5–20 (padded
+  with `$A0`) and its length in sectors at 30–31.
+- **A file** is a chain of sectors. Each one starts with the track and
+  sector of the next, then 254 bytes of the file. The last has track 0,
+  and its second byte is the position of its last byte.
+- **A file's first two bytes** are its load address. The drive keeps
+  them on the disk but doesn't give them to you: you say where a file
+  goes.
+
+### Registers
+
+| Address | Zig name | What it does |
+|---|---|---|
+| `$DD00` | `hw.drive_command` | Write a command here (below). The drive does it at once: by the time `poke` returns it's done. Reads back 0. |
+| `$DD01` | `hw.drive_status` | How the last command went: a `drive.Status`. |
+| `$DD02–$DD03` | `hw.drive_address` | Where in RAM, low byte first. |
+| `$DD04–$DD05` | `hw.drive_length` | How many bytes: to save, or the most to load. After a load, how many came. |
+| `$DD06` | `hw.drive_name_length` | The name's length, up to 32. |
+| `$DD10–$DD2F` | `hw.drive_name` | The file's name, as letters. |
+
+Only `m.poke` to `$DD00` starts a command; filling it any other way
+(`m.copy`, `m.ram`) writes the byte and nothing happens.
+
+| Command | `drive.Command` | What it does |
+|---|---|---|
+| 1 | `.load` | Load the named file into RAM at the address, less its two-byte load address, and at most the length. |
+| 2 | `.save` | Save `length` bytes from the address as the named file, with the address as its load address. |
+
+| Status | `drive.Status` | Meaning |
+|---|---|---|
+| 0 | `.ok` | Done. |
+| 1 | `.no_disk` | The drive is empty. |
+| 2 | `.not_found` | No file by that name. |
+| 3 | `.exists` | A save to a name that's taken. Put `@0:` in front to save over it. |
+| 4 | `.full` | Not enough free sectors. Nothing was written. |
+| 5 | `.too_long` | The file is longer than the length you gave. That much came. |
+| 6 | `.bad_name` | Empty, longer than 16 letters, or a pattern where a save needs a name. |
+| 7 | `.bad_disk` | The disk's chains lead off the disk, or round in a circle. |
+
+### Names
+
+- A name is up to 16 letters. `0:` in front names the drive (there's
+  only one): `0:CASTLE` is `CASTLE`.
+- In a load, `*` matches the rest of a name and `?` any one letter.
+  The first file in the directory that matches is the one you get.
+- `@0:` in front of a save saves over a file of that name if there is
+  one.
+- **`$` loads the directory**, as a little program listing. `$0:Z*`
+  lists only the files that match `Z*`. The listing is lines, one after
+  another. Each line is two link bytes (always 1, 1), a 16-bit line
+  number, some text and a 0 byte. The first line is the disk's name in
+  quotes, line number 0. Then a line for each file: its length in
+  sectors as the line number, then its name in quotes and its type.
+  The last line is the number of free sectors, then `BLOCKS FREE.`
+  Two 0 bytes end the listing. The files are in directory order.
+
+### Time
+
+**Every sector the drive reads or writes costs a frame's worth of
+cycles: 19,656.** A command that touches no sector still costs one (the
+disk spins round once). Loading a 4,323-byte file reads a directory
+sector and 18 sectors of file: 19 frames. Blank the display first
+(section 6), so the long frame is a loading pause, not an overrun.
+While the drive works, the SOUND chip goes on playing the last frame's
+registers.
+
+### Making a disk
+
+`machine.drive` works on a plain `drive.Image` and needs no machine, so
+a game can make its disk while it compiles:
+
+```zig
+pub const disk: machine.drive.Image = blk: {
+    @setEvalBranchQuota(4_000_000);
+    var d: machine.drive.Image = undefined;
+    machine.drive.format(&d, "MY DISK", "01".*);
+    var sectors: u32 = 0;
+    machine.drive.save(&d, "HELLO", 0x9800, "HELLO, DISK", &sectors) catch unreachable;
+    break :blk d;
+};
+```
+
+`format`, `save`, `load`, `find` and `blocksFree` count the sectors they
+touch in their last argument. A shell slots another disk in with
+`m.insert(bytes)` (after `boot`), takes it out with `m.eject()`, and gets
+the disk as it is now, saves and all, from `m.diskImage()`. Powering on
+again puts the game's own disk back in.

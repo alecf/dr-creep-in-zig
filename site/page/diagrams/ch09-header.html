@@ -1,0 +1,32 @@
+<style>
+.ch09-hd { display: grid; gap: 12px; }
+.ch09-hd .ch09-hd-list { display: grid; grid-template-columns: auto auto 1fr; gap: 4px 10px; align-items: baseline; max-width: 600px; }
+.ch09-hd .ch09-hd-list .n { color: var(--ink-soft); font: .72rem/1.3 var(--mono); white-space: nowrap; }
+.ch09-hd .ch09-hd-list b { font: 600 .78rem/1.3 var(--mono); }
+.ch09-hd .ch09-hd-list .file { color: var(--accent); }
+.ch09-hd .ch09-hd-list span:nth-child(3n) { font-size: .74rem; color: var(--ink-soft); }
+.ch09-hd .ch09-hd-key { display: flex; gap: 16px; flex-wrap: wrap; font-size: .72rem; color: var(--ink-soft); }
+.ch09-hd .ch09-hd-key i { display: inline-block; width: .9em; height: .9em; border-radius: 2px; vertical-align: -1px; margin-right: 5px; }
+</style>
+<div class="ch09-hd">
+  <span class="dg-label">The castle header, the first 256 bytes of the castle at <code>$7800</code></span>
+  <div class="ch09-hd-key"><span><i style="background: var(--accent)"></i>the castle file fills it in</span><span><i style="background: var(--code-bg); box-shadow: inset 0 0 0 1px var(--rule)"></i>zero on the disk: the game's own while a game is on</span></div>
+  <div class="ch09-hd-list">
+    <span class="n">$00–$01</span><b class="file">size</b><span>the whole file, header and all</span>
+    <span class="n">$02</span><b class="file">magic</b><span>$80: this really is a castle</span>
+    <span class="n">$03–$04</span><b class="file">start_room</b><span>where each player starts: player 1's byte, then player 2's</span>
+    <span class="n">$05–$06</span><b class="file">start_door</b><span>and by which door</span>
+    <span class="n">$07–$08</span><b class="file">lives</b><span>the lives a game starts with, then the lives left</span>
+    <span class="n">$09–$0A</span><b>room</b><span>the room he's in, or goes to next</span>
+    <span class="n">$0B–$0C</span><b>door</b><span>the door he comes into it by</span>
+    <span class="n">$0D–$0E</span><b>status</b><span>playing, in a doorway, gone or dead</span>
+    <span class="n">$0F–$10</span><b>in_game</b><span>1 until he's out of lives, or out of the castle</span>
+    <span class="n">$11</span><b>last</b><span>the last player walking the last room</span>
+    <span class="n">$12</span><b>two</b><span>1 in a game for two</span>
+    <span class="n">$13–$14</span><b>keys_count</b><span>keys in each pocket</span>
+    <span class="n">$15–$54</span><b>keys_held</b><span>the pockets, 32 bytes each</span>
+    <span class="n">$55–$5C</span><b>time</b><span>each player's clock, 4 bytes</span>
+    <span class="n">$5D–$5E</span><b>escaped</b><span>1 once he's through the way out</span>
+    <span class="n">$5F–$60</span><b class="file">final_room</b><span>where the final room's records are, or 0</span>
+  </div>
+</div>
